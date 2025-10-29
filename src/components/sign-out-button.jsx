@@ -1,10 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 
 export default function SignOutButton({ className = "" }) {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
@@ -15,18 +14,7 @@ export default function SignOutButton({ className = "" }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Logout failed");
-      }
-
-      router.replace("/auth");
+      await signOut({ callbackUrl: "/auth" });
     } catch (error) {
       setIsLoading(false);
       console.error(error);

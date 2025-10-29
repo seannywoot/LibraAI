@@ -1,8 +1,17 @@
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import SignOutButton from "@/components/sign-out-button";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { redirect } from "next/navigation";
 
-export default function StudentDashboardPage() {
-  // Route access is enforced by middleware; this component doesn't need to read cookies.
+export default async function StudentDashboardPage() {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    redirect("/auth");
+  }
+  if (session.user?.role === "admin") {
+    redirect("/admin/dashboard");
+  }
 
   const navigationLinks = [
     { key: "student-dashboard", label: "Dashboard", href: "/student/dashboard", exact: true },

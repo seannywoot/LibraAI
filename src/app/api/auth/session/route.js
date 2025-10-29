@@ -1,13 +1,20 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "../[...nextauth]/route";
 import { NextResponse } from "next/server";
 
-const SESSION_COOKIE = "libraai-session";
+export async function GET() {
+  const session = await getServerSession(authOptions);
 
-export async function GET(request) {
-  const role = request.cookies.get(SESSION_COOKIE)?.value;
-
-  if (!role) {
+  if (!session) {
     return NextResponse.json({ authenticated: false }, { status: 200 });
   }
 
-  return NextResponse.json({ authenticated: true, role }, { status: 200 });
+  return NextResponse.json({ 
+    authenticated: true, 
+    user: {
+      email: session.user.email,
+      name: session.user.name,
+      role: session.user.role,
+    }
+  }, { status: 200 });
 }

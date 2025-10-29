@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-
-const SESSION_COOKIE = "libraai-session";
+import { getToken } from "next-auth/jwt";
 
 function buildRedirect(request, pathname) {
   const url = request.nextUrl.clone();
@@ -9,14 +8,22 @@ function buildRedirect(request, pathname) {
   return url;
 }
 
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
-  const session = request.cookies.get(SESSION_COOKIE)?.value;
+  
+  // Get the token - using the environment variable
+  const token = await getToken({ 
+    req: request, 
+    secret: process.env.NEXTAUTH_SECRET 
+  });
+  
+  const role = token?.role;
 
   const requiresAuth =
     pathname.startsWith("/dashboard") || pathname.startsWith("/admin") || pathname.startsWith("/student");
 
-  if (!session && requiresAuth) {
+  // If no token and route requires auth, redirect to login
+  if (!token && requiresAuth) {
     const loginUrl = buildRedirect(request, "/auth");
     const originalPath = `${pathname}${request.nextUrl.search}`;
     if (originalPath && originalPath !== "/auth") {
@@ -25,24 +32,27 @@ export function middleware(request) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (session) {
+  // If user is authenticated
+  if (token) {
+    // Redirect from auth page to appropriate dashboard
     if (pathname.startsWith("/auth")) {
-      const destination = session === "admin" ? "/admin/dashboard" : "/student/dashboard";
+      const destination = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
       return NextResponse.redirect(buildRedirect(request, destination));
     }
 
-    if (pathname.startsWith("/admin") && session !== "admin") {
-      return NextResponse.redirect(buildRedirect(request, "/dashboard"));
+    // Prevent non-admins from accessing admin routes
+    if (pathname.startsWith("/admin") && role !== "admin") {
+      return NextResponse.redirect(buildRedirect(request, "/student/dashboard"));
     }
 
-    if (pathname.startsWith("/dashboard")) {
-      // Normalize legacy /dashboard to the correct destination based on role
-      const destination = session === "admin" ? "/admin/dashboard" : "/student/dashboard";
+    // Redirect legacy /dashboard to role-specific dashboard
+    if (pathname === "/dashboard") {
+      const destination = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
       return NextResponse.redirect(buildRedirect(request, destination));
     }
 
     // Prevent admins from accessing student-specific routes
-    if (pathname.startsWith("/student") && session === "admin") {
+    if (pathname.startsWith("/student") && role === "admin") {
       return NextResponse.redirect(buildRedirect(request, "/admin/dashboard"));
     }
   }
@@ -51,5 +61,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/student/:path*", "/auth"],
+  matcher: ["/dashboard", "/dashboard/:path*", "/admin/:path*", "/student/:path*", "/auth"],
 };
