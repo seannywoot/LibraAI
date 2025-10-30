@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
+  /* Light mode palette */
   --background: #ffffff;
   --foreground: #171717;
+  /* Sidebar palette from design (light mode) */
+  --bg-1: #FAFAFA;     /* panel and nav background */
+  --bg-2: #F5F5F5;     /* active/hover item background */
+  --bg-3: #EBEBEB;     /* subtle fills if needed */
+  --stroke: #E0E0E0;   /* light borders */
+  --dark-stroke: #3E3E3E; /* icon/text darker accents */
+  --subtext: #7D7D7D;  /* muted text */
+  --text: #000000;     /* primary text */
 }
 
 @theme inline {
