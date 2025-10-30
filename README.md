@@ -1,36 +1,142 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+## LibraAI
 
-## Getting Started
+AI‑powered digital library companion built with Next.js App Router, NextAuth, and MongoDB.
 
-First, run the development server:
+This README covers the current project structure and the environment variables you need to run the app locally and in production.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Project structure
+
+```
+eslint.config.mjs
+jsconfig.json
+middleware.js
+next.config.mjs
+package.json
+postcss.config.mjs
+README.md
+public/
+src/
+	app/
+		globals.css
+		layout.js
+		page.js
+		admin/
+			dashboard/
+				page.js
+			profile/
+				page.js
+			settings/
+				page.js
+		api/
+			admin/
+				seed-users/
+					route.js
+			auth/
+				[...nextauth]/
+					route.js
+				login/
+					route.js
+				logout/
+					route.js
+				session/
+					route.js
+			db/
+				ping/
+					route.js
+		auth/
+			page.js
+		dashboard/
+			page.js
+		student/
+			dashboard/
+				page.js
+			profile/
+				page.js
+			settings/
+				page.js
+	components/
+		dashboard-sidebar.jsx
+		SessionProvider.jsx
+		sign-out-button.jsx
+	lib/
+		mongodb.js
+		passwords.js
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Required environment variables
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+Create a file named `.env.local` in the project root and add the values below. Keys marked required must be set for the app to work.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+# Database (required) — primary variable the app looks for
+MONGODB_URI="mongodb+srv://<user>:<pass>@<cluster>/<db>?retryWrites=true&w=majority"
 
-## Learn More
+# NextAuth secret (required) — used for signing/encrypting JWTs and by middleware
+NEXTAUTH_SECRET="<generate-a-strong-random-string>"
 
-To learn more about Next.js, take a look at the following resources:
+# Optional fallbacks supported by the code (if you prefer different names)
+# MONGODB_URL=
+# DATABASE_URL=
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Recommended in production for NextAuth absolute callback URLs
+# NEXTAUTH_URL="https://your-domain.tld"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Tips
+- To generate a strong secret on Windows PowerShell (requires Node.js):
+  – Run: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+- Node.js version: the project targets Node >= 18.17.0 (see `package.json`).
 
-## Deploy on Vercel
+## Running locally
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1) Install dependencies
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```powershell
+npm install
+```
+
+2) Create `.env.local` with the variables above.
+
+3) (Optional) Seed demo users into your MongoDB (development only)
+
+After the dev server starts, open this in your browser:
+
+```
+http://localhost:3000/api/admin/seed-users
+```
+
+This will upsert two users into the `users` collection:
+- student: student@demo.edu / ReadSmart123
+- admin: admin@libra.ai / ManageStacks!
+
+4) Start the dev server
+
+```powershell
+npm run dev
+```
+
+Then visit http://localhost:3000 and sign in at /auth. You can also test the DB connection at `/api/db/ping`.
+
+## Authentication and roles
+
+- Auth is powered by NextAuth using the Credentials provider and JWT sessions.
+- Middleware enforces role‑based routing:
+  - Admin routes under `/admin/*` require role `admin`.
+  - Student routes under `/student/*` require role `student`.
+  - `/dashboard` redirects to the role‑specific dashboard.
+
+## Deploying
+
+Any Next.js compatible platform will work. In addition to `.env` above, set at least:
+- MONGODB_URI
+- NEXTAUTH_SECRET
+- NEXTAUTH_URL (recommended)
+
+Build/start scripts:
+
+```powershell
+npm run build
+npm start
+```
+
+For more details, see Next.js deployment docs.
