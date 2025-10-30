@@ -153,15 +153,15 @@ function AuthContent() {
           <ul className="relative z-10 space-y-4 text-sm text-zinc-200">
             <li className="flex items-start gap-3">
               <span className="mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full bg-emerald-400" aria-hidden />
-              Smart discovery from catalogs, PDFs, and lecture notes
+              Natural conversation-based search for books and journals
             </li>
             <li className="flex items-start gap-3">
               <span className="mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full bg-sky-400" aria-hidden />
-              Instant citations, summaries, and study plans powered by AI
+              Personalized recommendations based on reading pattern
             </li>
             <li className="flex items-start gap-3">
               <span className="mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full bg-amber-400" aria-hidden />
-              Share resource collections with classmates in one click
+              Interactive tools such as notes and quizzes
             </li>
           </ul>
           <p className="relative z-10 text-xs text-zinc-500">
