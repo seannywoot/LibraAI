@@ -256,7 +256,6 @@ function AuthContent() {
                       />
                       Remember me
                     </label>
-                    <span className="text-xs text-zinc-500">Secured by multi-factor auth</span>
                   </div>
                 )}
 

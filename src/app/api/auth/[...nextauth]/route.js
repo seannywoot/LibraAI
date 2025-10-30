@@ -1,5 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import clientPromise from "@/lib/mongodb";
+import { comparePassword } from "@/lib/passwords";
 
 const STUDENT_DEMO = {
   email: "student@demo.edu",
@@ -29,6 +31,29 @@ export const authOptions = {
 
         if (!email || !password) {
           throw new Error("Missing credentials");
+        }
+
+        // 1) Try database-backed users first
+        try {
+          const client = await clientPromise;
+          const db = client.db();
+          const userDoc = await db.collection("users").findOne({ email });
+          if (userDoc) {
+            const valid = await comparePassword(password, userDoc.passwordHash);
+            if (valid) {
+              return {
+                id: userDoc._id.toString(),
+                name: userDoc.name || "User",
+                email: userDoc.email,
+                role: userDoc.role || "student",
+              };
+            }
+            // If user exists but password invalid, fail immediately
+            throw new Error("Invalid credentials");
+          }
+        } catch (e) {
+          // If DB is unreachable, fall back to demo users below
+          console.warn("DB authorize fallback:", e?.message || e);
         }
 
         if (email === STUDENT_DEMO.email && password === STUDENT_DEMO.password) {
