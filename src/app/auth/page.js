@@ -9,7 +9,7 @@ const STUDENT_DEMO_PASSWORD = "ReadSmart123";
 const ADMIN_DEMO_EMAIL = "admin@libra.ai";
 const ADMIN_DEMO_PASSWORD = "ManageStacks!";
 
-export default function AuthPage() {
+function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState("student"); // 'student' | 'admin'
@@ -56,8 +56,8 @@ export default function AuthPage() {
     setError("");
 
     try {
-  const redirectParam = searchParams.get("redirect");
-  const defaultDestination = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
+      const redirectParam = searchParams.get("redirect");
+      const defaultDestination = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
       let destination = defaultDestination;
 
       if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
@@ -137,10 +137,9 @@ export default function AuthPage() {
   };
 
   return (
-    <Suspense fallback={null}>
-      <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-6 py-12 text-zinc-900">
-        <div className="flex w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 md:flex-row">
-          <section className="relative hidden w-full max-w-sm flex-col justify-between bg-zinc-900 p-10 text-zinc-100 md:flex">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-6 py-12 text-zinc-900">
+      <div className="flex w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 md:flex-row">
+  <section className="relative hidden w-full max-w-sm flex-col justify-between bg-zinc-900 p-10 text-zinc-100 md:flex">
           <div className="absolute inset-0 bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900" aria-hidden />
           <div className="relative z-10">
             <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">LibraAI</p>
@@ -170,7 +169,7 @@ export default function AuthPage() {
           </p>
         </section>
 
-  <main className="flex w-full flex-1 flex-col justify-center px-8 py-12 sm:px-14">
+        <main className="flex w-full flex-1 flex-col justify-center px-8 py-12 sm:px-14">
           <div className="w-full max-w-2xl">
             <header className="mb-6 flex items-center justify-between">
               <div>
@@ -310,8 +309,16 @@ export default function AuthPage() {
             </section>
           </div>
         </main>
-        </div>
       </div>
+    </div>
+  );
+}
+
+export default function AuthPage() {
+  // Wrap the content that uses useSearchParams in a Suspense boundary
+  return (
+    <Suspense fallback={null}>
+      <AuthContent />
     </Suspense>
   );
 }
