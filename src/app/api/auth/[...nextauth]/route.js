@@ -82,15 +82,24 @@ export const authOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // On sign-in, copy role and name from user
       if (user) {
         token.role = user.role;
+        if (user.name) token.name = user.name;
       }
+
+      // When a client calls useSession().update({ ... }), propagate allowed fields
+      if (trigger === "update") {
+        if (session?.name) token.name = session.name;
+      }
+
       return token;
     },
     async session({ session, token }) {
       session.user = session.user || {};
       session.user.role = token.role;
+      if (token.name) session.user.name = token.name;
       return session;
     },
   },

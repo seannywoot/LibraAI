@@ -3,6 +3,7 @@ import SignOutButton from "@/components/sign-out-button";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
+import ClientUserName from "@/components/ClientUserName";
 
 export default async function AdminDashboardPage() {
   const session = await getServerSession(authOptions);
@@ -37,7 +38,7 @@ export default async function AdminDashboardPage() {
           </p>
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-              Welcome back, Library Steward
+              Welcome back, <ClientUserName fallback="Library Steward" />
             </h1>
             <p className="text-sm text-zinc-600">
               Monitor library engagement, curate featured collections, and keep your academic community organized from a single AI-assisted console.

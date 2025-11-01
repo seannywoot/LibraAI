@@ -1,15 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import SignOutButton from "@/components/sign-out-button";
+import ToastContainer from "@/components/ToastContainer";
 
 export default function AdminProfilePage() {
+  const { data: session, update } = useSession();
   const [name, setName] = useState("Library Steward");
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [weeklyReport, setWeeklyReport] = useState(true);
   const [betaFeatures, setBetaFeatures] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [toasts, setToasts] = useState([]);
+
+  useEffect(() => {
+    if (session?.user?.name) setName(session.user.name);
+  }, [session?.user?.name]);
+
+  const pushToast = (toast) => {
+    const id = Date.now() + Math.random();
+    const t = { id, duration: 2500, ...toast };
+    setToasts((prev) => [t, ...prev]);
+    if (t.duration) {
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((x) => x.id !== id));
+      }, t.duration + 100);
+    }
+  };
 
   const navigationLinks = [
     { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true },
@@ -17,11 +35,23 @@ export default function AdminProfilePage() {
     { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true },
   ];
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setSaved(true);
-    const timer = setTimeout(() => setSaved(false), 2000);
-    return () => clearTimeout(timer);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "Failed to save changes");
+      }
+      try { await update({ name }); } catch {}
+      pushToast({ type: "success", title: "Changes saved", description: "Your profile was updated." });
+    } catch (err) {
+      pushToast({ type: "error", title: "Save failed", description: err?.message || "Unknown error" });
+    }
   };
 
   return (
@@ -61,10 +91,11 @@ export default function AdminProfilePage() {
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">Role</span>
                 <input
-                  className="rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
+                  className="cursor-not-allowed rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
                   type="text"
                   value="Admin"
-                  readOnly
+                  disabled
+                  aria-readonly
                 />
               </label>
             </div>
@@ -104,7 +135,6 @@ export default function AdminProfilePage() {
           </section>
 
           <div className="flex items-center justify-end gap-3">
-            {saved && <span className="text-xs text-emerald-500">Saved</span>}
             <button
               type="submit"
               className="rounded-xl border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-100"
@@ -113,6 +143,12 @@ export default function AdminProfilePage() {
             </button>
           </div>
         </form>
+
+        <ToastContainer
+          toasts={toasts}
+          onClose={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+          position="top-right"
+        />
       </main>
     </div>
   );

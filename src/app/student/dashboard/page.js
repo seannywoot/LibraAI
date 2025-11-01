@@ -3,6 +3,7 @@ import SignOutButton from "@/components/sign-out-button";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
+import ClientUserName from "@/components/ClientUserName";
 
 export default async function StudentDashboardPage() {
   const session = await getServerSession(authOptions);
@@ -61,7 +62,7 @@ export default async function StudentDashboardPage() {
             </p>
             <div className="space-y-2">
               <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-                Good afternoon, Study Explorer
+                Good afternoon, <ClientUserName />
               </h1>
               <p className="text-sm text-zinc-600">
                 Here&apos;s a quick snapshot of your academic library workspace. Upload resources, explore AI-generated summaries, and keep your study materials organized from one central hub.

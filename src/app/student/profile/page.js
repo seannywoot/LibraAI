@@ -1,15 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import SignOutButton from "@/components/sign-out-button";
+import ToastContainer from "@/components/ToastContainer";
 
 export default function StudentProfilePage() {
+  const { data: session, update } = useSession();
   const [name, setName] = useState("Study Explorer");
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [studyReminders, setStudyReminders] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [toasts, setToasts] = useState([]);
+
+  const pushToast = (toast) => {
+    const id = Date.now() + Math.random();
+    const t = { id, duration: 2500, ...toast };
+    setToasts((prev) => [t, ...prev]);
+    // Auto-remove after duration
+    if (t.duration) {
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((x) => x.id !== id));
+      }, t.duration + 100); // small buffer after auto-close inside Toast
+    }
+  };
+
+  // Initialize name from session when available
+  useEffect(() => {
+    if (session?.user?.name) {
+      setName(session.user.name);
+    }
+  }, [session?.user?.name]);
 
   const navigationLinks = [
     {
@@ -41,11 +63,24 @@ export default function StudentProfilePage() {
     },
   ];
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setSaved(true);
-    const timer = setTimeout(() => setSaved(false), 2000);
-    return () => clearTimeout(timer);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "Failed to save changes");
+      }
+      // Update client session so name is in sync everywhere without re-auth
+      try { await update({ name }); } catch (e) { /* ignore non-fatal */ }
+      pushToast({ type: "success", title: "Changes saved", description: "Your profile was updated." });
+    } catch (err) {
+      pushToast({ type: "error", title: "Save failed", description: err?.message || "Unknown error" });
+    }
   };
 
   return (
@@ -85,10 +120,11 @@ export default function StudentProfilePage() {
                 <label className="grid gap-2 text-sm">
                   <span className="text-zinc-700">Role</span>
                   <input
-                    className="rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
+                    className="cursor-not-allowed rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
                     type="text"
-                    value="Student"
-                    readOnly
+                    value={session?.user?.role === "admin" ? "Admin" : "Student"}
+                    disabled
+                    aria-readonly
                   />
                 </label>
               </div>
@@ -128,7 +164,6 @@ export default function StudentProfilePage() {
             </section>
 
             <div className="flex items-center justify-end gap-3">
-              {saved && <span className="text-xs text-emerald-500">Saved</span>}
               <button
                 type="submit"
                 className="rounded-xl border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-100"
@@ -137,6 +172,11 @@ export default function StudentProfilePage() {
               </button>
             </div>
           </form>
+          <ToastContainer
+            toasts={toasts}
+            onClose={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+            position="top-right"
+          />
       </main>
     </div>
   );
