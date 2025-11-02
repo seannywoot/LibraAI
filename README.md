@@ -1,4 +1,4 @@
-## LibraAI
+~## LibraAI
 
 AI‑powered digital library companion built with Next.js App Router, NextAuth, and MongoDB.
 
@@ -61,7 +61,6 @@ src/
 	lib/
 		mongodb.js
 		passwords.js
-	        email.js
 ```
 
 ## Required environment variables
@@ -81,17 +80,6 @@ NEXTAUTH_SECRET="<generate-a-strong-random-string>"
 
 # Recommended in production for NextAuth absolute callback URLs
 # NEXTAUTH_URL="https://your-domain.tld"
-
-# SMTP / email (required for password reset)
-# Ask your provider or use a service like SendGrid/Mailgun/SES
-# SMTP_HOST=
-# SMTP_PORT=587
-# SMTP_USER=
-# SMTP_PASS=
-# EMAIL_FROM="LibraAI <no-reply@your-domain.com>"
-
-# Password reset link expiration (minutes)
-# PASSWORD_RESET_EXP_MIN=15
 ```
 
 Tips
@@ -129,19 +117,6 @@ npm run dev
 
 Then visit http://localhost:3000 and sign in at /auth. You can also test the DB connection at `/api/db/ping`.
 
-## Password reset (backend)
-
-This project includes a minimal, secure password-reset backend flow:
-
-- Request reset: `POST /api/auth/password-reset/request` with JSON `{ "email": "user@example.com" }`
-	- Always responds with `{ ok: true }` to avoid leaking whether the account exists.
-	- Generates a one-time token (hashed in DB), stores it with expiration, and emails a link to the user.
-
-- Complete reset: `POST /api/auth/password-reset/reset` with JSON `{ "token": "<from-email>", "password": "NewSecurePass123" }`
-	- Verifies token validity/expiration, sets the new password, and invalidates all outstanding tokens for that email.
-
-Configure SMTP variables in `.env.local` so emails can be sent. The reset email links to `/auth/reset?token=...`; add a UI page there to collect the new password and call the reset API.
-
 ## Authentication and roles
 
 - Auth is powered by NextAuth using the Credentials provider and JWT sessions.
@@ -166,6 +141,38 @@ npm start
 
 For more details, see Next.js deployment docs.
 
-## Production build notes
+## Email setup (password reset)
 
-- Pages/components that use `useSearchParams()` (from `next/navigation`) must be rendered inside a `<Suspense>` boundary in the App Router, otherwise static generation will fail with "missing suspense with csr bailout". The `/auth` and `/auth/reset` pages follow this pattern by wrapping a Client Component in `<Suspense>` from a Server Component page file.
+This app now uses a single email sender: SMTP via nodemailer in `src/lib/email.js`.
+
+Environment variables used by the app:
+
+```
+# Who the email is from — use a verified sender/domain at your provider
+EMAIL_FROM="LibraAI <no-reply@yourdomain.com>"
+
+# SMTP settings (point these to your provider, e.g., Resend SMTP, SendGrid, Postmark, etc.)
+SMTP_HOST="smtp.yourprovider.com"
+SMTP_PORT="587"                  # typically 587 (STARTTLS) or 465 (TLS)
+SMTP_USER="<smtp-username>"
+SMTP_PASS="<smtp-password-or-token>"
+
+# Optional: controls expiry text in the email copy
+PASSWORD_RESET_EXP_MIN="15"
+
+# The base URL used to build email links (fallback order: NEXTAUTH_URL, APP_URL, then http://localhost:3000)
+# Set one of these in production
+NEXTAUTH_URL="https://your-domain.tld"
+# or
+APP_URL="https://your-domain.tld"
+```
+
+How it works:
+- In production, `src/lib/email.js` uses the SMTP_* variables and `EMAIL_FROM`.
+- In development, if SMTP vars are not set, it automatically provisions an Ethereal test inbox so you can preview emails in the console.
+
+Deliverability tips:
+- Verify your sending domain (SPF/DKIM) with your email provider and use a real `EMAIL_FROM` at that domain.
+- Keep password‑reset tokens short‑lived (15–60 minutes) and one‑time use.
+- Avoid user enumeration: the API responds with a generic success message whether or not the email exists (already implemented).
+
