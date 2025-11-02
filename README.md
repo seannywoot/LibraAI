@@ -165,3 +165,7 @@ npm start
 ```
 
 For more details, see Next.js deployment docs.
+
+## Production build notes
+
+- Pages/components that use `useSearchParams()` (from `next/navigation`) must be rendered inside a `<Suspense>` boundary in the App Router, otherwise static generation will fail with "missing suspense with csr bailout". The `/auth` and `/auth/reset` pages follow this pattern by wrapping a Client Component in `<Suspense>` from a Server Component page file.
