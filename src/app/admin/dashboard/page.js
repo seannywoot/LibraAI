@@ -1,5 +1,5 @@
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Home, Book, Plus, Users, Library as LibraryIcon, User, Settings } from "@/components/icons";
+import { Home, Book, Plus, Users, Library as LibraryIcon, User, Settings, History } from "@/components/icons";
 import SignOutButton from "@/components/sign-out-button";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -19,6 +19,7 @@ export default async function AdminDashboardPage() {
     { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true, icon: <Home className="h-4 w-4" /> },
     { key: "admin-books", label: "Books", href: "/admin/books", exact: true, icon: <Book className="h-4 w-4" /> },
     { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true, icon: <Plus className="h-4 w-4" /> },
+    { key: "admin-transactions", label: "Transactions", href: "/admin/transactions", exact: true, icon: <History className="h-4 w-4" /> },
     { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true, icon: <Users className="h-4 w-4" /> },
     { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
     { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true, icon: <User className="h-4 w-4" /> },
@@ -79,17 +80,17 @@ export default async function AdminDashboardPage() {
               >
                 Add a new book
               </a>
+              <a
+                href="/admin/transactions"
+                className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
+              >
+                View borrow transactions
+              </a>
               <button
                 className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
                 type="button"
               >
                 Review flagged content
-              </button>
-              <button
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
-                type="button"
-              >
-                Publish featured collection
               </button>
               <button
                 className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"

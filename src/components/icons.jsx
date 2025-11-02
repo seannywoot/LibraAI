@@ -5,6 +5,7 @@ export {
   // Navigation / essentials
   Home,
   Book,
+  BookOpen,
   Plus,
   Users,
   LibraryBig as Library,
@@ -16,6 +17,7 @@ export {
   Search,
   ChevronLeft,
   ChevronRight,
+  History,
 } from "lucide-react";
 
 // Optional wrapper for consistent sizing in nav/buttons

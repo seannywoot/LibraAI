@@ -1,5 +1,5 @@
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Home, User, Settings } from "@/components/icons";
+import { Home, User, Settings, Book, BookOpen } from "@/components/icons";
 import SignOutButton from "@/components/sign-out-button";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -22,6 +22,20 @@ export default async function StudentDashboardPage() {
       href: "/student/dashboard",
       exact: true,
       icon: <Home className="h-4 w-4" />,
+    },
+    {
+      key: "student-books",
+      label: "Browse Books",
+      href: "/student/books",
+      exact: true,
+      icon: <Book className="h-4 w-4" />,
+    },
+    {
+      key: "student-borrowed",
+      label: "My Books",
+      href: "/student/borrowed",
+      exact: true,
+      icon: <BookOpen className="h-4 w-4" />,
     },
     {
       key: "student-profile",
@@ -87,23 +101,23 @@ export default async function StudentDashboardPage() {
             <article className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-700">
               <h2 className="text-base font-semibold text-zinc-900">Quick Actions</h2>
               <div className="mt-4 grid gap-3">
-                <button
+                <a
+                  href="/student/books"
                   className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
-                  type="button"
                 >
-                  Upload resource
-                </button>
+                  Browse available books
+                </a>
+                <a
+                  href="/student/borrowed"
+                  className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
+                >
+                  View my borrowed books
+                </a>
                 <button
                   className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
                   type="button"
                 >
                   Generate study summary
-                </button>
-                <button
-                  className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
-                  type="button"
-                >
-                  Share reading list
                 </button>
               </div>
             </article>
