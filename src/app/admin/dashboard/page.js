@@ -16,6 +16,10 @@ export default async function AdminDashboardPage() {
 
   const navigationLinks = [
     { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true },
+    { key: "admin-books", label: "Books", href: "/admin/books", exact: true },
+    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true },
+    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true },
+    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true },
     { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true },
     { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true },
   ];
@@ -68,6 +72,12 @@ export default async function AdminDashboardPage() {
           <article className="rounded-2xl border border-zinc-200 bg-zinc-50 px-6 py-5 text-sm text-zinc-700">
             <h2 className="text-base font-semibold text-zinc-900">Priority actions</h2>
             <div className="mt-4 grid gap-3">
+              <a
+                href="/admin/books/add"
+                className="rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-zinc-800"
+              >
+                Add a new book
+              </a>
               <button
                 className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
                 type="button"

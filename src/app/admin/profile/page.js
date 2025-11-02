@@ -31,6 +31,10 @@ export default function AdminProfilePage() {
 
   const navigationLinks = [
     { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true },
+    { key: "admin-books", label: "Books", href: "/admin/books", exact: true },
+    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true },
+    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true },
+    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true },
     { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true },
     { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true },
   ];
