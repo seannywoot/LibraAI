@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Home, Book, Plus, Users, Library as LibraryIcon, User, Settings } from "@/components/icons";
+import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import ToastContainer from "@/components/ToastContainer";
 
@@ -30,15 +30,7 @@ export default function AdminProfilePage() {
     }
   };
 
-  const navigationLinks = [
-    { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true, icon: <Home className="h-4 w-4" /> },
-    { key: "admin-books", label: "Books", href: "/admin/books", exact: true, icon: <Book className="h-4 w-4" /> },
-    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true, icon: <Plus className="h-4 w-4" /> },
-    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true, icon: <Users className="h-4 w-4" /> },
-    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
-    { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true, icon: <User className="h-4 w-4" /> },
-    { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true, icon: <Settings className="h-4 w-4" /> },
-  ];
+  const navigationLinks = getAdminLinks();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -61,14 +53,7 @@ export default function AdminProfilePage() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-      <DashboardSidebar
-        heading="Account Controls"
-        tagline="Admin"
-        links={navigationLinks}
-        variant="light"
-        footer="Adjust your admin profile and workspace preferences."
-        SignOutComponent={SignOutButton}
-      />
+      <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-3 border-b border-(--stroke) pb-6">

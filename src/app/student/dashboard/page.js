@@ -1,5 +1,5 @@
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Home, User, Settings, Book, BookOpen } from "@/components/icons";
+import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -15,54 +15,11 @@ export default async function StudentDashboardPage() {
     redirect("/admin/dashboard");
   }
 
-  const navigationLinks = [
-    {
-      key: "student-dashboard",
-      label: "Dashboard",
-      href: "/student/dashboard",
-      exact: true,
-      icon: <Home className="h-4 w-4" />,
-    },
-    {
-      key: "student-books",
-      label: "Browse Books",
-      href: "/student/books",
-      exact: true,
-      icon: <Book className="h-4 w-4" />,
-    },
-    {
-      key: "student-borrowed",
-      label: "My Books",
-      href: "/student/borrowed",
-      exact: true,
-      icon: <BookOpen className="h-4 w-4" />,
-    },
-    {
-      key: "student-profile",
-      label: "Profile",
-      href: "/student/profile",
-      exact: true,
-      icon: <User className="h-4 w-4" />,
-    },
-    {
-      key: "student-settings",
-      label: "Settings",
-      href: "/student/settings",
-      exact: true,
-      icon: <Settings className="h-4 w-4" />,
-    },
-  ];
+  const navigationLinks = getStudentLinks();
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-      <DashboardSidebar
-        heading="LibraAI Student"
-        tagline="Student"
-        links={navigationLinks}
-        variant="light"
-        footer="Jump back into your personalized study hub whenever you like."
-        SignOutComponent={SignOutButton}
-      />
+      <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-10 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
           <header className="space-y-4 border-b border-zinc-200 pb-6">

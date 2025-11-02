@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Home, User, Settings } from "@/components/icons";
+import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import ToastContainer from "@/components/ToastContainer";
 
@@ -34,29 +34,7 @@ export default function StudentProfilePage() {
     }
   }, [session?.user?.name]);
 
-  const navigationLinks = [
-    {
-      key: "student-dashboard",
-      label: "Dashboard",
-      href: "/student/dashboard",
-      exact: true,
-      icon: <Home className="h-4 w-4" />,
-    },
-    {
-      key: "student-profile",
-      label: "Profile",
-      href: "/student/profile",
-      exact: true,
-      icon: <User className="h-4 w-4" />,
-    },
-    {
-      key: "student-settings",
-      label: "Settings",
-      href: "/student/settings",
-      exact: true,
-      icon: <Settings className="h-4 w-4" />,
-    },
-  ];
+  const navigationLinks = getStudentLinks();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -80,14 +58,7 @@ export default function StudentProfilePage() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-      <DashboardSidebar
-        heading="Personal Settings"
-        tagline="Student"
-        links={navigationLinks}
-        variant="light"
-        footer="Keep your study preferences tuned for the semester."
-        SignOutComponent={SignOutButton}
-      />
+      <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
           <header className="space-y-3 border-b border-zinc-200 pb-6">

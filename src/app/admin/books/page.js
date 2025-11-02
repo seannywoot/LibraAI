@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Home, Book as BookIcon, Plus, Users, Library as LibraryIcon, User, Settings } from "@/components/icons";
+import { Book as BookIcon, Plus } from "@/components/icons";
+import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import Link from "next/link";
 
@@ -32,15 +33,7 @@ export default function AdminBooksListPage() {
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
 
-  const navigationLinks = useMemo(() => ([
-    { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true, icon: <Home className="h-4 w-4" /> },
-    { key: "admin-books", label: "Books", href: "/admin/books", exact: true, icon: <BookIcon className="h-4 w-4" /> },
-    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true, icon: <Plus className="h-4 w-4" /> },
-    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true, icon: <Users className="h-4 w-4" /> },
-    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
-    { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true, icon: <User className="h-4 w-4" /> },
-    { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true, icon: <Settings className="h-4 w-4" /> },
-  ]), []);
+  const navigationLinks = useMemo(() => getAdminLinks(), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,14 +62,7 @@ export default function AdminBooksListPage() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-      <DashboardSidebar
-        heading="Library Catalog"
-        tagline="Admin"
-        links={navigationLinks}
-        variant="light"
-        footer="Browse and manage catalog entries."
-        SignOutComponent={SignOutButton}
-      />
+      <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="flex items-end justify-between gap-4 border-b border-(--stroke) pb-6">

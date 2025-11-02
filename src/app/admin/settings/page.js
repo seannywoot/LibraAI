@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Home, Book, Plus, Users, Library as LibraryIcon, User, Settings } from "@/components/icons";
+import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 
 export default function AdminSettingsPage() {
@@ -12,15 +12,7 @@ export default function AdminSettingsPage() {
   const [maintenanceWindow, setMaintenanceWindow] = useState("sunday");
   const [saved, setSaved] = useState(false);
 
-  const navigationLinks = [
-    { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true, icon: <Home className="h-4 w-4" /> },
-    { key: "admin-books", label: "Books", href: "/admin/books", exact: true, icon: <Book className="h-4 w-4" /> },
-    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true, icon: <Plus className="h-4 w-4" /> },
-    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true, icon: <Users className="h-4 w-4" /> },
-    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
-    { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true, icon: <User className="h-4 w-4" /> },
-    { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true, icon: <Settings className="h-4 w-4" /> },
-  ];
+  const navigationLinks = getAdminLinks();
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -31,14 +23,7 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-      <DashboardSidebar
-        heading="Workspace Settings"
-        tagline="Admin"
-        links={navigationLinks}
-        variant="light"
-        footer="Tune automation, backups, and maintenance policies for the library stack."
-        SignOutComponent={SignOutButton}
-      />
+      <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-3 border-b border-(--stroke) pb-6">

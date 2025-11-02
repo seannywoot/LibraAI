@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Home, Book as BookIcon, User, Settings, BookOpen } from "@/components/icons";
+import { Book as BookIcon, BookOpen } from "@/components/icons";
+import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import Link from "next/link";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
@@ -39,13 +40,7 @@ export default function StudentBorrowedPage() {
   const [items, setItems] = useState([]);
   const [returning, setReturning] = useState(null);
 
-  const navigationLinks = [
-    { key: "student-dashboard", label: "Dashboard", href: "/student/dashboard", exact: true, icon: <Home className="h-4 w-4" /> },
-    { key: "student-books", label: "Browse Books", href: "/student/books", exact: true, icon: <BookIcon className="h-4 w-4" /> },
-    { key: "student-borrowed", label: "My Books", href: "/student/borrowed", exact: true, icon: <BookOpen className="h-4 w-4" /> },
-    { key: "student-profile", label: "Profile", href: "/student/profile", exact: true, icon: <User className="h-4 w-4" /> },
-    { key: "student-settings", label: "Settings", href: "/student/settings", exact: true, icon: <Settings className="h-4 w-4" /> },
-  ];
+  const navigationLinks = getStudentLinks();
 
   useEffect(() => {
     loadBorrowedBooks();
@@ -89,14 +84,7 @@ export default function StudentBorrowedPage() {
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
       <ToastContainer />
-      <DashboardSidebar
-        heading="LibraAI Student"
-        tagline="Student"
-        links={navigationLinks}
-        variant="light"
-        footer="Manage your borrowed books."
-        SignOutComponent={SignOutButton}
-      />
+      <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="flex items-end justify-between gap-4 border-b border-(--stroke) pb-6">
