@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LogOut } from "@/components/icons";
 import { signOut } from "next-auth/react";
 
 export default function SignOutButton({ className = "" }) {
@@ -21,7 +22,7 @@ export default function SignOutButton({ className = "" }) {
     }
   };
 
-  const baseClass = "inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70";
+  const baseClass = "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70";
 
   return (
     <button
@@ -30,7 +31,14 @@ export default function SignOutButton({ className = "" }) {
       disabled={isLoading}
       className={`${baseClass} ${className}`.trim()}
     >
-      {isLoading ? "Signing out..." : "Sign out"}
+      {isLoading ? (
+        "Signing out..."
+      ) : (
+        <>
+          <LogOut className="h-4 w-4" />
+          <span>Sign out</span>
+        </>
+      )}
     </button>
   );
 }

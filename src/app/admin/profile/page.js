@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
+import { Home, Book, Plus, Users, Library as LibraryIcon, User, Settings } from "@/components/icons";
 import SignOutButton from "@/components/sign-out-button";
 import ToastContainer from "@/components/ToastContainer";
 
@@ -30,13 +31,13 @@ export default function AdminProfilePage() {
   };
 
   const navigationLinks = [
-    { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true },
-    { key: "admin-books", label: "Books", href: "/admin/books", exact: true },
-    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true },
-    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true },
-    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true },
-    { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true },
-    { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true },
+    { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true, icon: <Home className="h-4 w-4" /> },
+    { key: "admin-books", label: "Books", href: "/admin/books", exact: true, icon: <Book className="h-4 w-4" /> },
+    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true, icon: <Plus className="h-4 w-4" /> },
+    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true, icon: <Users className="h-4 w-4" /> },
+    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
+    { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true, icon: <User className="h-4 w-4" /> },
+    { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true, icon: <Settings className="h-4 w-4" /> },
   ];
 
   const handleSubmit = async (event) => {

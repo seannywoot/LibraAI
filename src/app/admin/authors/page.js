@@ -2,13 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
+import { Home, Book, Plus, Users, Library as LibraryIcon, User, Settings, Edit as EditIcon, Trash2 } from "@/components/icons";
 import SignOutButton from "@/components/sign-out-button";
 
 function RowActions({ onEdit, onDelete }) {
   return (
     <div className="flex items-center gap-2">
-      <button onClick={onEdit} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Edit</button>
-      <button onClick={onDelete} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">Delete</button>
+      <button onClick={onEdit} className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">
+        <EditIcon className="h-3.5 w-3.5" />
+        Edit
+      </button>
+      <button onClick={onDelete} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">
+        <Trash2 className="h-3.5 w-3.5" />
+        Delete
+      </button>
     </div>
   );
 }
@@ -29,13 +36,13 @@ export default function AdminAuthorsPage() {
   const [editingBio, setEditingBio] = useState("");
 
   const navigationLinks = useMemo(() => ([
-    { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true },
-    { key: "admin-books", label: "Books", href: "/admin/books", exact: true },
-    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true },
-    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true },
-    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true },
-    { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true },
-    { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true },
+    { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true, icon: <Home className="h-4 w-4" /> },
+    { key: "admin-books", label: "Books", href: "/admin/books", exact: true, icon: <Book className="h-4 w-4" /> },
+    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true, icon: <Plus className="h-4 w-4" /> },
+    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true, icon: <Users className="h-4 w-4" /> },
+    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
+    { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true, icon: <User className="h-4 w-4" /> },
+    { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true, icon: <Settings className="h-4 w-4" /> },
   ]), []);
 
   async function load() {

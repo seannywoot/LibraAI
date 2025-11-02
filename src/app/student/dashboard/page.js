@@ -1,4 +1,5 @@
 import DashboardSidebar from "@/components/dashboard-sidebar";
+import { Home, User, Settings } from "@/components/icons";
 import SignOutButton from "@/components/sign-out-button";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -20,27 +21,21 @@ export default async function StudentDashboardPage() {
       label: "Dashboard",
       href: "/student/dashboard",
       exact: true,
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-5h4v5h5V9.5"/></svg>
-      ),
+      icon: <Home className="h-4 w-4" />,
     },
     {
       key: "student-profile",
       label: "Profile",
       href: "/student/profile",
       exact: true,
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/><path d="M3 21a9 9 0 0 1 18 0"/></svg>
-      ),
+      icon: <User className="h-4 w-4" />,
     },
     {
       key: "student-settings",
       label: "Settings",
       href: "/student/settings",
       exact: true,
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.06 1.64V21a2 2 0 1 1-4 0v-.08a1.8 1.8 0 0 0-1.06-1.64 1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 5 15.4a1.8 1.8 0 0 0-1.64-1.06H3a2 2 0 1 1 0-4h.08A1.8 1.8 0 0 0 4.72 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 9.17 3c.72 0 1.37-.43 1.64-1.06V2a2 2 0 1 1 4 0v.08c.27.63.92 1.06 1.64 1.06.54 0 1.06-.22 1.44-.59l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.37.37-.59.9-.59 1.44 0 .72.43 1.37 1.06 1.64H22a2 2 0 1 1 0 4h-.08c-.63.27-1.06.92-1.06 1.64Z"/></svg>
-      ),
+      icon: <Settings className="h-4 w-4" />,
     },
   ];
 

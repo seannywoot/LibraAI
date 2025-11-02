@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
+import { Home, Book as BookIcon, Plus, Users, Library as LibraryIcon, User, Settings } from "@/components/icons";
 import SignOutButton from "@/components/sign-out-button";
 import Link from "next/link";
 
@@ -32,13 +33,13 @@ export default function AdminBooksListPage() {
   const [total, setTotal] = useState(0);
 
   const navigationLinks = useMemo(() => ([
-    { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true },
-    { key: "admin-books", label: "Books", href: "/admin/books", exact: true },
-    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true },
-    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true },
-    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true },
-    { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true },
-    { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true },
+    { key: "admin-dashboard", label: "Dashboard", href: "/admin/dashboard", exact: true, icon: <Home className="h-4 w-4" /> },
+    { key: "admin-books", label: "Books", href: "/admin/books", exact: true, icon: <BookIcon className="h-4 w-4" /> },
+    { key: "admin-add-book", label: "Add Book", href: "/admin/books/add", exact: true, icon: <Plus className="h-4 w-4" /> },
+    { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true, icon: <Users className="h-4 w-4" /> },
+    { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
+    { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true, icon: <User className="h-4 w-4" /> },
+    { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true, icon: <Settings className="h-4 w-4" /> },
   ]), []);
 
   useEffect(() => {
@@ -84,7 +85,10 @@ export default function AdminBooksListPage() {
             <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Books</h1>
             <p className="text-sm text-zinc-600">View recent additions and their availability.</p>
           </div>
-          <Link href="/admin/books/add" className="rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">Add book</Link>
+          <Link href="/admin/books/add" className="inline-flex items-center gap-2 rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">
+            <Plus className="h-4 w-4" />
+            Add book
+          </Link>
         </header>
 
         {loading ? (
@@ -93,8 +97,8 @@ export default function AdminBooksListPage() {
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">{error}</div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
-            <div className="rounded-full bg-white p-3 shadow">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6 text-zinc-500"><path d="M4 19.5V6.75A2.25 2.25 0 016.25 4.5h9A2.25 2.25 0 0117.5 6.75V19.5m-13.5 0h13.5m-13.5 0a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25m-9.75-3h6.75M7.5 9h6.75"/></svg>
+            <div className="rounded-full bg-white p-3 shadow text-zinc-500">
+              <BookIcon className="h-6 w-6" />
             </div>
             <h2 className="text-lg font-semibold text-zinc-900">No books yet</h2>
             <p className="text-sm text-zinc-600">Get started by adding your first title to the catalog.</p>
