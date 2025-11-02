@@ -73,6 +73,7 @@ function AuthContent() {
         redirect: false,
         email,
         password,
+        expectedRole: role,
         callbackUrl: destination,
       });
 
@@ -83,9 +84,13 @@ function AuthContent() {
             : "Those credentials don’t match the admin demo account. Use the demo credentials below.";
 
         const errorMessage =
-          result?.error === "Invalid credentials" || result?.error === "CredentialsSignin"
-            ? defaultCopy
-            : "Unable to sign in. Check your credentials and try again.";
+          result?.error === "RoleMismatch"
+            ? (role === "student"
+                ? "That account is an admin. Switch to the Admin tab to sign in."
+                : "That account is a student. Switch to the Student tab to sign in.")
+            : (result?.error === "Invalid credentials" || result?.error === "CredentialsSignin"
+                ? defaultCopy
+                : "Unable to sign in. Check your credentials and try again.");
 
         setError(errorMessage);
         return;

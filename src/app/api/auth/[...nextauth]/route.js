@@ -24,14 +24,20 @@ export const authOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        // Optional: the portal the user is attempting to access ("student" | "admin")
+        expectedRole: { label: "Expected Role", type: "text" },
       },
       async authorize(credentials) {
         const email = normalizeEmail(credentials?.email);
         const password = credentials?.password || "";
+        const expectedRole = (credentials?.expectedRole || "").trim().toLowerCase();
 
         if (!email || !password) {
           throw new Error("Missing credentials");
         }
+
+        // We'll resolve a user object here and only return after verifying any expected role
+        let resolvedUser = null;
 
         // 1) Try database-backed users first
         try {
@@ -41,23 +47,24 @@ export const authOptions = {
           if (userDoc) {
             const valid = await comparePassword(password, userDoc.passwordHash);
             if (valid) {
-              return {
+              resolvedUser = {
                 id: userDoc._id.toString(),
                 name: userDoc.name || "User",
                 email: userDoc.email,
                 role: userDoc.role || "student",
               };
+            } else {
+              // If user exists but password invalid, fail immediately
+              throw new Error("Invalid credentials");
             }
-            // If user exists but password invalid, fail immediately
-            throw new Error("Invalid credentials");
           }
         } catch (e) {
           // If DB is unreachable, fall back to demo users below
           console.warn("DB authorize fallback:", e?.message || e);
         }
 
-        if (email === STUDENT_DEMO.email && password === STUDENT_DEMO.password) {
-          return {
+        if (!resolvedUser && email === STUDENT_DEMO.email && password === STUDENT_DEMO.password) {
+          resolvedUser = {
             id: "student-demo",
             name: "Student",
             email,
@@ -65,8 +72,8 @@ export const authOptions = {
           };
         }
 
-        if (email === ADMIN_DEMO.email && password === ADMIN_DEMO.password) {
-          return {
+        if (!resolvedUser && email === ADMIN_DEMO.email && password === ADMIN_DEMO.password) {
+          resolvedUser = {
             id: "admin-demo",
             name: "Admin",
             email,
@@ -74,7 +81,17 @@ export const authOptions = {
           };
         }
 
-        throw new Error("Invalid credentials");
+        if (!resolvedUser) {
+          throw new Error("Invalid credentials");
+        }
+
+        // Enforce portal-role match when an expectedRole is provided
+        if (expectedRole && resolvedUser.role !== expectedRole) {
+          // Throw a specific error string so the client UI can show a helpful message
+          throw new Error("RoleMismatch");
+        }
+
+        return resolvedUser;
       },
     }),
   ],
