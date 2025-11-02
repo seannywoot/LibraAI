@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 
 const STUDENT_DEMO_EMAIL = "student@demo.edu";
@@ -226,9 +227,9 @@ function AuthContent() {
                     <label className="text-sm font-medium text-zinc-700" htmlFor="password">
                       Password
                     </label>
-                    <a className="text-xs font-semibold text-zinc-900 hover:text-zinc-700" href="#">
+                    <Link className="text-xs font-semibold text-zinc-900 hover:text-zinc-700" href="/auth/forgot">
                       Forgot password?
-                    </a>
+                    </Link>
                   </div>
                   <input
                     className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"

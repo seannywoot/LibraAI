@@ -61,6 +61,7 @@ src/
 	lib/
 		mongodb.js
 		passwords.js
+	        email.js
 ```
 
 ## Required environment variables
@@ -80,6 +81,17 @@ NEXTAUTH_SECRET="<generate-a-strong-random-string>"
 
 # Recommended in production for NextAuth absolute callback URLs
 # NEXTAUTH_URL="https://your-domain.tld"
+
+# SMTP / email (required for password reset)
+# Ask your provider or use a service like SendGrid/Mailgun/SES
+# SMTP_HOST=
+# SMTP_PORT=587
+# SMTP_USER=
+# SMTP_PASS=
+# EMAIL_FROM="LibraAI <no-reply@your-domain.com>"
+
+# Password reset link expiration (minutes)
+# PASSWORD_RESET_EXP_MIN=15
 ```
 
 Tips
@@ -116,6 +128,19 @@ npm run dev
 ```
 
 Then visit http://localhost:3000 and sign in at /auth. You can also test the DB connection at `/api/db/ping`.
+
+## Password reset (backend)
+
+This project includes a minimal, secure password-reset backend flow:
+
+- Request reset: `POST /api/auth/password-reset/request` with JSON `{ "email": "user@example.com" }`
+	- Always responds with `{ ok: true }` to avoid leaking whether the account exists.
+	- Generates a one-time token (hashed in DB), stores it with expiration, and emails a link to the user.
+
+- Complete reset: `POST /api/auth/password-reset/reset` with JSON `{ "token": "<from-email>", "password": "NewSecurePass123" }`
+	- Verifies token validity/expiration, sets the new password, and invalidates all outstanding tokens for that email.
+
+Configure SMTP variables in `.env.local` so emails can be sent. The reset email links to `/auth/reset?token=...`; add a UI page there to collect the new password and call the reset API.
 
 ## Authentication and roles
 
