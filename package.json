@@ -7,12 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "add-student": "node scripts/add_student.mjs",
     "vercel-build": "next build"
   },
   "engines": {
     "node": ">=18.17.0"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@radix-ui/react-accordion": "^1.2.12",
     "bcryptjs": "^2.4.3",
     "lucide-react": "^0.552.0",
     "mongodb": "^6.9.0",
