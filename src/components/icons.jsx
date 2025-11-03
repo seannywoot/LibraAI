@@ -18,6 +18,9 @@ export {
   ChevronLeft,
   ChevronRight,
   History,
+  MessageCircle,
+  Send,
+  Paperclip,
 } from "lucide-react";
 
 // Optional wrapper for consistent sizing in nav/buttons
