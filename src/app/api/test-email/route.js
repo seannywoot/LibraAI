@@ -10,7 +10,7 @@ export async function GET() {
     console.log('[TEST] EMAIL_FROM:', process.env.EMAIL_FROM);
 
     const result = await sendMail({
-      to: "your-test-email@example.com", // Replace with your email
+      to: "libraaismartlibraryassistant@gmail.com", // Your actual email
       subject: "Test Email from Production",
       text: "This is a test email to verify EmailJS configuration.",
       html: "<p>This is a test email to verify EmailJS configuration.</p>",
