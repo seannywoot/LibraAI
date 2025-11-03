@@ -5,9 +5,9 @@ import clientPromise from "@/lib/mongodb";
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== "admin") {
-      return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), {
-        status: 403,
+    if (!session) {
+      return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), {
+        status: 401,
         headers: { "content-type": "application/json" },
       });
     }
@@ -19,42 +19,21 @@ export async function GET(request) {
 
     const client = await clientPromise;
     const db = client.db();
-    const books = db.collection("books");
-    const shelves = db.collection("shelves");
+    const authors = db.collection("authors");
 
-    const projection = {
-      title: 1,
-      author: 1,
-      year: 1,
-      shelf: 1,
-      status: 1,
-      isbn: 1,
-      barcode: 1,
-      createdAt: 1,
-    };
+    const projection = { name: 1, bio: 1 };
 
-    const [rawItems, total] = await Promise.all([
-      books.find({}, { projection }).sort({ createdAt: -1 }).skip(skip).limit(pageSize).toArray(),
-      books.estimatedDocumentCount(),
+    const [items, total] = await Promise.all([
+      authors.find({}, { projection }).sort({ name: 1 }).skip(skip).limit(pageSize).toArray(),
+      authors.countDocuments({}),
     ]);
-
-    // Enrich books with shelf IDs
-    const items = await Promise.all(
-      rawItems.map(async (book) => {
-        if (book.shelf) {
-          const shelf = await shelves.findOne({ code: book.shelf }, { projection: { _id: 1 } });
-          return { ...book, shelfId: shelf?._id?.toString() || null };
-        }
-        return { ...book, shelfId: null };
-      })
-    );
 
     return new Response(
       JSON.stringify({ ok: true, items, page, pageSize, total }),
       { status: 200, headers: { "content-type": "application/json" } }
     );
   } catch (err) {
-    console.error("List books failed:", err);
+    console.error("List authors failed:", err);
     return new Response(
       JSON.stringify({ ok: false, error: err?.message || "Unknown error" }),
       { status: 500, headers: { "content-type": "application/json" } }

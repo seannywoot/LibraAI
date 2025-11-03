@@ -5,6 +5,7 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Edit as EditIcon, Trash2 } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
+import Link from "next/link";
 
 function RowActions({ onEdit, onDelete }) {
   return (
@@ -47,7 +48,23 @@ export default function AdminAuthorsPage() {
       const res = await fetch(`/api/admin/authors?${params.toString()}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load authors");
-      setItems(data.items || []);
+      
+      const authorsData = data.items || [];
+      
+      // Fetch book counts for each author
+      const authorsWithCounts = await Promise.all(
+        authorsData.map(async (author) => {
+          try {
+            const booksRes = await fetch(`/api/admin/authors/${author._id}/books?pageSize=1`, { cache: "no-store" });
+            const booksData = await booksRes.json().catch(() => ({}));
+            return { ...author, bookCount: booksData?.total || 0 };
+          } catch {
+            return { ...author, bookCount: 0 };
+          }
+        })
+      );
+      
+      setItems(authorsWithCounts);
       setTotal(data.total || 0);
     } catch (e) {
       setError(e?.message || "Unknown error");
@@ -147,6 +164,7 @@ export default function AdminAuthorsPage() {
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-zinc-500">
                     <th className="px-4 py-2">Name</th>
+                    <th className="px-4 py-2">Books</th>
                     <th className="px-4 py-2">Bio</th>
                     <th className="px-4 py-2">Actions</th>
                   </tr>
@@ -158,7 +176,18 @@ export default function AdminAuthorsPage() {
                         {editingId === a._id ? (
                           <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editingName} onChange={(e) => setEditingName(e.target.value)} />
                         ) : (
-                          a.name
+                          <Link href={`/admin/authors/${a._id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                            {a.name}
+                          </Link>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingId === a._id ? (
+                          "—"
+                        ) : (
+                          <Link href={`/admin/authors/${a._id}`} className="text-zinc-700 hover:text-zinc-900">
+                            {a.bookCount ?? 0}
+                          </Link>
                         )}
                       </td>
                       <td className="px-4 py-3">

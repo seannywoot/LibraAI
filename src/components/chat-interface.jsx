@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { MessageCircle, Send, Paperclip } from "@/components/icons";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { MessageCircle, Send, Paperclip, History } from "@/components/icons";
 
 export default function ChatInterface({ userName }) {
   const [messages, setMessages] = useState([
@@ -13,6 +13,9 @@ export default function ChatInterface({ userName }) {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState([]);
+  const [currentConversationId, setCurrentConversationId] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -23,6 +26,79 @@ export default function ChatInterface({ userName }) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load conversation history from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("chatHistory");
+    if (saved) {
+      try {
+        setConversationHistory(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load chat history:", e);
+      }
+    }
+  }, []);
+
+  // Auto-save conversation when messages change
+  useEffect(() => {
+    if (messages.length <= 1) return; // Don't save if only greeting exists
+
+    const timer = setTimeout(() => {
+      const firstUserMessage = messages.find(m => m.role === "user");
+      if (!firstUserMessage) return;
+
+      const title = firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? "..." : "");
+      const conversationData = {
+        id: currentConversationId || Date.now(),
+        title,
+        messages,
+        lastUpdated: new Date().toISOString()
+      };
+
+      setConversationHistory(prev => {
+        const filtered = prev.filter(c => c.id !== conversationData.id);
+        const updated = [conversationData, ...filtered].slice(0, 20); // Keep last 20 conversations
+        localStorage.setItem("chatHistory", JSON.stringify(updated));
+        return updated;
+      });
+
+      if (!currentConversationId) {
+        setCurrentConversationId(conversationData.id);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [messages, currentConversationId]);
+
+  const loadConversation = (conversation) => {
+    setMessages(conversation.messages);
+    setCurrentConversationId(conversation.id);
+    setShowHistory(false);
+  };
+
+  const startNewConversation = () => {
+    setMessages([
+      {
+        role: "assistant",
+        content: "Hello! I'm here to help you find books and answer questions about literature. What can I help you with today?",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+    setCurrentConversationId(null);
+    setShowHistory(false);
+  };
+
+  const deleteConversation = (id, e) => {
+    e.stopPropagation();
+    setConversationHistory(prev => {
+      const updated = prev.filter(c => c.id !== id);
+      localStorage.setItem("chatHistory", JSON.stringify(updated));
+      return updated;
+    });
+    if (currentConversationId === id) {
+      startNewConversation();
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -84,19 +160,90 @@ export default function ChatInterface({ userName }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col relative">
       {/* Chat Header */}
       <div className="border-b border-zinc-200 p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white">
-            <MessageCircle className="h-5 w-5" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white">
+              <MessageCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-zinc-900">LibraAI Assistant</h1>
+              <p className="text-sm text-zinc-500">Ask me anything about literature</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-zinc-900">LibraAI Assistant</h1>
-            <p className="text-sm text-zinc-500">Ask me anything about literature</p>
-          </div>
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50"
+            aria-label="Chat history"
+          >
+            <History className="h-5 w-5" />
+          </button>
         </div>
       </div>
+
+      {/* History Sidebar */}
+      {showHistory && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/20 z-40"
+            onClick={() => setShowHistory(false)}
+          />
+          <div className="absolute top-0 right-0 bottom-0 w-80 bg-white border-l border-zinc-200 shadow-xl z-50 flex flex-col">
+            <div className="border-b border-zinc-200 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-zinc-900">Chat History</h2>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="text-zinc-500 hover:text-zinc-900"
+                >
+                  ✕
+                </button>
+              </div>
+              <button
+                onClick={startNewConversation}
+                className="w-full px-4 py-2 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition"
+              >
+                + New Conversation
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {conversationHistory.length === 0 ? (
+                <p className="text-sm text-zinc-500 text-center py-8">No conversation history yet</p>
+              ) : (
+                conversationHistory.map((conv) => (
+                  <div
+                    key={conv.id}
+                    onClick={() => loadConversation(conv)}
+                    className={`group p-3 rounded-lg border cursor-pointer transition ${
+                      currentConversationId === conv.id
+                        ? "border-zinc-900 bg-zinc-50"
+                        : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          {new Date(conv.lastUpdated).toLocaleDateString()} • {conv.messages.length} messages
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => deleteConversation(conv.id, e)}
+                        className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-600 transition"
+                        aria-label="Delete conversation"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">

@@ -24,6 +24,10 @@ export default function AdminAddBookPage() {
   const [loanPolicy, setLoanPolicy] = useState("standard");
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [shelves, setShelves] = useState([]);
+  const [loadingShelves, setLoadingShelves] = useState(true);
+  const [authors, setAuthors] = useState([]);
+  const [loadingAuthors, setLoadingAuthors] = useState(true);
 
   const [toasts, setToasts] = useState([]);
   const pushToast = (toast) => {
@@ -36,6 +40,33 @@ export default function AdminAddBookPage() {
       }, t.duration + 100);
     }
   };
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [shelvesRes, authorsRes] = await Promise.all([
+          fetch("/api/admin/shelves?pageSize=100", { cache: "no-store" }),
+          fetch("/api/admin/authors?pageSize=100", { cache: "no-store" })
+        ]);
+        
+        const shelvesData = await shelvesRes.json().catch(() => ({}));
+        if (shelvesRes.ok && shelvesData?.ok) {
+          setShelves(shelvesData.items || []);
+        }
+        
+        const authorsData = await authorsRes.json().catch(() => ({}));
+        if (authorsRes.ok && authorsData?.ok) {
+          setAuthors(authorsData.items || []);
+        }
+      } catch (e) {
+        console.error("Failed to load data:", e);
+      } finally {
+        setLoadingShelves(false);
+        setLoadingAuthors(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const ALLOWED_STATUS = ["available", "checked-out", "reserved", "maintenance", "lost"];
   const ALLOWED_POLICIES = ["standard", "short-loan", "reference-only", "staff-only"];
@@ -158,15 +189,51 @@ export default function AdminAddBookPage() {
               </label>
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">Author</span>
-                <input
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"}`}
-                  type="text"
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
-                  placeholder="e.g., François Chollet"
-                  aria-invalid={!!errors.author}
-                  data-field="author"
-                />
+                {loadingAuthors ? (
+                  <input
+                    className="rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
+                    type="text"
+                    value="Loading authors..."
+                    disabled
+                  />
+                ) : authors.length > 0 ? (
+                  <div className="relative">
+                    <select
+                      className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
+                      value={author}
+                      onChange={(e) => setAuthor(e.target.value)}
+                      aria-invalid={!!errors.author}
+                      data-field="author"
+                    >
+                      <option value="">Select an author or type custom</option>
+                      {authors.map((a) => (
+                        <option key={a._id} value={a.name}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="mt-2">
+                      <input
+                        className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
+                        type="text"
+                        value={author}
+                        onChange={(e) => setAuthor(e.target.value)}
+                        placeholder="Or type custom author name"
+                        aria-invalid={!!errors.author}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <input
+                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"}`}
+                    type="text"
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                    placeholder="e.g., François Chollet"
+                    aria-invalid={!!errors.author}
+                    data-field="author"
+                  />
+                )}
                 {fieldError("author")}
               </label>
               <label className="grid gap-2 text-sm">
@@ -187,15 +254,39 @@ export default function AdminAddBookPage() {
               </label>
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">Shelf</span>
-                <input
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
-                  type="text"
-                  value={shelf}
-                  onChange={(e) => setShelf(e.target.value)}
-                  placeholder="e.g., A3"
-                  aria-invalid={!!errors.shelf}
-                  data-field="shelf"
-                />
+                {loadingShelves ? (
+                  <input
+                    className="rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
+                    type="text"
+                    value="Loading shelves..."
+                    disabled
+                  />
+                ) : shelves.length > 0 ? (
+                  <select
+                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
+                    value={shelf}
+                    onChange={(e) => setShelf(e.target.value)}
+                    aria-invalid={!!errors.shelf}
+                    data-field="shelf"
+                  >
+                    <option value="">Select a shelf</option>
+                    {shelves.map((s) => (
+                      <option key={s._id} value={s.code}>
+                        {s.code}{s.name ? ` - ${s.name}` : ""}{s.location ? ` (${s.location})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
+                    type="text"
+                    value={shelf}
+                    onChange={(e) => setShelf(e.target.value)}
+                    placeholder="e.g., A3"
+                    aria-invalid={!!errors.shelf}
+                    data-field="shelf"
+                  />
+                )}
                 {fieldError("shelf")}
               </label>
               <label className="grid gap-2 text-sm">

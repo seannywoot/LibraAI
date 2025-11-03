@@ -17,6 +17,7 @@ export {
   Search,
   ChevronLeft,
   ChevronRight,
+  ArrowLeft,
   History,
   MessageCircle,
   Send,

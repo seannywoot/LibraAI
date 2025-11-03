@@ -5,6 +5,7 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Edit as EditIcon, Trash2 } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
+import Link from "next/link";
 
 function RowActions({ onEdit, onDelete }) {
   return (
@@ -50,7 +51,23 @@ export default function AdminShelvesPage() {
       const res = await fetch(`/api/admin/shelves?${params.toString()}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load shelves");
-      setItems(data.items || []);
+      
+      const shelvesData = data.items || [];
+      
+      // Fetch book counts for each shelf
+      const shelvesWithCounts = await Promise.all(
+        shelvesData.map(async (shelf) => {
+          try {
+            const booksRes = await fetch(`/api/admin/shelves/${shelf._id}/books?pageSize=1`, { cache: "no-store" });
+            const booksData = await booksRes.json().catch(() => ({}));
+            return { ...shelf, bookCount: booksData?.total || 0 };
+          } catch {
+            return { ...shelf, bookCount: 0 };
+          }
+        })
+      );
+      
+      setItems(shelvesWithCounts);
       setTotal(data.total || 0);
     } catch (e) {
       setError(e?.message || "Unknown error");
@@ -174,6 +191,7 @@ export default function AdminShelvesPage() {
                     <th className="px-4 py-2">Code</th>
                     <th className="px-4 py-2">Name</th>
                     <th className="px-4 py-2">Location</th>
+                    <th className="px-4 py-2">Books</th>
                     <th className="px-4 py-2">Capacity</th>
                     <th className="px-4 py-2">Notes</th>
                     <th className="px-4 py-2">Actions</th>
@@ -186,7 +204,9 @@ export default function AdminShelvesPage() {
                         {editingId === a._id ? (
                           <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.code} onChange={(e) => setEditing((prev) => ({ ...prev, code: e.target.value }))} />
                         ) : (
-                          a.code
+                          <Link href={`/admin/shelves/${a._id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                            {a.code}
+                          </Link>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -201,6 +221,15 @@ export default function AdminShelvesPage() {
                           <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.location} onChange={(e) => setEditing((prev) => ({ ...prev, location: e.target.value }))} />
                         ) : (
                           a.location || "—"
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingId === a._id ? (
+                          "—"
+                        ) : (
+                          <Link href={`/admin/shelves/${a._id}`} className="text-zinc-700 hover:text-zinc-900">
+                            {a.bookCount ?? 0}
+                          </Link>
                         )}
                       </td>
                       <td className="px-4 py-3">

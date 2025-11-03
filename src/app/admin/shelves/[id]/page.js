@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Book as BookIcon, Plus } from "@/components/icons";
+import { Book as BookIcon, ArrowLeft } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
-import Link from "next/link";
 
 function StatusChip({ status }) {
   const map = {
@@ -25,38 +25,42 @@ function StatusChip({ status }) {
   );
 }
 
-export default function AdminBooksListPage() {
+export default function AdminShelfBooksPage() {
+  const params = useParams();
+  const router = useRouter();
+  const shelfId = params?.id;
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [shelf, setShelf] = useState(null);
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
 
-  const navigationLinks = useMemo(() => getAdminLinks(), []);
+  const navigationLinks = getAdminLinks();
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await fetch(`/api/admin/books?page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load books");
-        if (!cancelled) {
-          setItems(data.items || []);
-          setTotal(data.total || 0);
-        }
-      } catch (e) {
-        if (!cancelled) setError(e?.message || "Unknown error");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    if (shelfId) loadBooks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shelfId, page, pageSize]);
+
+  async function loadBooks() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/shelves/${shelfId}/books?page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load books");
+      setShelf(data.shelf);
+      setItems(data.items || []);
+      setTotal(data.total || 0);
+    } catch (e) {
+      setError(e?.message || "Unknown error");
+    } finally {
+      setLoading(false);
     }
-    load();
-    return () => { cancelled = true; };
-  }, [page, pageSize]);
+  }
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -67,14 +71,27 @@ export default function AdminBooksListPage() {
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="flex items-end justify-between gap-4 border-b border-(--stroke) pb-6">
           <div className="space-y-2">
+            <button
+              onClick={() => router.push("/admin/shelves")}
+              className="inline-flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900 mb-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Shelves
+            </button>
             <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Books</h1>
-            <p className="text-sm text-zinc-600">View recent additions and their availability.</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
+              {shelf ? `Shelf ${shelf.code}` : "Loading..."}
+            </h1>
+            {shelf && (
+              <div className="space-y-1">
+                {shelf.name && <p className="text-sm text-zinc-600">{shelf.name}</p>}
+                {shelf.location && <p className="text-xs text-zinc-500">📍 {shelf.location}</p>}
+                {shelf.capacity !== null && shelf.capacity !== undefined && (
+                  <p className="text-xs text-zinc-500">Capacity: {shelf.capacity} books</p>
+                )}
+              </div>
+            )}
           </div>
-          <Link href="/admin/books/add" className="inline-flex items-center gap-2 rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">
-            <Plus className="h-4 w-4" />
-            Add book
-          </Link>
         </header>
 
         {loading ? (
@@ -86,9 +103,8 @@ export default function AdminBooksListPage() {
             <div className="rounded-full bg-white p-3 shadow text-zinc-500">
               <BookIcon className="h-6 w-6" />
             </div>
-            <h2 className="text-lg font-semibold text-zinc-900">No books yet</h2>
-            <p className="text-sm text-zinc-600">Get started by adding your first title to the catalog.</p>
-            <Link href="/admin/books/add" className="mt-1 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-100">Add a book</Link>
+            <h2 className="text-lg font-semibold text-zinc-900">No books on this shelf</h2>
+            <p className="text-sm text-zinc-600">This shelf is currently empty.</p>
           </div>
         ) : (
           <section className="space-y-4">
@@ -99,37 +115,27 @@ export default function AdminBooksListPage() {
                     <th className="px-4 py-2">Title</th>
                     <th className="px-4 py-2">Author</th>
                     <th className="px-4 py-2">Year</th>
-                    <th className="px-4 py-2">Shelf</th>
                     <th className="px-4 py-2">Status</th>
                     <th className="px-4 py-2">ISBN</th>
                     <th className="px-4 py-2">Barcode</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((b) => (
-                    <tr key={b._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
-                      <td className="px-4 py-3 font-medium text-zinc-900">{b.title}</td>
-                      <td className="px-4 py-3">{b.author || "—"}</td>
-                      <td className="px-4 py-3">{b.year ?? "—"}</td>
-                      <td className="px-4 py-3">
-                        {b.shelf && b.shelfId ? (
-                          <Link href={`/admin/shelves/${b.shelfId}`} className="text-blue-600 hover:text-blue-800 hover:underline">
-                            {b.shelf}
-                          </Link>
-                        ) : (
-                          b.shelf || "—"
-                        )}
-                      </td>
-                      <td className="px-4 py-3"><StatusChip status={b.status} /></td>
-                      <td className="px-4 py-3">{b.isbn || "—"}</td>
-                      <td className="px-4 py-3">{b.barcode || "—"}</td>
+                  {items.map((book) => (
+                    <tr key={book._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
+                      <td className="px-4 py-3 font-medium text-zinc-900">{book.title}</td>
+                      <td className="px-4 py-3">{book.author || "—"}</td>
+                      <td className="px-4 py-3">{book.year ?? "—"}</td>
+                      <td className="px-4 py-3"><StatusChip status={book.status} /></td>
+                      <td className="px-4 py-3">{book.isbn || "—"}</td>
+                      <td className="px-4 py-3">{book.barcode || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-4">
               <p className="text-xs text-zinc-500">Page {page} of {totalPages} · {total} total</p>
               <div className="flex items-center gap-2">
                 <button
