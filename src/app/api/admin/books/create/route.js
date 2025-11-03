@@ -9,9 +9,16 @@ function normalizeString(v) {
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== "admin") {
+    console.log("Create book session:", session);
+    if (!session) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Forbidden" }),
+        JSON.stringify({ ok: false, error: "Unauthorized - Please sign in" }),
+        { status: 401, headers: { "content-type": "application/json" } }
+      );
+    }
+    if (session.user?.role !== "admin") {
+      return new Response(
+        JSON.stringify({ ok: false, error: `Forbidden - Admin access required (current role: ${session.user?.role})` }),
         { status: 403, headers: { "content-type": "application/json" } }
       );
     }
@@ -25,6 +32,7 @@ export async function POST(request) {
   const isbnRaw = body?.isbn ?? body?.identifier;
   const publisherRaw = body?.publisher;
   const formatRaw = body?.format ?? body?.type;
+  const ebookUrlRaw = body?.ebookUrl;
   const barcodeRaw = body?.barcode ?? body?.itemId ?? body?.itemID;
   const statusRaw = body?.status;
   const loanPolicyRaw = body?.loanPolicy;
@@ -35,6 +43,7 @@ export async function POST(request) {
   const isbn = normalizeString(isbnRaw);
   const publisher = normalizeString(publisherRaw);
   const format = normalizeString(formatRaw);
+  const ebookUrl = normalizeString(ebookUrlRaw);
   const barcode = normalizeString(barcodeRaw);
 
     const yearNum = typeof yearRaw === "number" ? yearRaw : parseInt(yearRaw, 10);
@@ -52,7 +61,8 @@ export async function POST(request) {
         { status: 400, headers: { "content-type": "application/json" } }
       );
     }
-    if (!shelf) {
+    // Shelf is only required for non-eBook formats
+    if (format !== "eBook" && !shelf) {
       return new Response(
         JSON.stringify({ ok: false, error: "Shelf is required" }),
         { status: 400, headers: { "content-type": "application/json" } }
@@ -95,13 +105,14 @@ export async function POST(request) {
       title,
       author,
       year,
-      shelf,
+      shelf: shelf || null,
       isbn: isbn || null,
       publisher: publisher || null,
       format: format || null,
+      ebookUrl: ebookUrl || null,
       barcode: barcode || null,
       status,
-      loanPolicy,
+      loanPolicy: format === "eBook" ? null : loanPolicy,
       createdAt: now,
       updatedAt: now,
       createdBy: session.user?.email || null,

@@ -8,6 +8,7 @@ export function getStudentLinks() {
   return [
     { key: "student-dashboard", label: "Dashboard", href: "/student/dashboard", exact: true, icon: <Home className="h-4 w-4" /> },
     { key: "student-books", label: "Browse Books", href: "/student/books", exact: true, icon: <Book className="h-4 w-4" /> },
+    { key: "student-ebooks", label: "eBooks", href: "/student/ebooks", exact: true, icon: <BookOpen className="h-4 w-4" /> },
     { key: "student-borrowed", label: "My Books", href: "/student/borrowed", exact: true, icon: <BookOpen className="h-4 w-4" /> },
     { key: "student-shelves", label: "Shelves", href: "/student/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
     { key: "student-authors", label: "Authors", href: "/student/authors", exact: true, icon: <Users className="h-4 w-4" /> },

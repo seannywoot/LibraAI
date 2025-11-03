@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
-import ToastContainer from "@/components/ToastContainer";
+import { ToastContainer, showToast } from "@/components/ToastContainer";
 import { useRouter } from "next/navigation";
 
 export default function AdminAddBookPage() {
@@ -19,6 +19,7 @@ export default function AdminAddBookPage() {
   const [isbn, setIsbn] = useState("");
   const [publisher, setPublisher] = useState("");
   const [format, setFormat] = useState("");
+  const [ebookUrl, setEbookUrl] = useState("");
   const [barcode, setBarcode] = useState("");
   const [status, setStatus] = useState("available");
   const [loanPolicy, setLoanPolicy] = useState("standard");
@@ -28,18 +29,6 @@ export default function AdminAddBookPage() {
   const [loadingShelves, setLoadingShelves] = useState(true);
   const [authors, setAuthors] = useState([]);
   const [loadingAuthors, setLoadingAuthors] = useState(true);
-
-  const [toasts, setToasts] = useState([]);
-  const pushToast = (toast) => {
-    const id = Date.now() + Math.random();
-    const t = { id, duration: 2500, ...toast };
-    setToasts((prev) => [t, ...prev]);
-    if (t.duration) {
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((x) => x.id !== id));
-      }, t.duration + 100);
-    }
-  };
 
   useEffect(() => {
     async function loadData() {
@@ -86,7 +75,10 @@ export default function AdminAddBookPage() {
     } else if (!Number.isInteger(yearNum) || yearNum < 0 || yearNum > currentYear + 1) {
       e.year = `Enter a valid year (0–${currentYear + 1})`;
     }
-    if (!trimmedShelf) e.shelf = "Shelf is required";
+    // Shelf is only required for non-eBook formats
+    if (format !== "eBook" && !trimmedShelf) {
+      e.shelf = "Shelf is required";
+    }
 
     if (!ALLOWED_STATUS.includes(status)) e.status = "Invalid status";
     if (!ALLOWED_POLICIES.includes(loanPolicy)) e.loanPolicy = "Invalid loan policy";
@@ -111,7 +103,7 @@ export default function AdminAddBookPage() {
       // Focus first invalid field
       const el = document.querySelector(`[data-field="${firstKey}"]`);
       if (el?.focus) el.focus();
-      pushToast({ type: "error", title: "Please fix errors", description: "Some fields need your attention." });
+      showToast("Please fix errors in the form", "error");
       return;
     }
     setSubmitting(true);
@@ -127,6 +119,7 @@ export default function AdminAddBookPage() {
           isbn,
           publisher,
           format,
+          ebookUrl: format === "eBook" ? ebookUrl : undefined,
           barcode,
           status,
           loanPolicy,
@@ -136,7 +129,7 @@ export default function AdminAddBookPage() {
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to add book");
       }
-      pushToast({ type: "success", title: "Book added", description: `${data.book?.title || title} saved.` });
+      showToast(`Book "${data.book?.title || title}" added successfully!`, "success");
       // Reset form after success
       setTitle("");
       setAuthor("");
@@ -145,13 +138,14 @@ export default function AdminAddBookPage() {
       setIsbn("");
       setPublisher("");
       setFormat("");
+      setEbookUrl("");
       setBarcode("");
       setStatus("available");
       setLoanPolicy("standard");
       setErrors({});
       // Optionally navigate to dashboard or a list page later
     } catch (err) {
-      pushToast({ type: "error", title: "Add failed", description: err?.message || "Unknown error" });
+      showToast(err?.message || "Failed to add book", "error");
     } finally {
       setSubmitting(false);
     }
@@ -253,7 +247,9 @@ export default function AdminAddBookPage() {
                 {fieldError("year")}
               </label>
               <label className="grid gap-2 text-sm">
-                <span className="text-zinc-700">Shelf</span>
+                <span className="text-zinc-700">
+                  Shelf {format === "eBook" && <span className="text-zinc-500">(not applicable for eBooks)</span>}
+                </span>
                 {loadingShelves ? (
                   <input
                     className="rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
@@ -263,13 +259,14 @@ export default function AdminAddBookPage() {
                   />
                 ) : shelves.length > 0 ? (
                   <select
-                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
+                    className={`rounded-xl border px-4 py-3 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
                     value={shelf}
                     onChange={(e) => setShelf(e.target.value)}
                     aria-invalid={!!errors.shelf}
                     data-field="shelf"
+                    disabled={format === "eBook"}
                   >
-                    <option value="">Select a shelf</option>
+                    <option value="">Select a shelf{format === "eBook" ? " (N/A)" : ""}</option>
                     {shelves.map((s) => (
                       <option key={s._id} value={s.code}>
                         {s.code}{s.name ? ` - ${s.name}` : ""}{s.location ? ` (${s.location})` : ""}
@@ -278,13 +275,14 @@ export default function AdminAddBookPage() {
                   </select>
                 ) : (
                   <input
-                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
+                    className={`rounded-xl border px-4 py-3 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
                     type="text"
                     value={shelf}
                     onChange={(e) => setShelf(e.target.value)}
-                    placeholder="e.g., A3"
+                    placeholder={format === "eBook" ? "N/A for eBooks" : "e.g., A3"}
                     aria-invalid={!!errors.shelf}
                     data-field="shelf"
+                    disabled={format === "eBook"}
                   />
                 )}
                 {fieldError("shelf")}
@@ -311,14 +309,32 @@ export default function AdminAddBookPage() {
               </label>
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">Format / Type</span>
-                <input
+                <select
                   className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
-                  type="text"
                   value={format}
                   onChange={(e) => setFormat(e.target.value)}
-                  placeholder="e.g., Book, eBook, Journal"
-                />
+                >
+                  <option value="">Select format (optional)</option>
+                  <option value="Physical Book">Physical Book</option>
+                  <option value="eBook">eBook</option>
+                  <option value="Journal">Journal</option>
+                  <option value="Reference">Reference</option>
+                  <option value="Thesis">Thesis</option>
+                </select>
               </label>
+              {format === "eBook" && (
+                <label className="grid gap-2 text-sm sm:col-span-2">
+                  <span className="text-zinc-700">eBook URL</span>
+                  <input
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                    type="url"
+                    value={ebookUrl}
+                    onChange={(e) => setEbookUrl(e.target.value)}
+                    placeholder="e.g., https://example.com/ebook.pdf"
+                  />
+                  <p className="text-xs text-zinc-500">Enter the URL where students can access this eBook</p>
+                </label>
+              )}
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">Barcode / Item ID</span>
                 <input
@@ -347,18 +363,27 @@ export default function AdminAddBookPage() {
                 {fieldError("status")}
               </label>
               <label className="grid gap-2 text-sm">
-                <span className="text-zinc-700">Loan Policy</span>
+                <span className="text-zinc-700">
+                  Loan Policy {format === "eBook" && <span className="text-zinc-500">(not applicable for eBooks)</span>}
+                </span>
                 <select
-                  value={loanPolicy}
+                  value={format === "eBook" ? "n/a" : loanPolicy}
                   onChange={(e) => setLoanPolicy(e.target.value)}
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.loanPolicy ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border px-4 py-3 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.loanPolicy ? "border-rose-400" : "border-zinc-200"}`}
                   aria-invalid={!!errors.loanPolicy}
                   data-field="loanPolicy"
+                  disabled={format === "eBook"}
                 >
-                  <option value="standard">Standard</option>
-                  <option value="short-loan">Short loan</option>
-                  <option value="reference-only">Reference only</option>
-                  <option value="staff-only">Staff only</option>
+                  {format === "eBook" ? (
+                    <option value="n/a">N/A - Digital Access Only</option>
+                  ) : (
+                    <>
+                      <option value="standard">Standard</option>
+                      <option value="short-loan">Short loan</option>
+                      <option value="reference-only">Reference only</option>
+                      <option value="staff-only">Staff only</option>
+                    </>
+                  )}
                 </select>
                 {fieldError("loanPolicy")}
               </label>
@@ -382,13 +407,9 @@ export default function AdminAddBookPage() {
             </button>
           </div>
         </form>
-
-        <ToastContainer
-          toasts={toasts}
-          onClose={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
-          position="top-right"
-        />
       </main>
+      
+      <ToastContainer position="top-right" />
     </div>
   );
 }
