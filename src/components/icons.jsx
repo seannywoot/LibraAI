@@ -22,6 +22,10 @@ export {
   MessageCircle,
   Send,
   Paperclip,
+  Camera,
+  Upload,
+  X,
+  ScanLine as Scan,
 } from "lucide-react";
 
 // Optional wrapper for consistent sizing in nav/buttons

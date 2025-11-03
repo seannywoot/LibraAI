@@ -17,12 +17,15 @@
     "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "bcryptjs": "^2.4.3",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.552.0",
     "mongodb": "^6.9.0",
     "next": "16.0.1",
     "next-auth": "^4.24.12",
+    "quagga": "^0.12.1",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "react-webcam": "^7.2.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
