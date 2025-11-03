@@ -17,12 +17,28 @@ export async function GET(request) {
     const pageSize = Math.max(Math.min(parseInt(searchParams.get("pageSize") || "20", 10), 100), 1);
     const skip = (page - 1) * pageSize;
     const statusFilter = searchParams.get("status");
+    const search = searchParams.get("search")?.trim() || "";
 
     const client = await clientPromise;
     const db = client.db();
     const books = db.collection("books");
 
-    const query = statusFilter ? { status: statusFilter } : {};
+    // Build query
+    const query = {};
+    if (statusFilter) {
+      query.status = statusFilter;
+    }
+
+    // Add search filter if provided
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { author: { $regex: search, $options: "i" } },
+        { isbn: { $regex: search, $options: "i" } },
+        { publisher: { $regex: search, $options: "i" } },
+      ];
+    }
+
     const projection = {
       title: 1,
       author: 1,
@@ -34,6 +50,7 @@ export async function GET(request) {
       format: 1,
       loanPolicy: 1,
       reservedFor: 1,
+      ebookUrl: 1,
     };
 
     const [rawItems, total] = await Promise.all([
