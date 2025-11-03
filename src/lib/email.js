@@ -1,15 +1,7 @@
-import nodemailer from "nodemailer";
-
-let transporterPromise;
-let fromAddress;
-let usingEthereal = false;
-let usingEmailJS = false;
-
 function isEmailJSConfigured() {
   const svc = process.env.EMAILJS_SERVICE_ID;
   const tpl = process.env.EMAILJS_TEMPLATE_ID;
   const priv = process.env.EMAILJS_PRIVATE_KEY;
-  // Prefer server-side with a private key for secure use
   return Boolean(svc && tpl && priv);
 }
 
@@ -22,17 +14,20 @@ function parseNameEmail(input) {
 }
 
 async function sendViaEmailJS({ to, subject, html, text, templateParams }) {
-  usingEmailJS = true;
   const service_id = process.env.EMAILJS_SERVICE_ID;
   const template_id = process.env.EMAILJS_TEMPLATE_ID;
-  const publicKey = process.env.EMAILJS_PUBLIC_KEY || process.env.EMAILJS_USER_ID; // support either env name
-  const privateKey = process.env.EMAILJS_PRIVATE_KEY;
-  const from = process.env.EMAIL_FROM || process.env.SMTP_FROM;
+  const publicKeyRaw =
+    process.env.EMAILJS_PUBLIC_KEY || process.env.EMAILJS_USER_ID;
+  const privateKeyRaw = process.env.EMAILJS_PRIVATE_KEY;
+
+  // Normalize keys: EmailJS expects raw values (no 'public_' or 'pr_' prefixes)
+  const publicKey = (publicKeyRaw || "").trim().replace(/^public_/i, "");
+  const privateKey = (privateKeyRaw || "").trim().replace(/^pr_/i, "");
+  const from = process.env.EMAIL_FROM || "LibraAI <no-reply@example.com>";
   const { name: from_name, email: reply_to } = parseNameEmail(from);
 
   const endpoint = "https://api.emailjs.com/api/v1.0/email/send";
   const headers = { "Content-Type": "application/json" };
-  if (privateKey) headers["Authorization"] = `Bearer ${privateKey}`;
 
   const baseParams = {
     to_email: to,
@@ -46,9 +41,14 @@ async function sendViaEmailJS({ to, subject, html, text, templateParams }) {
   const body = {
     service_id,
     template_id,
-    // user_id is optional when using private key authorization, but including public key doesn't hurt
-    ...(publicKey ? { user_id: publicKey } : {}),
-    template_params: { ...baseParams, ...(templateParams || {}) },
+    user_id: publicKey,
+    accessToken: privateKey,
+    template_params: {
+      ...baseParams,
+      email: to,
+      to_email: to,
+      ...(templateParams || {}),
+    },
   };
 
   const res = await fetch(endpoint, {
@@ -59,82 +59,40 @@ async function sendViaEmailJS({ to, subject, html, text, templateParams }) {
 
   const textBody = await res.text();
   if (!res.ok) {
+    // Provide helpful error message for common 403 error
+    if (res.status === 403 && textBody.includes("non-browser")) {
+      throw new Error(
+        `EmailJS API calls are disabled for server-side applications. ` +
+          `Please enable server-side access in your EmailJS dashboard: ` +
+          `Go to Account > Security > Enable "Allow non-browser requests". ` +
+          `See QUICK_FIX_403.md for detailed instructions.`
+      );
+    }
     throw new Error(`EmailJS send failed (${res.status}): ${textBody}`);
   }
+
+  console.log(`✓ Email sent via EmailJS to ${to}`);
   return { provider: "emailjs", ok: true, status: res.status, body: textBody };
 }
 
-async function resolveTransporter() {
-  if (transporterPromise) return transporterPromise;
-  transporterPromise = (async () => {
-    // If EmailJS is configured, we won't need an SMTP transporter
-    if (isEmailJSConfigured()) {
-      usingEmailJS = true;
-      // Set from address for consistency in downstream functions
-      fromAddress = process.env.EMAIL_FROM || process.env.SMTP_FROM || "LibraAI <no-reply@example.com>";
-      return null; // No nodemailer transport when using EmailJS
-    }
-
-    const host = process.env.SMTP_HOST;
-    const port = Number(process.env.SMTP_PORT || 587);
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const from = process.env.EMAIL_FROM || process.env.SMTP_FROM;
-
-    if (host && user && pass && from) {
-      fromAddress = from;
-      return nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: { user, pass },
-      });
-    }
-
-    if (process.env.NODE_ENV !== "production") {
-      // Dev fallback: auto-provision an Ethereal test account for previewing emails
-      const account = await nodemailer.createTestAccount();
-      usingEthereal = true;
-      fromAddress = from || "LibraAI <no-reply@example.com>";
-      return nodemailer.createTransport({
-        host: account.smtp.host,
-        port: account.smtp.port,
-        secure: account.smtp.secure,
-        auth: { user: account.user, pass: account.pass },
-      });
-    }
-
-    throw new Error(
-      "Missing SMTP configuration (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM). Please set these variables to match your SMTP provider (e.g., Resend SMTP, SendGrid, Postmark, Amazon SES)."
-    );
-  })();
-  return transporterPromise;
-}
-
 export async function sendMail({ to, subject, html, text, templateParams }) {
-  // Prefer EmailJS if configured
-  if (isEmailJSConfigured()) {
-    return sendViaEmailJS({ to, subject, html, text, templateParams });
+  if (!isEmailJSConfigured()) {
+    throw new Error(
+      "EmailJS is not configured. Please set EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, and EMAILJS_PRIVATE_KEY environment variables."
+    );
   }
 
-  const tx = await resolveTransporter();
-  if (!tx) {
-    // Shouldn't happen, but guard just in case
-    throw new Error("No email transport available");
-  }
-  const info = await tx.sendMail({ from: fromAddress, to, subject, html, text });
-  if (usingEthereal) {
-    const url = nodemailer.getTestMessageUrl(info);
-    if (url) {
-      console.log("Password reset email preview URL:", url);
-    }
-  }
-  return info;
+  return sendViaEmailJS({ to, subject, html, text, templateParams });
 }
 
-export async function sendPasswordResetEmail(to, resetUrl, { appName = "LibraAI", expiresMinutes = 15 } = {}) {
+export async function sendPasswordResetEmail(
+  to,
+  resetUrl,
+  { appName = "LibraAI", expiresMinutes = 15 } = {}
+) {
   const subject = `${appName} password reset`;
-  const text = `You requested a password reset for your ${appName} account.\n\n` +
+  const text =
+    `You requested a password reset for your ${appName} account.\n\n` +
     `Click the link below to set a new password. The link expires in ${expiresMinutes} minutes.\n\n` +
     `${resetUrl}\n\n` +
     `If you did not request this, you can safely ignore this email.`;

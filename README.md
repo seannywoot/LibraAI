@@ -143,36 +143,49 @@ For more details, see Next.js deployment docs.
 
 ## Email setup (password reset)
 
-This app now uses a single email sender: SMTP via nodemailer in `src/lib/email.js`.
+This app uses EmailJS for sending emails. EmailJS is a simple, client-side email service that doesn't require a backend server.
 
-Environment variables used by the app:
+### Setting up EmailJS
+
+1. Create a free account at https://www.emailjs.com/
+2. Add an email service (Gmail, Outlook, etc.)
+3. Create an email template with these variables:
+   - `{{to_email}}` - recipient email
+   - `{{subject}}` - email subject
+   - `{{message}}` or `{{message_html}}` - email body
+   - `{{reset_url}}` - password reset link
+   - `{{app_name}}` - application name
+   - `{{expires_minutes}}` - token expiry time
+   - `{{from_name}}` - sender name
+   - `{{reply_to}}` - reply-to email
+4. Get your credentials from the EmailJS dashboard
+
+### Environment variables
 
 ```
-# Who the email is from — use a verified sender/domain at your provider
-EMAIL_FROM="LibraAI <no-reply@yourdomain.com>"
+# EmailJS Configuration (Required)
+EMAILJS_SERVICE_ID="service_xxxxxxx"      # From EmailJS dashboard > Email Services
+EMAILJS_TEMPLATE_ID="template_xxxxxxx"    # From EmailJS dashboard > Email Templates
+EMAILJS_PRIVATE_KEY="xxxxxxxxxx"          # From EmailJS dashboard > Account > API Keys
+EMAILJS_PUBLIC_KEY="xxxxxxxxxx"           # From EmailJS dashboard > Account > General
 
-# SMTP settings (point these to your provider, e.g., Resend SMTP, SendGrid, Postmark, etc.)
-SMTP_HOST="smtp.yourprovider.com"
-SMTP_PORT="587"                  # typically 587 (STARTTLS) or 465 (TLS)
-SMTP_USER="<smtp-username>"
-SMTP_PASS="<smtp-password-or-token>"
+# Email sender info
+EMAIL_FROM="LibraAI <no-reply@yourdomain.com>"
 
 # Optional: controls expiry text in the email copy
 PASSWORD_RESET_EXP_MIN="15"
 
-# The base URL used to build email links (fallback order: NEXTAUTH_URL, APP_URL, then http://localhost:3000)
-# Set one of these in production
+# The base URL used to build email links
 NEXTAUTH_URL="https://your-domain.tld"
-# or
-APP_URL="https://your-domain.tld"
 ```
 
-How it works:
-- In production, `src/lib/email.js` uses the SMTP_* variables and `EMAIL_FROM`.
-- In development, if SMTP vars are not set, it automatically provisions an Ethereal test inbox so you can preview emails in the console.
+### How it works
+- `src/lib/email.js` sends emails via the EmailJS REST API
+- All credentials are kept server-side for security
+- The private key is never exposed to the client
 
-Deliverability tips:
-- Verify your sending domain (SPF/DKIM) with your email provider and use a real `EMAIL_FROM` at that domain.
-- Keep password‑reset tokens short‑lived (15–60 minutes) and one‑time use.
-- Avoid user enumeration: the API responds with a generic success message whether or not the email exists (already implemented).
+### Tips
+- Keep password reset tokens short-lived (15–60 minutes) and one-time use
+- Test your email template in the EmailJS dashboard before deploying
+- The API responds with a generic success message whether or not the email exists (prevents user enumeration)
 

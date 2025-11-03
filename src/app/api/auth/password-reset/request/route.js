@@ -58,7 +58,7 @@ export async function POST(request) {
     const base = appBaseUrl().replace(/\/$/, "");
     const resetUrl = `${base}/auth/reset?token=${token}`;
 
-    // Send email via our SMTP/nodemailer helper. Swallow any error to preserve enumeration resistance.
+    // Send email via EmailJS. Swallow any error to preserve enumeration resistance.
     try {
       await sendPasswordResetEmail(email, resetUrl, { expiresMinutes });
     } catch (mailErr) {
