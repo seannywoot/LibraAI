@@ -51,6 +51,12 @@ async function sendViaEmailJS({ to, subject, html, text, templateParams }) {
     },
   };
 
+  console.log('[EmailJS] Sending email to:', to);
+  console.log('[EmailJS] Using service:', service_id);
+  console.log('[EmailJS] Using template:', template_id);
+  console.log('[EmailJS] Public key configured:', !!publicKey);
+  console.log('[EmailJS] Private key configured:', !!privateKey);
+
   const res = await fetch(endpoint, {
     method: "POST",
     headers,
@@ -58,6 +64,9 @@ async function sendViaEmailJS({ to, subject, html, text, templateParams }) {
   });
 
   const textBody = await res.text();
+  console.log('[EmailJS] Response status:', res.status);
+  console.log('[EmailJS] Response body:', textBody);
+  
   if (!res.ok) {
     // Provide helpful error message for common 403 error
     if (res.status === 403 && textBody.includes("non-browser")) {
