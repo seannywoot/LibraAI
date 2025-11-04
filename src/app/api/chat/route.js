@@ -1,11 +1,25 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import { getDb } from "@/lib/mongodb";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(request) {
   try {
-    const { message, history } = await request.json();
+    const session = await getServerSession(authOptions);
+    const { message, history, conversationId } = await request.json();
+
+    // Fetch FAQs from database
+    const db = await getDb();
+    const faqCollection = db.collection("faqs");
+    const faqs = await faqCollection.find({ isActive: true }).toArray();
+
+    // Build FAQ context from database
+    const faqContext = faqs.map(faq => 
+      `Q: ${faq.question}\nA: ${faq.answer}`
+    ).join("\n\n");
 
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
@@ -17,7 +31,7 @@ export async function POST(request) {
       },
     });
 
-    // System instruction for LibraAI context
+    // System instruction for LibraAI context with FAQ database
     const systemContext = `You are LibraAI Assistant, a helpful AI assistant for a library management system. 
 You help students with:
 - Finding books and literature recommendations
@@ -26,7 +40,11 @@ You help students with:
 - Helping with research and study resources
 - General literature and reading advice
 
-Library Information:
+Use the following FAQ database to answer questions accurately:
+
+${faqContext}
+
+Key Library Information Summary:
 - Operating Hours: Mon-Fri 8AM-10PM, Sat 10AM-6PM, Sun 12PM-8PM
 - Borrowing Limit: 5 books for 7 days, renewable up to 3 times
 - Late Fee: $0.25 per day per book
@@ -34,7 +52,7 @@ Library Information:
 - WiFi available throughout the library
 - Study rooms can be reserved up to 7 days in advance
 
-Be friendly, concise, and helpful. If you don't know something specific about the library, suggest they contact the library staff.`;
+Be friendly, concise, and helpful. When answering questions, prioritize information from the FAQ database above. If you don't know something specific about the library, suggest they contact the library staff.`;
 
     // Build chat history for context
     const chatHistory = history?.map(msg => ({
@@ -59,6 +77,21 @@ Be friendly, concise, and helpful. If you don't know something specific about th
     const result = await chat.sendMessage(message);
     const response = await result.response;
     const text = response.text();
+
+    // Log conversation to MongoDB
+    const chatLogsCollection = db.collection("chat_logs");
+    const logEntry = {
+      userId: session?.user?.email || "anonymous",
+      userName: session?.user?.name || "Anonymous User",
+      conversationId: conversationId || null,
+      userMessage: message,
+      aiResponse: text,
+      timestamp: new Date(),
+      model: "gemini-2.5-flash",
+      messageCount: (history?.length || 0) + 2, // +2 for current exchange
+    };
+
+    await chatLogsCollection.insertOne(logEntry);
 
     return NextResponse.json({ 
       message: text,

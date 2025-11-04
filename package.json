@@ -20,6 +20,7 @@
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.552.0",
     "mongodb": "^6.9.0",
+    "mongoose": "^8.19.2",
     "next": "16.0.1",
     "next-auth": "^4.24.12",
     "quagga": "^0.12.1",

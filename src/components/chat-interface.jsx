@@ -123,7 +123,8 @@ export default function ChatInterface({ userName }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage,
-          history: messages.slice(1) // Exclude initial greeting
+          history: messages.slice(1), // Exclude initial greeting
+          conversationId: currentConversationId
         }),
       });
 
