@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LogOut } from "@/components/icons";
 import { signOut } from "next-auth/react";
+import { clearSessionStorage } from "@/lib/session-handler";
 
 export default function SignOutButton({ className = "" }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -15,6 +16,8 @@ export default function SignOutButton({ className = "" }) {
     setIsLoading(true);
 
     try {
+      // Clear session storage before signing out
+      clearSessionStorage();
       await signOut({ callbackUrl: "/auth" });
     } catch (error) {
       setIsLoading(false);

@@ -7,6 +7,8 @@ import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import Link from "next/link";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
+import { getBehaviorTracker } from "@/lib/behavior-tracker";
+import RecommendationsSidebar from "@/components/recommendations-sidebar";
 
 function StatusChip({ status }) {
   const map = {
@@ -57,18 +59,55 @@ export default function StudentBooksPage() {
     resourceTypes: ["Books"],
     yearRange: [1950, 2025],
     subjects: ["Computer Science"],
-    availability: ["Available"],
-    formats: ["Physical", "eBook"],
+    availability: [],
+    formats: [],
   });
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [recommendationsKey, setRecommendationsKey] = useState(0);
 
   const navigationLinks = getStudentLinks();
+  const tracker = getBehaviorTracker();
+
+  // Cleanup tracker on unmount
+  useEffect(() => {
+    return () => {
+      tracker.cleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
       loadBooks();
+      
+      // Track search event if there's a query
+      if (searchInput.trim()) {
+        tracker.trackSearch(searchInput, {
+          formats: filters.formats,
+          yearRange: filters.yearRange,
+          availability: filters.availability
+        });
+      }
     }, 300);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
+  // Auto-suggestions effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput.length >= 2) {
+        loadSuggestions();
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 200);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,8 +115,17 @@ export default function StudentBooksPage() {
 
   useEffect(() => {
     loadBooks();
+    
+    // Track filter changes as search events
+    if (filters.formats.length > 0 || filters.availability.length > 0) {
+      tracker.trackSearch(searchInput || "filtered search", {
+        formats: filters.formats,
+        yearRange: filters.yearRange,
+        availability: filters.availability
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize]);
+  }, [page, pageSize, sortBy, filters]);
 
   async function loadBooks() {
     setLoading(true);
@@ -86,8 +134,22 @@ export default function StudentBooksPage() {
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
+        sortBy: sortBy,
       });
       if (searchInput) params.append("search", searchInput);
+      
+      // Add filter parameters
+      if (filters.formats.length > 0) {
+        params.append("formats", filters.formats.join(","));
+      }
+      if (filters.yearRange) {
+        params.append("yearMin", filters.yearRange[0].toString());
+        params.append("yearMax", filters.yearRange[1].toString());
+      }
+      if (filters.availability.length > 0) {
+        params.append("availability", filters.availability.join(","));
+      }
+      
       const res = await fetch(`/api/student/books?${params}`, {
         cache: "no-store",
       });
@@ -101,6 +163,31 @@ export default function StudentBooksPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadSuggestions() {
+    setLoadingSuggestions(true);
+    try {
+      const res = await fetch(
+        `/api/student/books/suggestions?q=${encodeURIComponent(searchInput)}`,
+        { cache: "no-store" }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        setSuggestions(data.suggestions || []);
+        setShowSuggestions(true);
+      }
+    } catch (e) {
+      console.error("Failed to load suggestions:", e);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }
+
+  function handleSuggestionClick(suggestion) {
+    setSearchInput(suggestion.text);
+    setShowSuggestions(false);
+    setPage(1);
   }
 
   function toggleResourceType(type) {
@@ -330,7 +417,10 @@ export default function StudentBooksPage() {
               </div>
 
               <button
-                onClick={loadBooks}
+                onClick={() => {
+                  setPage(1);
+                  loadBooks();
+                }}
                 className="w-full rounded-lg bg-black text-white py-2.5 text-sm font-medium hover:bg-gray-800 transition-colors"
               >
                 Apply Filters
@@ -360,6 +450,8 @@ export default function StudentBooksPage() {
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   placeholder="Search books by title, author, ISBN, or publisher..."
                   className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-24 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                 />
@@ -369,6 +461,50 @@ export default function StudentBooksPage() {
                 >
                   Search
                 </button>
+                
+                {/* Auto-suggestions dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                    {suggestions.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0"
+                      >
+                        <svg
+                          className="h-4 w-4 text-gray-400 shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          {suggestion.type === "title" ? (
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                            />
+                          ) : (
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
+                          )}
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900 truncate">
+                            {suggestion.text}
+                          </p>
+                          <p className="text-xs text-gray-500 capitalize">
+                            {suggestion.type}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {searchInput && (
                 <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
@@ -401,7 +537,10 @@ export default function StudentBooksPage() {
                   <span className="text-sm text-gray-600">Sort by:</span>
                   <select
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => {
+                      setSortBy(e.target.value);
+                      setPage(1);
+                    }}
                     className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                   >
                     <option value="relevance">Relevance</option>
@@ -474,7 +613,7 @@ export default function StudentBooksPage() {
                     : "Check back later for new additions to the catalog."}
                 </p>
               </div>
-            ) : (
+            ) : viewMode === "list" ? (
               <div className="space-y-4">
                 {items.map((book) => (
                   <article
@@ -574,6 +713,90 @@ export default function StudentBooksPage() {
                   </article>
                 ))}
               </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {items.map((book) => (
+                  <article
+                    key={book._id}
+                    className="rounded-lg bg-white border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col"
+                  >
+                    {/* Book Cover */}
+                    <div className="w-full aspect-[2/3] rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-3">
+                      Book Cover
+                    </div>
+
+                    {/* Book Details */}
+                    <div className="flex-1 flex flex-col">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
+                        {book.title}
+                      </h3>
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+                        {book.author}
+                      </p>
+                      <div className="text-xs text-gray-500 mb-2">
+                        {book.year && <span>{book.year}</span>}
+                      </div>
+
+                      {/* Status */}
+                      <div className="mb-3">
+                        <StatusChip status={book.status} />
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="mt-auto">
+                        {book.format === "eBook" && book.ebookUrl ? (
+                          <a
+                            href={book.ebookUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-full text-center rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
+                          >
+                            Access
+                          </a>
+                        ) : book.status === "available" &&
+                          !["reference-only", "staff-only"].includes(
+                            book.loanPolicy || ""
+                          ) ? (
+                          <button
+                            onClick={() => handleBorrow(book._id)}
+                            disabled={borrowing === book._id}
+                            className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                          >
+                            {borrowing === book._id ? "Borrowing..." : "Borrow"}
+                          </button>
+                        ) : book.status === "reserved" &&
+                          book.reservedForCurrentUser ? (
+                          <span className="block text-center text-xs font-medium text-gray-500">
+                            Awaiting approval
+                          </span>
+                        ) : book.status === "reserved" ? (
+                          <button
+                            disabled
+                            className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
+                          >
+                            Reserved
+                          </button>
+                        ) : book.status === "checked-out" ? (
+                          <button
+                            disabled
+                            className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
+                          >
+                            Unavailable
+                          </button>
+                        ) : book.loanPolicy === "reference-only" ? (
+                          <span className="block text-center text-xs text-gray-500">
+                            Reference only
+                          </span>
+                        ) : book.loanPolicy === "staff-only" ? (
+                          <span className="block text-center text-xs text-gray-500">
+                            Staff only
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
             )}
 
             {/* Pagination */}
@@ -654,6 +877,17 @@ export default function StudentBooksPage() {
               </div>
             )}
           </div>
+
+          {/* Recommendations Sidebar */}
+          <RecommendationsSidebar
+            key={recommendationsKey}
+            maxItems={8}
+            context={searchInput ? "search" : "browse"}
+            onRefresh={() => {
+              setRecommendationsKey(prev => prev + 1);
+              loadBooks();
+            }}
+          />
         </div>
       </main>
     </div>

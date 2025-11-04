@@ -2,6 +2,11 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import clientPromise from "@/lib/mongodb";
 import { comparePassword } from "@/lib/passwords";
+import {
+  isAccountLocked,
+  recordFailedAttempt,
+  clearFailedAttempts,
+} from "@/lib/brute-force-protection";
 
 const STUDENT_DEMO = {
   email: "student@demo.edu",
@@ -34,6 +39,15 @@ export const authOptions = {
 
         if (!email || !password) {
           throw new Error("Missing credentials");
+        }
+
+        // Check if account is locked due to too many failed attempts
+        const lockStatus = isAccountLocked(email);
+        if (lockStatus.locked) {
+          const minutes = Math.ceil(lockStatus.remainingTime / 60);
+          throw new Error(
+            `AccountLocked:${minutes}:Too many failed login attempts. Account locked for ${minutes} minute${minutes !== 1 ? 's' : ''}.`
+          );
         }
 
         // We'll resolve a user object here and only return after verifying any expected role
@@ -82,14 +96,36 @@ export const authOptions = {
         }
 
         if (!resolvedUser) {
-          throw new Error("Invalid credentials");
+          // Record failed attempt
+          const attemptResult = recordFailedAttempt(email);
+          
+          if (attemptResult.locked) {
+            const minutes = Math.ceil(attemptResult.remainingTime / 60);
+            throw new Error(
+              `AccountLocked:${minutes}:Too many failed login attempts. Account locked for ${minutes} minute${minutes !== 1 ? 's' : ''}.`
+            );
+          }
+          
+          // Add progressive delay if configured
+          if (attemptResult.delay > 0) {
+            await new Promise(resolve => setTimeout(resolve, attemptResult.delay));
+          }
+          
+          const remaining = attemptResult.remainingAttempts;
+          throw new Error(
+            `InvalidCredentials:${remaining}:Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`
+          );
         }
 
         // Enforce portal-role match when an expectedRole is provided
         if (expectedRole && resolvedUser.role !== expectedRole) {
-          // Throw a specific error string so the client UI can show a helpful message
+          // Record failed attempt for role mismatch too
+          recordFailedAttempt(email);
           throw new Error("RoleMismatch");
         }
+
+        // Clear failed attempts on successful login
+        clearFailedAttempts(email);
 
         return resolvedUser;
       },
@@ -97,13 +133,37 @@ export const authOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24 hours
+    updateAge: 60 * 60, // Update session every 1 hour
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60, // 24 hours
+      },
+    },
+  },
+  jwt: {
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // On sign-in, copy role and name from user
+      // On sign-in, copy role and name from user and set issued time
       if (user) {
         token.role = user.role;
         if (user.name) token.name = user.name;
+        token.iat = Math.floor(Date.now() / 1000); // Issued at time
+      }
+
+      // Check if token has expired (24 hours)
+      const tokenAge = Math.floor(Date.now() / 1000) - (token.iat || 0);
+      if (tokenAge > 24 * 60 * 60) {
+        return null; // Force re-authentication
       }
 
       // When a client calls useSession().update({ ... }), propagate allowed fields
@@ -114,6 +174,10 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
+      if (!token) {
+        return null; // Invalid session
+      }
+      
       session.user = session.user || {};
       session.user.role = token.role;
       if (token.name) session.user.name = token.name;

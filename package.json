@@ -8,6 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "add-student": "node scripts/add_student.mjs",
+    "setup-recommendations": "node scripts/setup-recommendations-schema.js",
+    "test-recommendations": "node scripts/test-recommendations.js",
+    "test-components": "node scripts/test-components-manual.js",
+    "monitor-performance": "node scripts/performance-monitor.js",
     "vercel-build": "next build"
   },
   "engines": {

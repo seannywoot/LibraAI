@@ -17,6 +17,7 @@ export default function ChatInterface({ userName }) {
   const [conversationHistory, setConversationHistory] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [attachedFile, setAttachedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
   const [typingMessage, setTypingMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [lastUserMessage, setLastUserMessage] = useState("");
@@ -193,10 +194,22 @@ export default function ChatInterface({ userName }) {
     }
 
     setAttachedFile(file);
+    
+    // Create preview for images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFilePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFilePreview(null);
+    }
   };
 
   const removeAttachment = () => {
     setAttachedFile(null);
+    setFilePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -209,6 +222,8 @@ export default function ChatInterface({ userName }) {
     const userMessage = input.trim() || "Uploaded a file";
     const hasFile = !!attachedFile;
     const fileName = attachedFile?.name;
+    const fileType = attachedFile?.type;
+    const currentFilePreview = filePreview;
     
     // Save last user message for up arrow recall
     if (userMessage && userMessage !== "Uploaded a file") {
@@ -218,6 +233,7 @@ export default function ChatInterface({ userName }) {
     setInput("");
     const fileToUpload = attachedFile;
     setAttachedFile(null);
+    setFilePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -229,6 +245,8 @@ export default function ChatInterface({ userName }) {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       hasFile,
       fileName,
+      fileType,
+      filePreview: currentFilePreview,
     };
     setMessages(prev => [...prev, newUserMessage]);
     setIsLoading(true);
@@ -417,11 +435,29 @@ export default function ChatInterface({ userName }) {
                 : "bg-zinc-100 text-zinc-800"
             }`}>
               {msg.hasFile && (
-                <div className={`mb-2 flex items-center gap-2 text-xs ${
-                  msg.role === "user" ? "text-zinc-300" : "text-zinc-600"
-                }`}>
-                  <Paperclip className="h-3 w-3" />
-                  <span>{msg.fileName}</span>
+                <div className="mb-2">
+                  {msg.filePreview && msg.fileType?.startsWith('image/') ? (
+                    <div className="mb-2">
+                      <img 
+                        src={msg.filePreview} 
+                        alt={msg.fileName}
+                        className="max-w-full h-auto rounded-lg border border-zinc-300 max-h-64 object-contain"
+                      />
+                      <div className={`mt-1 flex items-center gap-2 text-xs ${
+                        msg.role === "user" ? "text-zinc-300" : "text-zinc-600"
+                      }`}>
+                        <Paperclip className="h-3 w-3" />
+                        <span>{msg.fileName}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`flex items-center gap-2 text-xs ${
+                      msg.role === "user" ? "text-zinc-300" : "text-zinc-600"
+                    }`}>
+                      <Paperclip className="h-3 w-3" />
+                      <span>{msg.fileName}</span>
+                    </div>
+                  )}
                 </div>
               )}
               <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -479,7 +515,14 @@ export default function ChatInterface({ userName }) {
       {/* Input Area */}
       <div className="border-t border-zinc-200 p-6">
         {attachedFile && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+          <div className="mb-3 flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+            {filePreview && attachedFile.type.startsWith('image/') && (
+              <img 
+                src={filePreview} 
+                alt="Preview"
+                className="h-16 w-16 rounded object-cover border border-zinc-300"
+              />
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-zinc-900 truncate">
                 {attachedFile.name}

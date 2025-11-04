@@ -17,6 +17,14 @@ function AuthContent() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Get logout reason from URL
+  const logoutReason = searchParams.get("reason");
+  const logoutMessage = logoutReason === "idle"
+    ? "You were logged out due to inactivity for security reasons."
+    : logoutReason === "expired"
+    ? "Your session has expired. Please sign in again."
+    : null;
+
   const [studentRemember, setStudentRemember] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -83,14 +91,30 @@ function AuthContent() {
             ? "Those credentials don’t match the student demo account. Use the demo credentials below."
             : "Those credentials don’t match the admin demo account. Use the demo credentials below.";
 
-        const errorMessage =
-          result?.error === "RoleMismatch"
-            ? (role === "student"
-                ? "That account is an admin. Switch to the Admin tab to sign in."
-                : "That account is a student. Switch to the Student tab to sign in.")
-            : (result?.error === "Invalid credentials" || result?.error === "CredentialsSignin"
-                ? defaultCopy
-                : "Unable to sign in. Check your credentials and try again.");
+        let errorMessage = "Unable to sign in. Check your credentials and try again.";
+
+        // Handle account locked errors
+        if (result?.error?.startsWith("AccountLocked:")) {
+          const parts = result.error.split(":");
+          const minutes = parts[1];
+          errorMessage = `🔒 Account temporarily locked due to multiple failed login attempts. Please try again in ${minutes} minute${minutes !== "1" ? "s" : ""}.`;
+        }
+        // Handle invalid credentials with remaining attempts
+        else if (result?.error?.startsWith("InvalidCredentials:")) {
+          const parts = result.error.split(":");
+          const remaining = parts[1];
+          errorMessage = `❌ Invalid credentials. You have ${remaining} attempt${remaining !== "1" ? "s" : ""} remaining before your account is temporarily locked.`;
+        }
+        // Handle role mismatch
+        else if (result?.error === "RoleMismatch") {
+          errorMessage = role === "student"
+            ? "That account is an admin. Switch to the Admin tab to sign in."
+            : "That account is a student. Switch to the Student tab to sign in.";
+        }
+        // Handle generic invalid credentials
+        else if (result?.error === "Invalid credentials" || result?.error === "CredentialsSignin") {
+          errorMessage = defaultCopy;
+        }
 
         setError(errorMessage);
         return;
@@ -203,6 +227,27 @@ function AuthContent() {
                 </button>
               </div>
             </header>
+
+            {logoutMessage && (
+              <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="h-5 w-5 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>{logoutMessage}</span>
+                </div>
+              </div>
+            )}
 
             <section className="rounded-3xl border border-zinc-200 bg-white px-8 py-10 shadow-lg shadow-zinc-900/5">
               <form

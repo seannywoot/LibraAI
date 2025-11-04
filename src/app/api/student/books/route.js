@@ -18,6 +18,13 @@ export async function GET(request) {
     const skip = (page - 1) * pageSize;
     const statusFilter = searchParams.get("status");
     const search = searchParams.get("search")?.trim() || "";
+    const sortBy = searchParams.get("sortBy") || "relevance";
+    
+    // Parse filter parameters
+    const formats = searchParams.get("formats")?.split(",").filter(Boolean) || [];
+    const yearMin = parseInt(searchParams.get("yearMin") || "0", 10);
+    const yearMax = parseInt(searchParams.get("yearMax") || "9999", 10);
+    const availability = searchParams.get("availability")?.split(",").filter(Boolean) || [];
 
     const client = await clientPromise;
     const db = client.db();
@@ -39,6 +46,27 @@ export async function GET(request) {
       ];
     }
 
+    // Apply format filter
+    if (formats.length > 0) {
+      query.format = { $in: formats };
+    }
+
+    // Apply year range filter
+    if (yearMin > 0 || yearMax < 9999) {
+      query.year = { $gte: yearMin, $lte: yearMax };
+    }
+
+    // Apply availability filter
+    if (availability.length > 0) {
+      const statusMap = {
+        "Available": "available",
+        "Checked Out": "checked-out",
+        "Reserved": "reserved"
+      };
+      const mappedStatuses = availability.map(a => statusMap[a] || a.toLowerCase());
+      query.status = { $in: mappedStatuses };
+    }
+
     const projection = {
       title: 1,
       author: 1,
@@ -53,8 +81,18 @@ export async function GET(request) {
       ebookUrl: 1,
     };
 
+    // Determine sort order
+    let sortOrder = { title: 1 };
+    if (sortBy === "year") {
+      sortOrder = { year: -1, title: 1 };
+    } else if (sortBy === "author") {
+      sortOrder = { author: 1, title: 1 };
+    } else if (sortBy === "title") {
+      sortOrder = { title: 1 };
+    }
+
     const [rawItems, total] = await Promise.all([
-      books.find(query, { projection }).sort({ title: 1 }).skip(skip).limit(pageSize).toArray(),
+      books.find(query, { projection }).sort(sortOrder).skip(skip).limit(pageSize).toArray(),
       books.countDocuments(query),
     ]);
 

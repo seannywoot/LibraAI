@@ -8,7 +8,6 @@ import SignOutButton from "@/components/sign-out-button";
 export default function StudentSettingsPage() {
   const [focusMode, setFocusMode] = useState(false);
   const [readingGoals, setReadingGoals] = useState(true);
-  const [syncCalendar, setSyncCalendar] = useState(false);
   const [summaryLength, setSummaryLength] = useState("concise");
   const [saved, setSaved] = useState(false);
 
@@ -53,15 +52,6 @@ export default function StudentSettingsPage() {
                     type="checkbox"
                     checked={readingGoals}
                     onChange={(event) => setReadingGoals(event.target.checked)}
-                    className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
-                  />
-                </label>
-                <label className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-                  <span>Sync due dates to calendar</span>
-                  <input
-                    type="checkbox"
-                    checked={syncCalendar}
-                    onChange={(event) => setSyncCalendar(event.target.checked)}
                     className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
                   />
                 </label>
