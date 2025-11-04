@@ -12,6 +12,7 @@
     "test-recommendations": "node scripts/test-recommendations.js",
     "test-components": "node scripts/test-components-manual.js",
     "monitor-performance": "node scripts/performance-monitor.js",
+    "seed-books": "node scripts/seed-books-direct.js",
     "vercel-build": "next build"
   },
   "engines": {

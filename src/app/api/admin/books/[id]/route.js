@@ -30,7 +30,7 @@ export async function DELETE(request, { params }) {
     }
 
     const client = await clientPromise;
-    const db = client.db();
+    const db = client.db("library");
     const books = db.collection("books");
 
     // Check if book exists

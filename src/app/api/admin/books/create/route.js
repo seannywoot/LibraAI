@@ -88,7 +88,7 @@ export async function POST(request) {
     if (!allowedPolicies.has(loanPolicy)) loanPolicy = "standard";
 
     const client = await clientPromise;
-    const db = client.db();
+    const db = client.db("library");
     const books = db.collection("books");
 
     // Helpful indexes for future queries (no-ops if already exist)
