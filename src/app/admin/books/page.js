@@ -6,6 +6,7 @@ import { Book as BookIcon, Plus } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import Link from "next/link";
+import { ToastContainer, showToast } from "@/components/ToastContainer";
 
 function StatusChip({ status }) {
   const map = {
@@ -32,6 +33,7 @@ export default function AdminBooksListPage() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
+  const [deleting, setDeleting] = useState(null);
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
@@ -60,8 +62,46 @@ export default function AdminBooksListPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
+  async function handleDelete(bookId, bookTitle) {
+    if (!confirm(`Are you sure you want to delete "${bookTitle}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(bookId);
+    try {
+      const res = await fetch(`/api/admin/books/${bookId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "Failed to delete book");
+      }
+
+      showToast("Book deleted successfully", "success");
+      
+      // Reload the books list
+      const reloadRes = await fetch(`/api/admin/books?page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
+      const reloadData = await reloadRes.json().catch(() => ({}));
+      if (reloadRes.ok && reloadData?.ok) {
+        setItems(reloadData.items || []);
+        setTotal(reloadData.total || 0);
+        
+        // If current page is now empty and not the first page, go back one page
+        if (reloadData.items.length === 0 && page > 1) {
+          setPage(page - 1);
+        }
+      }
+    } catch (e) {
+      showToast(e?.message || "Failed to delete book", "error");
+    } finally {
+      setDeleting(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+      <ToastContainer />
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
@@ -103,6 +143,7 @@ export default function AdminBooksListPage() {
                     <th className="px-4 py-2">Status</th>
                     <th className="px-4 py-2">ISBN</th>
                     <th className="px-4 py-2">Barcode</th>
+                    <th className="px-4 py-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -123,6 +164,15 @@ export default function AdminBooksListPage() {
                       <td className="px-4 py-3"><StatusChip status={b.status} /></td>
                       <td className="px-4 py-3">{b.isbn || "—"}</td>
                       <td className="px-4 py-3">{b.barcode || "—"}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleDelete(b._id, b.title)}
+                          disabled={deleting === b._id}
+                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {deleting === b._id ? "Deleting..." : "Delete"}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -22,6 +22,7 @@ export async function GET(request) {
     
     // Parse filter parameters
     const formats = searchParams.get("formats")?.split(",").filter(Boolean) || [];
+    const categories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
     const yearMin = parseInt(searchParams.get("yearMin") || "0", 10);
     const yearMax = parseInt(searchParams.get("yearMax") || "9999", 10);
     const availability = searchParams.get("availability")?.split(",").filter(Boolean) || [];
@@ -51,6 +52,11 @@ export async function GET(request) {
       query.format = { $in: formats };
     }
 
+    // Apply category filter
+    if (categories.length > 0) {
+      query.category = { $in: categories };
+    }
+
     // Apply year range filter
     if (yearMin > 0 || yearMax < 9999) {
       query.year = { $gte: yearMin, $lte: yearMax };
@@ -76,6 +82,7 @@ export async function GET(request) {
       isbn: 1,
       publisher: 1,
       format: 1,
+      category: 1,
       loanPolicy: 1,
       reservedFor: 1,
       ebookUrl: 1,

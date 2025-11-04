@@ -61,6 +61,7 @@ export default function StudentBooksPage() {
     subjects: ["Computer Science"],
     availability: [],
     formats: [],
+    categories: [],
   });
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -88,6 +89,7 @@ export default function StudentBooksPage() {
       if (searchInput.trim()) {
         tracker.trackSearch(searchInput, {
           formats: filters.formats,
+          categories: filters.categories,
           yearRange: filters.yearRange,
           availability: filters.availability
         });
@@ -117,9 +119,10 @@ export default function StudentBooksPage() {
     loadBooks();
     
     // Track filter changes as search events
-    if (filters.formats.length > 0 || filters.availability.length > 0) {
+    if (filters.formats.length > 0 || filters.availability.length > 0 || filters.categories.length > 0) {
       tracker.trackSearch(searchInput || "filtered search", {
         formats: filters.formats,
+        categories: filters.categories,
         yearRange: filters.yearRange,
         availability: filters.availability
       });
@@ -141,6 +144,9 @@ export default function StudentBooksPage() {
       // Add filter parameters
       if (filters.formats.length > 0) {
         params.append("formats", filters.formats.join(","));
+      }
+      if (filters.categories.length > 0) {
+        params.append("categories", filters.categories.join(","));
       }
       if (filters.yearRange) {
         params.append("yearMin", filters.yearRange[0].toString());
@@ -223,6 +229,15 @@ export default function StudentBooksPage() {
       formats: prev.formats.includes(format)
         ? prev.formats.filter((f) => f !== format)
         : [...prev.formats, format],
+    }));
+  }
+
+  function toggleCategory(category) {
+    setFilters((prev) => ({
+      ...prev,
+      categories: prev.categories.includes(category)
+        ? prev.categories.filter((c) => c !== category)
+        : [...prev.categories, category],
     }));
   }
 
@@ -362,6 +377,42 @@ export default function StudentBooksPage() {
                 <div className="flex justify-between text-xs text-gray-500 mt-2">
                   <span>1950</span>
                   <span>2025</span>
+                </div>
+              </div>
+
+              {/* Category */}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                  Category
+                </h3>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {[
+                    "Fiction",
+                    "Non-Fiction",
+                    "Science",
+                    "Technology",
+                    "History",
+                    "Biography",
+                    "Self-Help",
+                    "Business",
+                    "Arts",
+                    "Education",
+                    "Children",
+                    "Young Adult",
+                  ].map((category) => (
+                    <label
+                      key={category}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={filters.categories.includes(category)}
+                        onChange={() => toggleCategory(category)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{category}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 

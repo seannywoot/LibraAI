@@ -34,6 +34,7 @@ export async function POST(request) {
   const formatRaw = body?.format ?? body?.type;
   const ebookUrlRaw = body?.ebookUrl;
   const barcodeRaw = body?.barcode ?? body?.itemId ?? body?.itemID;
+  const categoryRaw = body?.category;
   const statusRaw = body?.status;
   const loanPolicyRaw = body?.loanPolicy;
 
@@ -45,6 +46,7 @@ export async function POST(request) {
   const format = normalizeString(formatRaw);
   const ebookUrl = normalizeString(ebookUrlRaw);
   const barcode = normalizeString(barcodeRaw);
+  const category = normalizeString(categoryRaw);
 
     const yearNum = typeof yearRaw === "number" ? yearRaw : parseInt(yearRaw, 10);
     const year = Number.isFinite(yearNum) ? yearNum : NaN;
@@ -111,6 +113,7 @@ export async function POST(request) {
       format: format || null,
       ebookUrl: ebookUrl || null,
       barcode: barcode || null,
+      category: category || null,
       status,
       loanPolicy: format === "eBook" ? null : loanPolicy,
       createdAt: now,

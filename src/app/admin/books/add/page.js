@@ -21,6 +21,7 @@ export default function AdminAddBookPage() {
   const [format, setFormat] = useState("");
   const [ebookUrl, setEbookUrl] = useState("");
   const [barcode, setBarcode] = useState("");
+  const [category, setCategory] = useState("");
   const [status, setStatus] = useState("available");
   const [loanPolicy, setLoanPolicy] = useState("standard");
   const [submitting, setSubmitting] = useState(false);
@@ -121,6 +122,7 @@ export default function AdminAddBookPage() {
           format,
           ebookUrl: format === "eBook" ? ebookUrl : undefined,
           barcode,
+          category,
           status,
           loanPolicy,
         }),
@@ -140,6 +142,7 @@ export default function AdminAddBookPage() {
       setFormat("");
       setEbookUrl("");
       setBarcode("");
+      setCategory("");
       setStatus("available");
       setLoanPolicy("standard");
       setErrors({});
@@ -344,6 +347,28 @@ export default function AdminAddBookPage() {
                   onChange={(e) => setBarcode(e.target.value)}
                   placeholder="e.g., BC-000123"
                 />
+              </label>
+              <label className="grid gap-2 text-sm">
+                <span className="text-zinc-700">Category</span>
+                <select
+                  className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  <option value="">Select category (optional)</option>
+                  <option value="Fiction">Fiction</option>
+                  <option value="Non-Fiction">Non-Fiction</option>
+                  <option value="Science">Science</option>
+                  <option value="Technology">Technology</option>
+                  <option value="History">History</option>
+                  <option value="Biography">Biography</option>
+                  <option value="Self-Help">Self-Help</option>
+                  <option value="Business">Business</option>
+                  <option value="Arts">Arts</option>
+                  <option value="Education">Education</option>
+                  <option value="Children">Children</option>
+                  <option value="Young Adult">Young Adult</option>
+                </select>
               </label>
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">Status</span>
