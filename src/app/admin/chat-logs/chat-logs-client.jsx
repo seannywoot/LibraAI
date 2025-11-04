@@ -18,7 +18,7 @@ export default function ChatLogsClient() {
 
   useEffect(() => {
     fetchLogs();
-  }, [page, searchUserId]);
+  }, [fetchLogs, page, searchUserId]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -174,13 +174,18 @@ export default function ChatLogsClient() {
                         )}
                       </div>
 
-                      {log.conversationId && (
-                        <div className="mt-2">
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {log.conversationId && (
                           <span className="inline-block px-2 py-1 text-xs bg-zinc-100 text-zinc-600 rounded">
                             Conversation ID: {log.conversationId}
                           </span>
-                        </div>
-                      )}
+                        )}
+                        {log.hasAttachment && (
+                          <span className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded">
+                            📎 {log.attachmentName || log.attachmentType}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
