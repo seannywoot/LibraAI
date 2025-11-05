@@ -109,13 +109,15 @@ export async function GET(request) {
           continue;
         }
 
-        // Format dates for display (use UTC to avoid timezone issues)
-        const formatDate = (date) => {
+        // Format dates for display
+        // Use UTC for due dates (stored as midnight UTC)
+        // Use Asia/Manila for borrow dates (stored as actual timestamp)
+        const formatDate = (date, useLocalTime = false) => {
           return new Date(date).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
-            timeZone: "UTC"
+            timeZone: useLocalTime ? "Asia/Manila" : "UTC"
           });
         };
 
@@ -126,8 +128,8 @@ export async function GET(request) {
           toEmail: transaction.userId,
           bookTitle: book.title,
           bookAuthor: book.author,
-          borrowDate: formatDate(transaction.borrowedAt),
-          dueDate: formatDate(transaction.dueDate),
+          borrowDate: formatDate(transaction.borrowedAt, true), // Use local time for borrow date
+          dueDate: formatDate(transaction.dueDate), // Use UTC for due date
           daysUntilDue,
           viewBorrowedUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/student/library`,
           libraryName: "LibraAI Library",

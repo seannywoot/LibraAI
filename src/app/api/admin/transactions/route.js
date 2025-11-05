@@ -298,12 +298,12 @@ export async function POST(request) {
           const book = await books.findOne({ _id: bookObjectId });
           
           if (book) {
-            const formatDate = (date) => {
+            const formatDate = (date, useLocalTime = false) => {
               return new Date(date).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
-                timeZone: "UTC"
+                timeZone: useLocalTime ? "Asia/Manila" : "UTC"
               });
             };
 
@@ -312,8 +312,8 @@ export async function POST(request) {
               toEmail: transaction.userId,
               bookTitle: book.title,
               bookAuthor: book.author,
-              borrowDate: transaction.borrowedAt ? formatDate(transaction.borrowedAt) : "",
-              returnDate: formatDate(now),
+              borrowDate: transaction.borrowedAt ? formatDate(transaction.borrowedAt, true) : "",
+              returnDate: formatDate(now, true),
               viewHistoryUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/student/library`,
               libraryName: "LibraAI Library",
               supportEmail: process.env.EMAIL_FROM || "support@libra.ai",
