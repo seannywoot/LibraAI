@@ -26,6 +26,8 @@ export {
   Upload,
   X,
   ScanLine as Scan,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 
 // Optional wrapper for consistent sizing in nav/buttons
