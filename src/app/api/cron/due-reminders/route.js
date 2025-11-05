@@ -129,7 +129,7 @@ export async function GET(request) {
           bookTitle: book.title,
           bookAuthor: book.author,
           borrowDate: formatDate(transaction.borrowedAt, true), // Use local time for borrow date
-          dueDate: formatDate(transaction.dueDate), // Use UTC for due date
+          dueDate: formatDate(transaction.dueDate, true), // Use local time for due date
           daysUntilDue,
           viewBorrowedUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/student/library`,
           libraryName: "LibraAI Library",
@@ -146,9 +146,13 @@ export async function GET(request) {
           // No templateId specified = uses default EMAILJS_TEMPLATE_ID
         });
 
+        console.log(`✅ Email sent for transaction ${transaction._id} (${phase}, ${daysUntilDue} days)`);
         results.sent++;
+        
+        // Add small delay between emails to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
       } catch (error) {
-        console.error(`Error processing transaction ${transaction._id}:`, error);
+        console.error(`❌ Error processing transaction ${transaction._id}:`, error);
         const errorMsg = error?.message || error?.toString() || JSON.stringify(error);
         results.errors.push(`Transaction ${transaction._id}: ${errorMsg}`);
       }

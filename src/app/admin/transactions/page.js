@@ -9,7 +9,12 @@ import SignOutButton from "@/components/sign-out-button";
 function formatDate(dateStr) {
   if (!dateStr) return "—";
   const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString("en-US", { 
+    month: "short", 
+    day: "numeric", 
+    year: "numeric",
+    timeZone: "Asia/Manila"
+  });
 }
 
 function StatusBadge({ status }) {
