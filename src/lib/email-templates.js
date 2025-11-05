@@ -127,9 +127,16 @@ function buildDueReminderHTML(params) {
   const boxBorder = days_until_due <= 1 ? '#fecaca' : days_until_due <= 3 ? '#fed7aa' : '#93c5fd';
   const textColor = days_until_due <= 1 ? '#991b1b' : days_until_due <= 3 ? '#9a3412' : '#1e40af';
 
+  // Create optimized heading (avoid redundancy like "Due tomorrow: Due tomorrow")
+  const heading = days_until_due === 1 ? 'Due Tomorrow' 
+    : days_until_due === 0 ? 'Due Today'
+    : days_until_due === 3 ? 'Due in 3 Days'
+    : days_until_due === 7 ? 'Due in 7 Days'
+    : `${phase_label}`;
+
   return `
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111827;max-width:640px;margin:0 auto;padding:24px;">
-    <h2 style="margin:0 0 4px;">${escapeHTML(phase_label)}: Due ${escapeHTML(whenText)}</h2>
+    <h2 style="margin:0 0 4px;color:${headerColor};">${escapeHTML(heading)}</h2>
     <p style="margin:0 0 16px;color:#6b7280">${escapeHTML(library_name)}</p>
 
     <p style="margin-top:0;">Hi ${escapeHTML(student_name || 'there')},</p>

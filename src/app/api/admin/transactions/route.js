@@ -155,6 +155,7 @@ export async function POST(request) {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
+                timeZone: "UTC"
               });
             };
 
@@ -302,6 +303,7 @@ export async function POST(request) {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
+                timeZone: "UTC"
               });
             };
 

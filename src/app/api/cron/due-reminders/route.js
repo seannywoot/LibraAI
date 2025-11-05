@@ -109,12 +109,13 @@ export async function GET(request) {
           continue;
         }
 
-        // Format dates for display
+        // Format dates for display (use UTC to avoid timezone issues)
         const formatDate = (date) => {
           return new Date(date).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
+            timeZone: "UTC"
           });
         };
 
