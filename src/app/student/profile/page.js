@@ -34,6 +34,24 @@ export default function StudentProfilePage() {
     }
   }, [session?.user?.name]);
 
+  // Load user preferences from database
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const res = await fetch("/api/user/profile");
+        const data = await res.json();
+        if (data?.ok && data?.user) {
+          setEmailNotifications(data.user.emailNotifications ?? true);
+        }
+      } catch (err) {
+        console.error("Failed to load preferences:", err);
+      }
+    };
+    if (session?.user?.email) {
+      loadPreferences();
+    }
+  }, [session?.user?.email]);
+
   const navigationLinks = getStudentLinks();
 
   const handleSubmit = async (event) => {
@@ -42,15 +60,22 @@ export default function StudentProfilePage() {
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, emailNotifications }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to save changes");
       }
-      // Update client session so name is in sync everywhere without re-auth
-      try { await update({ name }); } catch (e) { /* ignore non-fatal */ }
-      pushToast({ type: "success", title: "Changes saved", description: "Your profile was updated." });
+      
+      // Update client session for name only (if name changed)
+      if (update && name !== session?.user?.name) {
+        update({ name }).catch((e) => {
+          // Session update is non-critical, just log it
+          console.log("Session update skipped:", e);
+        });
+      }
+      
+      pushToast({ type: "success", title: "Changes saved", description: "Your profile and notification preferences were updated." });
     } catch (err) {
       pushToast({ type: "error", title: "Save failed", description: err?.message || "Unknown error" });
     }

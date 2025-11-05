@@ -13,9 +13,16 @@ function parseNameEmail(input) {
   return { name: "", email: str };
 }
 
-async function sendViaEmailJS({ to, subject, html, text, templateParams }) {
+async function sendViaEmailJS({
+  to,
+  subject,
+  html,
+  text,
+  templateParams,
+  templateId,
+}) {
   const service_id = process.env.EMAILJS_SERVICE_ID;
-  const template_id = process.env.EMAILJS_TEMPLATE_ID;
+  const template_id = templateId || process.env.EMAILJS_TEMPLATE_ID;
   const publicKeyRaw =
     process.env.EMAILJS_PUBLIC_KEY || process.env.EMAILJS_USER_ID;
   const privateKeyRaw = process.env.EMAILJS_PRIVATE_KEY;
@@ -51,11 +58,11 @@ async function sendViaEmailJS({ to, subject, html, text, templateParams }) {
     },
   };
 
-  console.log('[EmailJS] Sending email to:', to);
-  console.log('[EmailJS] Using service:', service_id);
-  console.log('[EmailJS] Using template:', template_id);
-  console.log('[EmailJS] Public key configured:', !!publicKey);
-  console.log('[EmailJS] Private key configured:', !!privateKey);
+  console.log("[EmailJS] Sending email to:", to);
+  console.log("[EmailJS] Using service:", service_id);
+  console.log("[EmailJS] Using template:", template_id);
+  console.log("[EmailJS] Public key configured:", !!publicKey);
+  console.log("[EmailJS] Private key configured:", !!privateKey);
 
   const res = await fetch(endpoint, {
     method: "POST",
@@ -64,9 +71,9 @@ async function sendViaEmailJS({ to, subject, html, text, templateParams }) {
   });
 
   const textBody = await res.text();
-  console.log('[EmailJS] Response status:', res.status);
-  console.log('[EmailJS] Response body:', textBody);
-  
+  console.log("[EmailJS] Response status:", res.status);
+  console.log("[EmailJS] Response body:", textBody);
+
   if (!res.ok) {
     // Provide helpful error message for common 403 error
     if (res.status === 403 && textBody.includes("non-browser")) {
@@ -84,14 +91,28 @@ async function sendViaEmailJS({ to, subject, html, text, templateParams }) {
   return { provider: "emailjs", ok: true, status: res.status, body: textBody };
 }
 
-export async function sendMail({ to, subject, html, text, templateParams }) {
+export async function sendMail({
+  to,
+  subject,
+  html,
+  text,
+  templateParams,
+  templateId,
+}) {
   if (!isEmailJSConfigured()) {
     throw new Error(
       "EmailJS is not configured. Please set EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, and EMAILJS_PRIVATE_KEY environment variables."
     );
   }
 
-  return sendViaEmailJS({ to, subject, html, text, templateParams });
+  return sendViaEmailJS({
+    to,
+    subject,
+    html,
+    text,
+    templateParams,
+    templateId,
+  });
 }
 
 export async function sendPasswordResetEmail(

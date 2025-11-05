@@ -54,6 +54,7 @@ curl -X POST http://localhost:3000/api/admin/books/seed
 ```
 
 This will:
+
 - Create 48 books across 12 categories
 - Create 24 shelves (A1-L2)
 - Link each book to its appropriate shelf
@@ -68,21 +69,25 @@ This will:
 ## API Endpoints
 
 ### List Shelves
+
 ```
 GET /api/student/shelves?page=1&pageSize=20&search=fiction
 ```
 
 Returns:
+
 - List of shelves with book counts
 - Pagination information
 - Search results
 
 ### List Books on Shelf
+
 ```
 GET /api/student/shelves/[shelfId]/books?page=1&pageSize=20&search=title
 ```
 
 Returns:
+
 - Shelf information (code, name, location)
 - List of books on that shelf
 - Pagination information
@@ -127,6 +132,7 @@ Returns:
 ## Next Steps
 
 After seeding, you can:
+
 - Browse shelves at `/student/shelves`
 - View books on specific shelves
 - Search for books by location

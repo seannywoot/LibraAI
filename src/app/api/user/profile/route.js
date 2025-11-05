@@ -29,8 +29,14 @@ export async function GET() {
       );
     }
 
+    // Include emailNotifications preference (default to true if not set)
+    const userWithPrefs = {
+      ...user,
+      emailNotifications: user.emailNotifications ?? true
+    };
+
     return new Response(
-      JSON.stringify({ ok: true, user }),
+      JSON.stringify({ ok: true, user: userWithPrefs }),
       { status: 200, headers: { "content-type": "application/json" } }
     );
   } catch (err) {
@@ -67,9 +73,16 @@ export async function PUT(request) {
     const users = db.collection("users");
 
     const now = new Date();
+    const updateFields = { name, updatedAt: now };
+    
+    // Include emailNotifications if provided
+    if (typeof body.emailNotifications === 'boolean') {
+      updateFields.emailNotifications = body.emailNotifications;
+    }
+
     const result = await users.updateOne(
       { email: session.user.email },
-      { $set: { name, updatedAt: now } }
+      { $set: updateFields }
     );
 
     if (result.matchedCount === 0) {
@@ -81,7 +94,11 @@ export async function PUT(request) {
     }
 
     return new Response(
-      JSON.stringify({ ok: true, name }),
+      JSON.stringify({ 
+        ok: true, 
+        name,
+        emailNotifications: updateFields.emailNotifications 
+      }),
       { status: 200, headers: { "content-type": "application/json" } }
     );
   } catch (err) {
