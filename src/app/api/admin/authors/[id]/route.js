@@ -44,7 +44,7 @@ export async function PUT(request, { params }) {
       return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
     }
 
-    const _id = safeObjectId(params.id);
+    const _id = safeObjectId(id);
     if (!_id) return new Response(JSON.stringify({ ok: false, error: "Invalid id" }), { status: 400, headers: { "content-type": "application/json" } });
 
     const body = await request.json().catch(() => ({}));
@@ -52,9 +52,6 @@ export async function PUT(request, { params }) {
     const bio = (body?.bio ?? "").toString().trim();
 
     if (!name) return new Response(JSON.stringify({ ok: false, error: "Name is required" }), { status: 400, headers: { "content-type": "application/json" } });
-
-    const _id = safeObjectId(id);
-    if (!_id) return new Response(JSON.stringify({ ok: false, error: "Invalid id" }), { status: 400, headers: { "content-type": "application/json" } });
 
     const client = await clientPromise;
     const db = client.db();

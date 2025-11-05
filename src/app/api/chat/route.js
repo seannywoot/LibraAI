@@ -81,18 +81,29 @@ async function getBooksByCategory(db, shelfCode) {
 
 async function getAvailableShelves(db) {
   const shelvesCollection = db.collection("shelves");
+  const booksCollection = db.collection("books");
+  
   const shelves = await shelvesCollection
     .find({})
     .project({ code: 1, name: 1, location: 1 })
     .toArray();
 
+  // Get book counts for each shelf
+  const shelvesWithCounts = await Promise.all(
+    shelves.map(async (shelf) => {
+      const bookCount = await booksCollection.countDocuments({ shelf: shelf.code });
+      return {
+        code: shelf.code,
+        name: shelf.name,
+        location: shelf.location,
+        bookCount,
+      };
+    })
+  );
+
   return {
-    count: shelves.length,
-    shelves: shelves.map(shelf => ({
-      code: shelf.code,
-      name: shelf.name,
-      location: shelf.location,
-    })),
+    count: shelvesWithCounts.length,
+    shelves: shelvesWithCounts,
   };
 }
 
@@ -192,13 +203,13 @@ export async function POST(request) {
           },
           {
             name: "getBooksByCategory",
-            description: "Get books from a specific shelf/category in the library",
+            description: "Get books from a specific shelf in the library. Use getAvailableShelves first to get the correct shelf codes. Shelf codes are alphanumeric like A1, B2, C3, etc.",
             parameters: {
               type: "object",
               properties: {
                 shelfCode: {
                   type: "string",
-                  description: "Shelf code (e.g., 'FIC' for Fiction, 'SCI' for Science, 'HIS' for History)",
+                  description: "Exact shelf code from the library system (e.g., 'A1', 'B1', 'C2'). Call getAvailableShelves first to get valid codes.",
                 },
               },
               required: ["shelfCode"],
@@ -206,7 +217,7 @@ export async function POST(request) {
           },
           {
             name: "getAvailableShelves",
-            description: "Get list of all available shelves/categories in the library",
+            description: "Get list of all available shelves/categories in the library with their codes, names, locations, and book counts. ALWAYS call this first when users ask about categories or shelves to get the correct shelf codes.",
             parameters: {
               type: "object",
               properties: {},
@@ -255,9 +266,10 @@ You help students with:
 
 IMPORTANT: When users ask about specific books, availability, or categories:
 1. Use the searchBooks function to find books by title, author, ISBN, or publisher
-2. Use getBooksByCategory to show books from specific shelves (Fiction, Science, History, etc.)
-3. Use getAvailableShelves to show all available categories
+2. Use getBooksByCategory to show books from specific shelves
+3. Use getAvailableShelves to show all available categories and their shelf codes
 4. Always provide real-time data from the library system
+5. ALWAYS call getAvailableShelves first when users ask about categories or shelves to get the correct shelf codes
 
 Book Status Meanings:
 - "available" = Book is on the shelf and can be borrowed
@@ -276,13 +288,19 @@ Key Library Information Summary:
 - WiFi available throughout the library
 - Study rooms can be reserved up to 7 days in advance
 
-Common Shelf Codes:
-- FIC = Fiction
-- SCI = Science
-- HIS = History
-- BIO = Biography
-- REF = Reference
-- CHI = Children's
+Library Shelf Organization:
+- Main Floor: Fiction (A1-A3), Science (B1-B3)
+- Second Floor: Technology (C1-C3), History (D1-D2), Biography (E1-E2)
+- Third Floor: Self-Help (F1-F2), Business (G1-G2), Non-Fiction (H1-H2)
+- Fourth Floor: Arts (I1-I2), Education (J1-J2)
+- Ground Floor: Children's Wing (K1-K2), Young Adult Wing (L1-L2)
+
+CRITICAL: When users ask about books in a category (e.g., "Fiction", "Science", "History"):
+1. First call getAvailableShelves to get the exact shelf codes
+2. Then call getBooksByCategory with the correct shelf code from the results
+3. For example: Fiction books are on shelves A1, A2, A3 (not "FIC")
+4. Science books are on shelves B1, B2, B3 (not "SCI")
+5. If a category has multiple shelves, you may need to check each shelf code
 
 Be friendly, concise, and helpful. Always use the function tools to provide accurate, real-time information about books and availability. If you don't know something specific, suggest they contact the library staff.`;
 
