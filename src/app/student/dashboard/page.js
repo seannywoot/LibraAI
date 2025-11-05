@@ -65,10 +65,10 @@ export default async function StudentDashboardPage() {
                   Browse available books
                 </a>
                 <a
-                  href="/student/borrowed"
+                  href="/student/library"
                   className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
                 >
-                  View my borrowed books
+                  View my library
                 </a>
                 <button
                   className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
