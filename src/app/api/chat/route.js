@@ -39,7 +39,7 @@ async function searchBooks(db, query, status) {
 
   return {
     count: books.length,
-    books: books.map(book => ({
+    books: books.map((book) => ({
       id: book._id.toString(),
       title: book.title,
       author: book.author,
@@ -69,7 +69,7 @@ async function getBooksByCategory(db, shelfCode) {
   return {
     shelfCode,
     count: books.length,
-    books: books.map(book => ({
+    books: books.map((book) => ({
       id: book._id.toString(),
       title: book.title,
       author: book.author,
@@ -82,7 +82,7 @@ async function getBooksByCategory(db, shelfCode) {
 async function getAvailableShelves(db) {
   const shelvesCollection = db.collection("shelves");
   const booksCollection = db.collection("books");
-  
+
   const shelves = await shelvesCollection
     .find({})
     .project({ code: 1, name: 1, location: 1 })
@@ -91,7 +91,9 @@ async function getAvailableShelves(db) {
   // Get book counts for each shelf
   const shelvesWithCounts = await Promise.all(
     shelves.map(async (shelf) => {
-      const bookCount = await booksCollection.countDocuments({ shelf: shelf.code });
+      const bookCount = await booksCollection.countDocuments({
+        shelf: shelf.code,
+      });
       return {
         code: shelf.code,
         name: shelf.name,
@@ -111,7 +113,7 @@ async function getBookDetails(db, bookId) {
   const booksCollection = db.collection("books");
   try {
     const book = await booksCollection.findOne({ _id: new ObjectId(bookId) });
-    
+
     if (!book) {
       return { error: "Book not found" };
     }
@@ -128,6 +130,44 @@ async function getBookDetails(db, bookId) {
       format: book.format,
       description: book.description,
       loanPolicy: book.loanPolicy,
+      borrowLink: `/student/books/${book._id.toString()}`,
+    };
+  } catch (error) {
+    return { error: "Invalid book ID" };
+  }
+}
+
+async function generateBorrowLink(db, bookId) {
+  const booksCollection = db.collection("books");
+  try {
+    const book = await booksCollection.findOne({ _id: new ObjectId(bookId) });
+
+    if (!book) {
+      return { error: "Book not found" };
+    }
+
+    const canBorrow =
+      book.status === "available" &&
+      !["reference-only", "staff-only"].includes(book.loanPolicy || "");
+
+    const borrowLink = `/student/books/${book._id.toString()}`;
+
+    return {
+      id: book._id.toString(),
+      title: book.title,
+      author: book.author,
+      status: book.status,
+      canBorrow,
+      borrowLink: borrowLink,
+      formattedMessage: canBorrow
+        ? `Great! You can borrow "${book.title}" by ${book.author} by clicking this link: ${borrowLink}\n\nThis will take you to the book details page where you can submit your borrow request.`
+        : book.status === "borrowed"
+        ? `"${book.title}" is currently checked out. You can view its details here: ${borrowLink}`
+        : book.status === "reserved"
+        ? `"${book.title}" is currently reserved. You can view its details here: ${borrowLink}`
+        : book.loanPolicy === "reference-only"
+        ? `"${book.title}" is reference only and cannot be borrowed. You can view it in the library. Details: ${borrowLink}`
+        : `"${book.title}" is currently unavailable for borrowing. View details: ${borrowLink}`,
     };
   } catch (error) {
     return { error: "Invalid book ID" };
@@ -137,25 +177,25 @@ async function getBookDetails(db, bookId) {
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     // Check if request has file upload (FormData) or JSON
-    const contentType = request.headers.get('content-type');
+    const contentType = request.headers.get("content-type");
     let message, history, conversationId, fileData;
 
-    if (contentType?.includes('multipart/form-data')) {
+    if (contentType?.includes("multipart/form-data")) {
       // Handle file upload
       const formData = await request.formData();
-      message = formData.get('message');
-      history = JSON.parse(formData.get('history') || '[]');
-      conversationId = formData.get('conversationId') || null;
-      
-      const file = formData.get('file');
+      message = formData.get("message");
+      history = JSON.parse(formData.get("history") || "[]");
+      conversationId = formData.get("conversationId") || null;
+
+      const file = formData.get("file");
       if (file) {
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        
+
         fileData = {
-          data: buffer.toString('base64'),
+          data: buffer.toString("base64"),
           mimeType: file.type,
           name: file.name,
         };
@@ -174,9 +214,9 @@ export async function POST(request) {
     const faqs = await faqCollection.find({ isActive: true }).toArray();
 
     // Build FAQ context from database
-    const faqContext = faqs.map(faq => 
-      `Q: ${faq.question}\nA: ${faq.answer}`
-    ).join("\n\n");
+    const faqContext = faqs
+      .map((faq) => `Q: ${faq.question}\nA: ${faq.answer}`)
+      .join("\n\n");
 
     // Define function tools for the AI to call
     const tools = [
@@ -184,17 +224,20 @@ export async function POST(request) {
         functionDeclarations: [
           {
             name: "searchBooks",
-            description: "Search for books in the library catalog by title, author, ISBN, or publisher. Returns available books with their details.",
+            description:
+              "Search for books in the library catalog by title, author, ISBN, or publisher. Returns available books with their details.",
             parameters: {
               type: "object",
               properties: {
                 query: {
                   type: "string",
-                  description: "Search query (title, author, ISBN, or publisher)",
+                  description:
+                    "Search query (title, author, ISBN, or publisher)",
                 },
                 status: {
                   type: "string",
-                  description: "Filter by book status: 'available', 'borrowed', or 'reserved'",
+                  description:
+                    "Filter by book status: 'available', 'borrowed', or 'reserved'",
                   enum: ["available", "borrowed", "reserved"],
                 },
               },
@@ -203,13 +246,15 @@ export async function POST(request) {
           },
           {
             name: "getBooksByCategory",
-            description: "Get books from a specific shelf in the library. Use getAvailableShelves first to get the correct shelf codes. Shelf codes are alphanumeric like A1, B2, C3, etc.",
+            description:
+              "Get books from a specific shelf in the library. Use getAvailableShelves first to get the correct shelf codes. Shelf codes are alphanumeric like A1, B2, C3, etc.",
             parameters: {
               type: "object",
               properties: {
                 shelfCode: {
                   type: "string",
-                  description: "Exact shelf code from the library system (e.g., 'A1', 'B1', 'C2'). Call getAvailableShelves first to get valid codes.",
+                  description:
+                    "Exact shelf code from the library system (e.g., 'A1', 'B1', 'C2'). Call getAvailableShelves first to get valid codes.",
                 },
               },
               required: ["shelfCode"],
@@ -217,7 +262,8 @@ export async function POST(request) {
           },
           {
             name: "getAvailableShelves",
-            description: "Get list of all available shelves/categories in the library with their codes, names, locations, and book counts. ALWAYS call this first when users ask about categories or shelves to get the correct shelf codes.",
+            description:
+              "Get list of all available shelves/categories in the library with their codes, names, locations, and book counts. ALWAYS call this first when users ask about categories or shelves to get the correct shelf codes.",
             parameters: {
               type: "object",
               properties: {},
@@ -225,7 +271,8 @@ export async function POST(request) {
           },
           {
             name: "getBookDetails",
-            description: "Get detailed information about a specific book by its ID",
+            description:
+              "Get detailed information about a specific book by its ID",
             parameters: {
               type: "object",
               properties: {
@@ -237,11 +284,27 @@ export async function POST(request) {
               required: ["bookId"],
             },
           },
+          {
+            name: "generateBorrowLink",
+            description:
+              "Generate a clickable link for a student to view and borrow a specific book. Use this when a student expresses interest in borrowing a book. The bookId should come from the 'id' field in previous searchBooks or getBookDetails results.",
+            parameters: {
+              type: "object",
+              properties: {
+                bookId: {
+                  type: "string",
+                  description:
+                    "The MongoDB ObjectId of the book (use the 'id' field from searchBooks results)",
+                },
+              },
+              required: ["bookId"],
+            },
+          },
         ],
       },
     ];
 
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: {
         temperature: 0.7,
@@ -276,6 +339,15 @@ Book Status Meanings:
 - "borrowed" = Book is currently checked out
 - "reserved" = Book is reserved for another user
 
+BORROWING WORKFLOW:
+When a student wants to borrow a book:
+1. When a student mentions wanting to borrow a specific book (e.g., "I want to borrow Clean Code"), identify which book they're referring to from your previous search results
+2. Call generateBorrowLink with that book's ID (the "id" field from searchBooks results)
+3. After the function returns, you MUST provide a text response to the student
+4. Use the "formattedMessage" from the generateBorrowLink response as your reply
+5. The formattedMessage contains a link like /student/books/[id] which will become clickable
+6. ALWAYS respond with text after calling generateBorrowLink - never leave the response empty
+
 Use the following FAQ database to answer policy questions:
 
 ${faqContext}
@@ -305,10 +377,11 @@ CRITICAL: When users ask about books in a category (e.g., "Fiction", "Science", 
 Be friendly, concise, and helpful. Always use the function tools to provide accurate, real-time information about books and availability. If you don't know something specific, suggest they contact the library staff.`;
 
     // Build chat history for context
-    const chatHistory = history?.map(msg => ({
-      role: msg.role === "user" ? "user" : "model",
-      parts: [{ text: msg.content }],
-    })) || [];
+    const chatHistory =
+      history?.map((msg) => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.content }],
+      })) || [];
 
     const chat = model.startChat({
       history: [
@@ -318,7 +391,11 @@ Be friendly, concise, and helpful. Always use the function tools to provide accu
         },
         {
           role: "model",
-          parts: [{ text: "Understood. I'm LibraAI Assistant, ready to help students with library services, book recommendations, and literature questions." }],
+          parts: [
+            {
+              text: "Understood. I'm LibraAI Assistant, ready to help students with library services, book recommendations, and literature questions.",
+            },
+          ],
         },
         ...chatHistory,
       ],
@@ -326,10 +403,10 @@ Be friendly, concise, and helpful. Always use the function tools to provide accu
 
     // Prepare message parts
     let messageParts = [{ text: message }];
-    
+
     // Add file data if present
     if (fileData) {
-      if (fileData.mimeType === 'application/pdf') {
+      if (fileData.mimeType === "application/pdf") {
         messageParts.push({
           inlineData: {
             data: fileData.data,
@@ -337,7 +414,7 @@ Be friendly, concise, and helpful. Always use the function tools to provide accu
           },
         });
         messageParts[0].text = `${message}\n\n[User uploaded a PDF file: ${fileData.name}. Please analyze the document and help answer their question.]`;
-      } else if (fileData.mimeType.startsWith('image/')) {
+      } else if (fileData.mimeType.startsWith("image/")) {
         messageParts.push({
           inlineData: {
             data: fileData.data,
@@ -353,11 +430,20 @@ Be friendly, concise, and helpful. Always use the function tools to provide accu
 
     // Handle function calls
     const functionCalls = response.functionCalls();
+    let borrowLinkResult = null;
+
     if (functionCalls && functionCalls.length > 0) {
+      console.log(
+        "Function calls detected:",
+        functionCalls.map((c) => c.name)
+      );
+
       const functionResponses = await Promise.all(
         functionCalls.map(async (call) => {
           const functionName = call.name;
           const args = call.args;
+
+          console.log(`Calling function: ${functionName} with args:`, args);
 
           let functionResult;
           try {
@@ -374,10 +460,16 @@ Be friendly, concise, and helpful. Always use the function tools to provide accu
               case "getBookDetails":
                 functionResult = await getBookDetails(db, args.bookId);
                 break;
+              case "generateBorrowLink":
+                functionResult = await generateBorrowLink(db, args.bookId);
+                borrowLinkResult = functionResult; // Store for fallback
+                console.log("generateBorrowLink result:", functionResult);
+                break;
               default:
                 functionResult = { error: "Unknown function" };
             }
           } catch (error) {
+            console.error(`Error in function ${functionName}:`, error);
             functionResult = { error: error.message };
           }
 
@@ -391,11 +483,37 @@ Be friendly, concise, and helpful. Always use the function tools to provide accu
       );
 
       // Send function results back to the model
+      console.log("Sending function responses back to model");
       result = await chat.sendMessage(functionResponses);
       response = result.response;
+      console.log("Got response after function calls");
     }
 
-    const text = response.text();
+    let text = response.text();
+
+    // Debug logging
+    console.log("Function calls:", functionCalls?.length || 0);
+    console.log("Response text length:", text?.length || 0);
+    console.log("Response text:", text);
+
+    // Fallback if text is empty - use generateBorrowLink formattedMessage if available
+    if ((!text || text.trim().length === 0) && borrowLinkResult) {
+      console.warn(
+        "Empty response from Gemini, using formattedMessage from generateBorrowLink"
+      );
+      if (borrowLinkResult.formattedMessage) {
+        text = borrowLinkResult.formattedMessage;
+      } else if (borrowLinkResult.error) {
+        text = `I encountered an error: ${borrowLinkResult.error}`;
+      }
+    }
+
+    // Final fallback
+    if (!text || text.trim().length === 0) {
+      console.warn("No text available, using generic fallback");
+      text =
+        "I apologize, but I'm having trouble generating a response. Please try rephrasing your question.";
+    }
 
     // Log conversation to MongoDB
     const chatLogsCollection = db.collection("chat_logs");
@@ -415,18 +533,18 @@ Be friendly, concise, and helpful. Always use the function tools to provide accu
 
     await chatLogsCollection.insertOne(logEntry);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: text,
-      success: true 
+      success: true,
     });
-
   } catch (error) {
     console.error("Gemini API Error:", error);
     return NextResponse.json(
-      { 
+      {
         error: "Failed to get response from AI",
-        message: "I'm having trouble connecting right now. Please try again in a moment.",
-        success: false 
+        message:
+          "I'm having trouble connecting right now. Please try again in a moment.",
+        success: false,
       },
       { status: 500 }
     );
