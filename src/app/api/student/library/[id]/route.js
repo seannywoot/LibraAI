@@ -35,7 +35,7 @@ export async function DELETE(request, { params }) {
     }
 
     const client = await clientPromise;
-    const db = client.db("library");
+    const db = client.db();
 
     // Get user from database
     const user = await db

@@ -21,12 +21,21 @@ export async function GET(request) {
     const db = client.db();
     const authors = db.collection("authors");
 
+    const books = db.collection("books");
     const projection = { name: 1, bio: 1 };
 
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       authors.find({}, { projection }).sort({ name: 1 }).skip(skip).limit(pageSize).toArray(),
       authors.countDocuments({}),
     ]);
+
+    // Get book counts for each author
+    const items = await Promise.all(
+      rawItems.map(async (author) => {
+        const bookCount = await books.countDocuments({ author: author.name });
+        return { ...author, bookCount };
+      })
+    );
 
     return new Response(
       JSON.stringify({ ok: true, items, page, pageSize, total }),

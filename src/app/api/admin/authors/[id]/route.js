@@ -18,7 +18,8 @@ export async function GET(request, { params }) {
       return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
     }
 
-    const _id = safeObjectId(params.id);
+    const { id } = await params;
+    const _id = safeObjectId(id);
     if (!_id) return new Response(JSON.stringify({ ok: false, error: "Invalid id" }), { status: 400, headers: { "content-type": "application/json" } });
 
     const client = await clientPromise;
@@ -37,6 +38,7 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session || session.user?.role !== "admin") {
       return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
@@ -50,6 +52,9 @@ export async function PUT(request, { params }) {
     const bio = (body?.bio ?? "").toString().trim();
 
     if (!name) return new Response(JSON.stringify({ ok: false, error: "Name is required" }), { status: 400, headers: { "content-type": "application/json" } });
+
+    const _id = safeObjectId(id);
+    if (!_id) return new Response(JSON.stringify({ ok: false, error: "Invalid id" }), { status: 400, headers: { "content-type": "application/json" } });
 
     const client = await clientPromise;
     const db = client.db();
@@ -76,12 +81,13 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session || session.user?.role !== "admin") {
       return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
     }
 
-    const _id = safeObjectId(params.id);
+    const _id = safeObjectId(id);
     if (!_id) return new Response(JSON.stringify({ ok: false, error: "Invalid id" }), { status: 400, headers: { "content-type": "application/json" } });
 
     const client = await clientPromise;

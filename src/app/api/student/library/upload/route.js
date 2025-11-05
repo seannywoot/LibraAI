@@ -36,7 +36,7 @@ export async function POST(request) {
     }
 
     const client = await clientPromise;
-    const db = client.db("library");
+    const db = client.db();
 
     // Get or create user in database
     let user = await db

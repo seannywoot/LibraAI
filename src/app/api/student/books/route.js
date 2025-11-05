@@ -28,7 +28,7 @@ export async function GET(request) {
     const availability = searchParams.get("availability")?.split(",").filter(Boolean) || [];
 
     const client = await clientPromise;
-    const db = client.db("library");
+    const db = client.db();
     const books = db.collection("books");
 
     // Build query

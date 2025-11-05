@@ -96,12 +96,56 @@ export async function POST(request) {
     const client = await clientPromise;
     const db = client.db();
     const books = db.collection("books");
+    const shelves = db.collection("shelves");
 
     const now = new Date();
     let insertedCount = 0;
     let updatedCount = 0;
-    let skippedCount = 0;
+    let shelvesCreated = 0;
 
+    // First, ensure all shelves exist (filter out null/undefined shelf codes)
+    const uniqueShelves = [...new Set(SEED_BOOKS.map(b => b.shelf).filter(s => s && s.trim()))];
+    
+    // Define shelf locations for better organization
+    const shelfLocations = {
+      A1: "Main Floor - Fiction Section", A2: "Main Floor - Fiction Section", A3: "Main Floor - Fiction Section",
+      B1: "Main Floor - Science Section", B2: "Main Floor - Science Section", B3: "Main Floor - Science Section",
+      C1: "Second Floor - Technology Section", C2: "Second Floor - Technology Section", C3: "Second Floor - Technology Section",
+      D1: "Second Floor - History Section", D2: "Second Floor - History Section",
+      E1: "Second Floor - Biography Section", E2: "Second Floor - Biography Section",
+      F1: "Third Floor - Self-Help Section", F2: "Third Floor - Self-Help Section",
+      G1: "Third Floor - Business Section", G2: "Third Floor - Business Section",
+      H1: "Third Floor - Non-Fiction Section", H2: "Third Floor - Non-Fiction Section",
+      I1: "Fourth Floor - Arts Section", I2: "Fourth Floor - Arts Section",
+      J1: "Fourth Floor - Education Section", J2: "Fourth Floor - Education Section",
+      K1: "Children's Wing - Ground Floor", K2: "Children's Wing - Ground Floor",
+      L1: "Young Adult Wing - Ground Floor", L2: "Young Adult Wing - Ground Floor",
+    };
+
+    for (const shelfCode of uniqueShelves) {
+      if (!shelfCode) continue; // Extra safety check
+      
+      const existingShelf = await shelves.findOne({ code: shelfCode });
+      if (!existingShelf) {
+        const shelfName = `Shelf ${shelfCode}`;
+        const shelfLocation = shelfLocations[shelfCode] || "Library";
+        
+        await shelves.insertOne({
+          code: shelfCode,
+          codeLower: shelfCode.toLowerCase(),
+          name: shelfName,
+          nameLower: shelfName.toLowerCase(),
+          location: shelfLocation,
+          locationLower: shelfLocation.toLowerCase(),
+          createdAt: now,
+          updatedAt: now,
+          createdBy: session.user?.email || null,
+        });
+        shelvesCreated++;
+      }
+    }
+
+    // Now seed the books
     for (const book of SEED_BOOKS) {
       // Check if book already exists by ISBN
       const existing = await books.findOne({ isbn: book.isbn });
@@ -135,10 +179,16 @@ export async function POST(request) {
     return new Response(
       JSON.stringify({
         ok: true,
-        message: "Books seeded successfully",
-        inserted: insertedCount,
-        updated: updatedCount,
-        total: SEED_BOOKS.length,
+        message: "Books and shelves seeded successfully",
+        books: {
+          inserted: insertedCount,
+          updated: updatedCount,
+          total: SEED_BOOKS.length,
+        },
+        shelves: {
+          created: shelvesCreated,
+          total: uniqueShelves.length,
+        },
       }),
       { status: 200, headers: { "content-type": "application/json" } }
     );

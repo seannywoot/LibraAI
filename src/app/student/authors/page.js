@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Users } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
@@ -68,7 +69,11 @@ export default function StudentAuthorsPage() {
           <section className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {items.map((author) => (
-                <article key={author._id} className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3">
+                <Link
+                  key={author._id}
+                  href={`/student/authors/${author._id}`}
+                  className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3 hover:bg-zinc-100 hover:border-zinc-300 transition-colors"
+                >
                   <div className="flex items-start gap-3">
                     <div className="rounded-full bg-white p-2 shadow-sm">
                       <Users className="h-5 w-5 text-zinc-700" />
@@ -78,9 +83,12 @@ export default function StudentAuthorsPage() {
                       {author.bio && (
                         <p className="text-sm text-zinc-600 line-clamp-3">{author.bio}</p>
                       )}
+                      <p className="text-xs font-medium text-zinc-700 pt-1">
+                        {author.bookCount || 0} {author.bookCount === 1 ? 'book' : 'books'}
+                      </p>
                     </div>
                   </div>
-                </article>
+                </Link>
               ))}
             </div>
 

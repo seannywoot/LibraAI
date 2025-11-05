@@ -117,10 +117,26 @@ export default function AdminAuthorsPage() {
   <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
-        <header className="space-y-2 border-b border-(--stroke) pb-6">
-          <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Authors</h1>
-          <p className="text-sm text-zinc-600">Create, edit, and delete canonical authors.</p>
+        <header className="space-y-4 border-b border-(--stroke) pb-6">
+          <div className="space-y-2">
+            <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Authors</h1>
+            <p className="text-sm text-zinc-600">Create, edit, and delete canonical authors.</p>
+          </div>
+          {!loading && items.length > 0 && (
+            <div className="flex items-center gap-4 text-sm">
+              <div className="inline-flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2">
+                <span className="font-semibold text-zinc-900">{total}</span>
+                <span className="text-zinc-600">{total === 1 ? 'author' : 'authors'}</span>
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-lg bg-blue-100 px-3 py-2">
+                <span className="font-semibold text-blue-900">
+                  {items.reduce((sum, a) => sum + (a.bookCount || 0), 0)}
+                </span>
+                <span className="text-blue-700">total books</span>
+              </div>
+            </div>
+          )}
         </header>
 
         <section className="grid gap-6 sm:grid-cols-2">
@@ -185,8 +201,11 @@ export default function AdminAuthorsPage() {
                         {editingId === a._id ? (
                           "—"
                         ) : (
-                          <Link href={`/admin/authors/${a._id}`} className="text-zinc-700 hover:text-zinc-900">
-                            {a.bookCount ?? 0}
+                          <Link href={`/admin/authors/${a._id}`} className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-900 font-medium">
+                            <span className="inline-flex items-center justify-center rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-semibold text-zinc-800">
+                              {a.bookCount ?? 0}
+                            </span>
+                            <span className="text-xs text-zinc-500">{a.bookCount === 1 ? 'book' : 'books'}</span>
                           </Link>
                         )}
                       </td>

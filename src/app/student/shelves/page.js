@@ -121,6 +121,9 @@ export default function StudentShelvesPage() {
                       {shelf.location && (
                         <p className="text-xs text-zinc-500">📍 {shelf.location}</p>
                       )}
+                      <p className="text-xs font-medium text-zinc-700 pt-1">
+                        {shelf.bookCount || 0} {shelf.bookCount === 1 ? 'book' : 'books'}
+                      </p>
                     </div>
                   </div>
                 </Link>

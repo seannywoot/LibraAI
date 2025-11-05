@@ -6,14 +6,14 @@ import { ObjectId } from "mongodb";
 export async function GET(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== "admin") {
-      return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), {
-        status: 403,
+    if (!session) {
+      return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), {
+        status: 401,
         headers: { "content-type": "application/json" },
       });
     }
 
-    const { id: authorId } = await params;
+    const { authorId } = await params;
     const { searchParams } = new URL(request.url);
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
     const pageSize = Math.max(Math.min(parseInt(searchParams.get("pageSize") || "20", 10), 100), 1);
@@ -27,15 +27,10 @@ export async function GET(request, { params }) {
     // Get author details
     let author;
     try {
-      if (!authorId || !ObjectId.isValid(authorId)) {
-        return new Response(JSON.stringify({ ok: false, error: "Invalid author ID" }), {
-          status: 400,
-          headers: { "content-type": "application/json" },
-        });
+      if (ObjectId.isValid(authorId)) {
+        author = await authors.findOne({ _id: new ObjectId(authorId) });
       }
-      author = await authors.findOne({ _id: new ObjectId(authorId) });
     } catch (err) {
-      console.error("Error finding author:", err);
       return new Response(JSON.stringify({ ok: false, error: "Invalid author ID" }), {
         status: 400,
         headers: { "content-type": "application/json" },
@@ -58,17 +53,22 @@ export async function GET(request, { params }) {
       shelf: 1,
       status: 1,
       isbn: 1,
-      barcode: 1,
       publisher: 1,
       format: 1,
+      category: 1,
       loanPolicy: 1,
-      createdAt: 1,
+      reservedFor: 1,
     };
 
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       books.find(query, { projection }).sort({ title: 1 }).skip(skip).limit(pageSize).toArray(),
       books.countDocuments(query),
     ]);
+
+    const items = rawItems.map(({ reservedFor, ...rest }) => ({
+      ...rest,
+      reservedForCurrentUser: reservedFor === session.user?.email,
+    }));
 
     return new Response(
       JSON.stringify({ ok: true, author, items, page, pageSize, total }),

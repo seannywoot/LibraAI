@@ -18,7 +18,7 @@ export async function GET(request) {
     const skip = (page - 1) * pageSize;
 
     const client = await clientPromise;
-    const db = client.db("library");
+    const db = client.db();
     const books = db.collection("books");
     const shelves = db.collection("shelves");
 

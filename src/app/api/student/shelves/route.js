@@ -35,13 +35,22 @@ export async function GET(request) {
         }
       : {};
 
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       shelves.find(query, { projection }).sort({ code: 1 }).skip(skip).limit(pageSize).toArray(),
       shelves.countDocuments(query),
     ]);
 
+    // Get book counts for each shelf
+    const books = db.collection("books");
+    const itemsWithCounts = await Promise.all(
+      rawItems.map(async (shelf) => {
+        const bookCount = await books.countDocuments({ shelf: shelf.code });
+        return { ...shelf, bookCount };
+      })
+    );
+
     return new Response(
-      JSON.stringify({ ok: true, items, page, pageSize, total }),
+      JSON.stringify({ ok: true, items: itemsWithCounts, page, pageSize, total }),
       { status: 200, headers: { "content-type": "application/json" } }
     );
   } catch (err) {

@@ -24,7 +24,7 @@ export async function GET(request, { params }) {
     }
 
     const client = await clientPromise;
-    const db = client.db("library");
+    const db = client.db();
 
     // Fetch the book
     const book = await db.collection("books").findOne({
