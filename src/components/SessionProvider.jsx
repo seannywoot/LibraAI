@@ -57,6 +57,7 @@ function SessionValidator({ children }) {
       });
 
       // Check session validity and idle status periodically (every 30 seconds)
+      // Add a delay before first check to allow session to fully establish
       const interval = setInterval(() => {
         // Check if session has expired (24 hours)
         if (isSessionExpired()) {

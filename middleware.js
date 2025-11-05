@@ -11,10 +11,10 @@ function buildRedirect(request, pathname) {
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
   
-  // Get the token - using the environment variable
+  // Get the token - using the environment variable or fallback
   const token = await getToken({ 
     req: request, 
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
   });
   
   const role = token?.role;
@@ -35,7 +35,7 @@ export async function middleware(request) {
   // If user is authenticated
   if (token) {
     // Redirect from auth page to appropriate dashboard
-    if (pathname.startsWith("/auth")) {
+    if (pathname === "/auth" || pathname.startsWith("/auth/")) {
       const destination = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
       return NextResponse.redirect(buildRedirect(request, destination));
     }

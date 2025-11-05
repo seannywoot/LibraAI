@@ -82,10 +82,12 @@ function AuthContent() {
         email,
         password,
         expectedRole: role,
-        callbackUrl: destination,
       });
 
+      console.log('SignIn result:', { ok: result?.ok, error: result?.error, url: result?.url, status: result?.status });
+
       if (!result || result.error) {
+        console.error('Login failed:', { result, error: result?.error });
         const defaultCopy =
           role === "student"
             ? "Those credentials don’t match the student demo account. Use the demo credentials below."
@@ -138,7 +140,10 @@ function AuthContent() {
         setAdminPassword("");
       }
 
-      router.replace(result?.url || destination);
+      // Force a hard navigation instead of client-side routing
+      const redirectUrl = result?.url || destination;
+      console.log('Redirecting to:', redirectUrl);
+      window.location.href = redirectUrl;
     } catch (error) {
       console.error(error);
       setError("Unable to sign in right now. Please try again.");
