@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Book as BookIcon, BookOpen, Camera, Upload, X, Scan } from "@/components/icons";
@@ -40,7 +40,7 @@ function StatusBadge({ status }) {
   );
 }
 
-export default function MyLibraryPage() {
+function MyLibraryContent() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "borrowed" ? "borrowed" : "personal";
   
@@ -627,5 +627,19 @@ export default function MyLibraryPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function MyLibraryPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <MyLibraryContent />
+    </Suspense>
   );
 }
