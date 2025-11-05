@@ -1,11 +1,13 @@
 # Chat Logging System
 
 ## Overview
+
 All chat conversations with LibraAI Assistant are now automatically logged to MongoDB for monitoring, analytics, and quality assurance purposes.
 
 ## What Gets Logged
 
 Each chat interaction stores:
+
 - **User Information**: Email, name (from session)
 - **Conversation ID**: Links messages in the same conversation
 - **User Message**: The question or input from the user
@@ -34,9 +36,11 @@ Collection: `chat_logs`
 ## Viewing Chat Logs
 
 ### Admin Dashboard
+
 Admins can view all chat logs at: `/admin/chat-logs`
 
 Features:
+
 - View all conversations across all users
 - Search by user email
 - Paginated results (20 per page)
@@ -45,15 +49,18 @@ Features:
 - Timestamps for each interaction
 
 ### API Access
+
 **GET /api/chat/logs**
 
 Query Parameters:
+
 - `userId` - Filter by specific user email (admin only)
 - `conversationId` - Filter by conversation ID
 - `limit` - Number of results per page (default: 50)
 - `skip` - Number of results to skip for pagination
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -65,6 +72,7 @@ Query Parameters:
 ```
 
 **Authorization:**
+
 - Regular users can only see their own logs
 - Admins can see all logs and filter by user
 
