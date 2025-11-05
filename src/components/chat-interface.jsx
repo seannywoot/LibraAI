@@ -3,6 +3,30 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageCircle, Send, Paperclip, History, X } from "@/components/icons";
 
+// Helper function to render message content with clickable links
+const renderMessageContent = (content) => {
+  // Regex to match URLs (including /student/books/... paths)
+  const urlRegex = /(https?:\/\/[^\s]+|\/student\/books\/[a-zA-Z0-9]+)/g;
+  const parts = content.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          className="text-blue-600 hover:text-blue-800 underline font-medium"
+          target={part.startsWith('http') ? '_blank' : '_self'}
+          rel={part.startsWith('http') ? 'noopener noreferrer' : undefined}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 export default function ChatInterface({ userName }) {
   const [messages, setMessages] = useState([
     {
@@ -281,8 +305,9 @@ export default function ChatInterface({ userName }) {
       });
 
       const data = await response.json();
+      console.log("AI Response:", data);
 
-      if (data.success) {
+      if (data.success && data.message) {
         // Use typing animation for AI response
         typeMessage(data.message, () => {
           const aiMessage = {
@@ -294,7 +319,7 @@ export default function ChatInterface({ userName }) {
           setIsLoading(false); // Ensure loading is off after message is added
         });
       } else {
-        throw new Error(data.error);
+        throw new Error(data.error || "No response from AI");
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -460,7 +485,9 @@ export default function ChatInterface({ userName }) {
                   )}
                 </div>
               )}
-              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+              <div className="text-sm whitespace-pre-wrap">
+                {renderMessageContent(msg.content)}
+              </div>
               {msg.stopped && (
                 <div className="mt-2 pt-2 border-t border-amber-300">
                   <p className="text-xs text-amber-700 italic flex items-center gap-1">
@@ -489,7 +516,9 @@ export default function ChatInterface({ userName }) {
             </div>
             <div className="max-w-[70%] rounded-2xl bg-zinc-100 px-4 py-3">
               <div className="flex items-start">
-                <p className="text-sm whitespace-pre-wrap inline">{typingMessage}</p>
+                <div className="text-sm whitespace-pre-wrap inline">
+                  {renderMessageContent(typingMessage)}
+                </div>
                 <span className="inline-block w-0.5 h-4 bg-zinc-800 animate-pulse ml-0.5 mt-0.5"></span>
               </div>
             </div>

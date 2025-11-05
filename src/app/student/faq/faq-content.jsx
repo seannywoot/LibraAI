@@ -127,25 +127,7 @@ export default function FAQContent() {
         )}
       </div>
 
-      {/* Contact Section */}
-      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-8 text-center">
-        <h2 className="text-xl font-semibold text-zinc-800 mb-2">
-          Can&apos;t find what you&apos;re looking for?
-        </h2>
-        <p className="text-zinc-600 mb-6">
-          Our librarians are here to help you with any questions
-        </p>
-        <div className="flex items-center justify-center gap-4">
-          <button className="flex items-center gap-2 rounded-xl bg-zinc-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-zinc-800">
-            <span>✉️</span>
-            <span>Email Us</span>
-          </button>
-          <button className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-6 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50">
-            <span>📞</span>
-            <span>Call Us</span>
-          </button>
-        </div>
-      </div>
+
     </main>
   );
 }
