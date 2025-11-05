@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Book as BookIcon, BookOpen, Camera, Upload, X, Scan } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
@@ -53,6 +54,7 @@ function MyLibraryContent() {
   const [uploading, setUploading] = useState(false);
   const [returning, setReturning] = useState(null);
   const [showManualForm, setShowManualForm] = useState(false);
+  const [viewMode, setViewMode] = useState("grid"); // 'list' or 'grid'
   const [manualBook, setManualBook] = useState({
     title: "",
     author: "",
@@ -464,165 +466,407 @@ function MyLibraryContent() {
         {/* Tab Content */}
         {activeTab === "personal" ? (
           /* Personal Collection */
-          <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Personal Collection ({myBooks.length})
-            </h2>
-
-            {loading ? (
-              <div className="text-center py-12 text-gray-600">
-                Loading your library...
-              </div>
-            ) : myBooks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                <div className="rounded-full bg-gray-100 p-4 text-gray-400">
-                  <BookIcon className="h-8 w-8" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  No books yet
-                </h3>
-                <p className="text-sm text-gray-600 max-w-md">
-                  Start building your library by uploading PDFs, scanning barcodes, or adding books manually.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {myBooks.map((book) => (
-                  <div
-                    key={book._id}
-                    className="relative rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+          <div className="space-y-4">
+            {/* View Controls */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Personal Collection ({myBooks.length})
+              </h2>
+              <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-1.5 rounded ${
+                    viewMode === "grid"
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    <button
-                      onClick={() => handleRemoveBook(book._id)}
-                      className="absolute right-2 top-2 rounded-full p-1.5 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-1.5 rounded ${
+                    viewMode === "list"
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-                    <div className="flex gap-3">
-                      <div className="w-16 h-20 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+            <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
+
+              {loading ? (
+                <div className="text-center py-12 text-gray-600">
+                  Loading your library...
+                </div>
+              ) : myBooks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                  <div className="rounded-full bg-gray-100 p-4 text-gray-400">
+                    <BookIcon className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    No books yet
+                  </h3>
+                  <p className="text-sm text-gray-600 max-w-md">
+                    Start building your library by uploading PDFs, scanning barcodes, or adding books manually.
+                  </p>
+                </div>
+              ) : viewMode === "list" ? (
+                <div className="space-y-4">
+                  {myBooks.map((book) => (
+                    <div
+                      key={book._id}
+                      className="relative rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <button
+                        onClick={() => handleRemoveBook(book._id)}
+                        className="absolute right-4 top-4 z-10 rounded-full p-1.5 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shadow-sm"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+
+                      <div className="flex gap-6">
+                        {/* Book Cover */}
+                        <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
+                          {book.fileType === "application/pdf" ? "PDF" : "Book"}
+                        </div>
+
+                        {/* Book Details */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                            {book.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {book.author || "Unknown Author"}
+                          </p>
+                          <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                            {book.isbn && <span>ISBN: {book.isbn}</span>}
+                            {book.addedAt && (
+                              <>
+                                {book.isbn && <span>|</span>}
+                                <span>Added {new Date(book.addedAt).toLocaleDateString()}</span>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Action Button */}
+                          <div className="flex items-center justify-between">
+                            <div></div>
+                            {book.fileType === "application/pdf" && book.fileUrl ? (
+                              <a
+                                href={book.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+                              >
+                                Open PDF
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {myBooks.map((book) => (
+                    <div
+                      key={book._id}
+                      className="relative rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow flex flex-col"
+                    >
+                      <button
+                        onClick={() => handleRemoveBook(book._id)}
+                        className="absolute right-2 top-2 z-10 rounded-full p-1.5 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shadow-sm"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+
+                      {/* Book Cover */}
+                      <div className="w-full aspect-[2/3] rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-3">
                         {book.fileType === "application/pdf" ? "PDF" : "Book"}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1">
+
+                      {/* Book Details */}
+                      <div className="flex-1 flex flex-col">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
                           {book.title}
                         </h3>
-                        <p className="text-xs text-gray-600 mb-1">
+                        <p className="text-xs text-gray-600 mb-2 line-clamp-1">
                           {book.author || "Unknown Author"}
                         </p>
                         {book.isbn && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 mb-2">
                             ISBN: {book.isbn}
                           </p>
                         )}
-                        {book.fileType === "application/pdf" && book.fileUrl && (
-                          <a
-                            href={book.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-1"
-                          >
-                            <BookOpen className="h-3 w-3" />
-                            Open PDF
-                          </a>
-                        )}
-                        {book.addedAt && (
-                          <p className="text-xs text-gray-400 mt-2">
-                            Added {new Date(book.addedAt).toLocaleDateString()}
-                          </p>
-                        )}
+
+                        {/* Action Button */}
+                        <div className="mt-auto">
+                          {book.fileType === "application/pdf" && book.fileUrl ? (
+                            <a
+                              href={book.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block w-full text-center rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
+                            >
+                              Open PDF
+                            </a>
+                          ) : (
+                            <div className="text-xs text-gray-400 text-center">
+                              Added {new Date(book.addedAt).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           /* Borrowed Books */
-          <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Borrowed Books ({borrowedBooks.length})
-            </h2>
+          <div className="space-y-4">
+            {/* View Controls */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Borrowed Books ({borrowedBooks.length})
+              </h2>
+              <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-1.5 rounded ${
+                    viewMode === "grid"
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-1.5 rounded ${
+                    viewMode === "list"
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-            {loading ? (
-              <div className="text-center py-12 text-gray-600">
-                Loading borrowed books...
-              </div>
-            ) : borrowedBooks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                <div className="rounded-full bg-gray-100 p-4 text-gray-400">
-                  <BookOpen className="h-8 w-8" />
+            <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
+              {loading ? (
+                <div className="text-center py-12 text-gray-600">
+                  Loading borrowed books...
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  No borrowed books
-                </h3>
-                <p className="text-sm text-gray-600 max-w-md">
-                  You haven&apos;t borrowed any books yet. Browse the catalog to get started.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {borrowedBooks.map((transaction) => {
+              ) : borrowedBooks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                  <div className="rounded-full bg-gray-100 p-4 text-gray-400">
+                    <BookOpen className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    No borrowed books
+                  </h3>
+                  <p className="text-sm text-gray-600 max-w-md">
+                    You haven&apos;t borrowed any books yet. Browse the catalog to get started.
+                  </p>
+                </div>
+              ) : viewMode === "list" ? (
+                <div className="space-y-4">
+                  {borrowedBooks.map((transaction) => {
+                    const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
+                    const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
+                    const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
+                    const canReturn = transaction.status === "borrowed";
+                    return (
+                      <Link
+                        key={transaction._id}
+                        href={`/student/books/${transaction.bookId}`}
+                        className={`rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${
+                          overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <div className="flex gap-6">
+                          {/* Book Cover */}
+                          <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
+                            Book Cover
+                          </div>
+
+                          {/* Book Details */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                              {transaction.bookTitle}
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-2">
+                              {transaction.bookAuthor}
+                            </p>
+
+                            <div className="flex items-center gap-3 mb-3">
+                              <StatusBadge status={transaction.status} />
+                            </div>
+
+                            <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                              <span>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</span>
+                              <span>|</span>
+                              <span className={overdue ? "font-semibold text-rose-700" : ""}>
+                                Due: {formatDate(dueDate)}
+                                {overdue && " (Overdue)"}
+                              </span>
+                            </div>
+
+                            {/* Action Button */}
+                            <div className="flex items-center justify-between">
+                              <div></div>
+                              <div onClick={(e) => e.preventDefault()}>
+                                {canReturn ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleReturn(transaction.bookId);
+                                    }}
+                                    disabled={returning === transaction.bookId}
+                                    className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                                  >
+                                    {returning === transaction.bookId ? "Submitting..." : "Request Return"}
+                                  </button>
+                                ) : transaction.status === "return-requested" ? (
+                                  <span className="text-sm font-medium text-gray-500">
+                                    Awaiting confirmation
+                                  </span>
+                                ) : transaction.status === "rejected" ? (
+                                  <span className="text-sm font-medium text-rose-600">
+                                    Request rejected
+                                  </span>
+                                ) : (
+                                  <span className="text-sm font-medium text-gray-500">
+                                    Pending approval
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {borrowedBooks.map((transaction) => {
                   const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
                   const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
                   const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
                   const canReturn = transaction.status === "borrowed";
                   return (
-                    <article 
-                      key={transaction._id} 
-                      className={`rounded-xl border p-5 ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-gray-50"}`}
+                    <Link
+                      key={transaction._id}
+                      href={`/student/books/${transaction.bookId}`}
+                      className={`rounded-lg border p-4 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${
+                        overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                      }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-2">
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{transaction.bookTitle}</h3>
-                            <p className="text-sm text-gray-600">{transaction.bookAuthor}</p>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-                            <span>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</span>
-                            <span className={overdue ? "font-semibold text-rose-700" : ""}>
-                              Due: {formatDate(dueDate)}
-                              {overdue && " (Overdue)"}
+                      {/* Book Cover */}
+                      <div className="w-full aspect-[2/3] rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-3">
+                        Book Cover
+                      </div>
+
+                      {/* Book Details */}
+                      <div className="flex-1 flex flex-col">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
+                          {transaction.bookTitle}
+                        </h3>
+                        <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+                          {transaction.bookAuthor}
+                        </p>
+
+                        {/* Status Badge */}
+                        <div className="mb-2">
+                          <StatusBadge status={transaction.status} />
+                        </div>
+
+                        {/* Dates */}
+                        <div className="text-xs text-gray-500 space-y-1 mb-3">
+                          <p>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</p>
+                          <p className={overdue ? "font-semibold text-rose-700" : ""}>
+                            Due: {formatDate(dueDate)}
+                            {overdue && " (Overdue)"}
+                          </p>
+                        </div>
+
+                        {/* Action Button */}
+                        <div className="mt-auto" onClick={(e) => e.preventDefault()}>
+                          {canReturn ? (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleReturn(transaction.bookId);
+                              }}
+                              disabled={returning === transaction.bookId}
+                              className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                            >
+                              {returning === transaction.bookId ? "Submitting..." : "Request Return"}
+                            </button>
+                          ) : transaction.status === "return-requested" ? (
+                            <span className="block text-center text-xs font-medium text-gray-500">
+                              Awaiting confirmation
                             </span>
-                            {transaction.loanPolicy && transaction.loanPolicy !== "standard" && (
-                              <span className="rounded-full bg-gray-200 px-2 py-0.5 text-gray-700">
-                                {transaction.loanPolicy.replace(/-/g, " ")}
-                              </span>
-                            )}
-                            <StatusBadge status={transaction.status} />
-                          </div>
-                          {transaction.status === "return-requested" && (
-                            <p className="text-xs text-gray-500">Waiting for admin to confirm the return.</p>
-                          )}
-                          {transaction.status === "pending-approval" && (
-                            <p className="text-xs text-gray-500">Your request is with the admin for approval.</p>
-                          )}
-                          {transaction.status === "rejected" && (
-                            <p className="text-xs text-rose-600">This request was rejected by the admin.</p>
+                          ) : transaction.status === "rejected" ? (
+                            <span className="block text-center text-xs font-medium text-rose-600">
+                              Request rejected
+                            </span>
+                          ) : (
+                            <span className="block text-center text-xs font-medium text-gray-500">
+                              Pending approval
+                            </span>
                           )}
                         </div>
-                        {canReturn ? (
-                          <button
-                            onClick={() => handleReturn(transaction.bookId)}
-                            disabled={returning === transaction.bookId}
-                            className="rounded-lg border border-gray-900 bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
-                          >
-                            {returning === transaction.bookId ? "Submitting..." : "Request Return"}
-                          </button>
-                        ) : transaction.status === "return-requested" ? (
-                          <span className="text-xs font-medium text-gray-500">Awaiting admin confirmation</span>
-                        ) : transaction.status === "rejected" ? (
-                          <span className="text-xs font-medium text-rose-600">Request rejected</span>
-                        ) : (
-                          <span className="text-xs font-medium text-gray-500">Pending admin approval</span>
-                        )}
                       </div>
-                    </article>
+                    </Link>
                   );
                 })}
               </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </main>

@@ -39,6 +39,7 @@ export async function GET(request) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "10", 10), 20);
     const context = searchParams.get("context") || "browse";
     const currentBookId = searchParams.get("currentBookId");
+    const bookId = searchParams.get("bookId"); // For book-specific recommendations
 
     const client = await clientPromise;
     const db = client.db();
@@ -49,6 +50,12 @@ export async function GET(request) {
 
     // Get user
     const user = await users.findOne({ email: session.user.email });
+    
+    // If bookId is provided, get recommendations based on that specific book
+    if (bookId) {
+      return await getBookBasedRecommendations(books, bookId, limit);
+    }
+    
     if (!user) {
       // New user with no history - return popular books
       return await getPopularBooks(books, limit);
@@ -362,6 +369,157 @@ async function getPopularBooks(booksCollection, limit) {
         searchCount: 0,
         topCategories: [],
         topTags: []
+      }
+    }),
+    { status: 200, headers: { "content-type": "application/json" } }
+  );
+}
+
+/**
+ * Get recommendations based on a specific book
+ */
+async function getBookBasedRecommendations(booksCollection, bookId, limit) {
+  const { ObjectId } = require("mongodb");
+  
+  // Get the source book
+  const sourceBook = await booksCollection.findOne({
+    _id: new ObjectId(bookId)
+  });
+
+  if (!sourceBook) {
+    return await getPopularBooks(booksCollection, limit);
+  }
+
+  // Build query to find similar books
+  const query = {
+    _id: { $ne: new ObjectId(bookId) }, // Exclude the current book
+    status: "available",
+    $or: []
+  };
+
+  // Match by author (highest priority)
+  if (sourceBook.author) {
+    query.$or.push({ author: sourceBook.author });
+  }
+
+  // Match by categories
+  if (sourceBook.categories && sourceBook.categories.length > 0) {
+    query.$or.push({ categories: { $in: sourceBook.categories } });
+  }
+
+  // Match by tags
+  if (sourceBook.tags && sourceBook.tags.length > 0) {
+    query.$or.push({ tags: { $in: sourceBook.tags } });
+  }
+
+  // Match by publisher
+  if (sourceBook.publisher) {
+    query.$or.push({ publisher: sourceBook.publisher });
+  }
+
+  // If no matching criteria, return popular books
+  if (query.$or.length === 0) {
+    return await getPopularBooks(booksCollection, limit);
+  }
+
+  // Fetch candidate books
+  const candidateBooks = await booksCollection
+    .find(query)
+    .limit(limit * 3)
+    .toArray();
+
+  if (candidateBooks.length === 0) {
+    return await getPopularBooks(booksCollection, limit);
+  }
+
+  // Score books based on similarity
+  const recommendations = candidateBooks
+    .map(book => {
+      let score = 0;
+      const matchReasons = [];
+
+      // Same author (50 points)
+      if (book.author === sourceBook.author) {
+        score += 50;
+        matchReasons.push(`Same author: ${book.author}`);
+      }
+
+      // Category matches (30 points per match)
+      const categoryMatches = countMatches(
+        book.categories || [],
+        sourceBook.categories || []
+      );
+      if (categoryMatches > 0) {
+        score += categoryMatches * 30;
+        if (matchReasons.length < 2) {
+          matchReasons.push(`Similar category: ${book.categories[0]}`);
+        }
+      }
+
+      // Tag matches (20 points per match)
+      const tagMatches = countMatches(
+        book.tags || [],
+        sourceBook.tags || []
+      );
+      if (tagMatches > 0) {
+        score += tagMatches * 20;
+        if (matchReasons.length < 2) {
+          matchReasons.push("Similar topics");
+        }
+      }
+
+      // Same publisher (10 points)
+      if (book.publisher && book.publisher === sourceBook.publisher) {
+        score += 10;
+        if (matchReasons.length < 2) {
+          matchReasons.push("Same publisher");
+        }
+      }
+
+      // Similar publication year (up to 10 points)
+      if (book.year && sourceBook.year) {
+        const yearDiff = Math.abs(book.year - sourceBook.year);
+        if (yearDiff <= 5) {
+          score += 10 - yearDiff;
+        }
+      }
+
+      // Popularity boost
+      if (book.popularityScore) {
+        score += Math.min(book.popularityScore * 0.1, 10);
+      }
+
+      return {
+        ...book,
+        relevanceScore: Math.min(Math.round(score), 100),
+        matchReasons: matchReasons.slice(0, 2)
+      };
+    })
+    .filter(book => book.relevanceScore > 10)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+    .slice(0, limit)
+    .map(({ _id, title, author, year, format, status, categories, tags, coverImageUrl, relevanceScore, matchReasons }) => ({
+      _id: _id.toString(),
+      title,
+      author,
+      year,
+      format,
+      status,
+      categories,
+      tags,
+      coverImageUrl,
+      relevanceScore,
+      matchReasons
+    }));
+
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      recommendations,
+      basedOn: {
+        book: sourceBook.title,
+        author: sourceBook.author,
+        categories: sourceBook.categories || []
       }
     }),
     { status: 200, headers: { "content-type": "application/json" } }
