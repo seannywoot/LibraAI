@@ -84,14 +84,14 @@ export default function StudentBooksPage() {
     const timer = setTimeout(() => {
       setPage(1);
       loadBooks();
-      
+
       // Track search event if there's a query
       if (searchInput.trim()) {
         tracker.trackSearch(searchInput, {
           formats: filters.formats,
           categories: filters.categories,
           yearRange: filters.yearRange,
-          availability: filters.availability
+          availability: filters.availability,
         });
       }
     }, 300);
@@ -117,14 +117,18 @@ export default function StudentBooksPage() {
 
   useEffect(() => {
     loadBooks();
-    
+
     // Track filter changes as search events
-    if (filters.formats.length > 0 || filters.availability.length > 0 || filters.categories.length > 0) {
+    if (
+      filters.formats.length > 0 ||
+      filters.availability.length > 0 ||
+      filters.categories.length > 0
+    ) {
       tracker.trackSearch(searchInput || "filtered search", {
         formats: filters.formats,
         categories: filters.categories,
         yearRange: filters.yearRange,
-        availability: filters.availability
+        availability: filters.availability,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,7 +144,7 @@ export default function StudentBooksPage() {
         sortBy: sortBy,
       });
       if (searchInput) params.append("search", searchInput);
-      
+
       // Add filter parameters
       if (filters.formats.length > 0) {
         params.append("formats", filters.formats.join(","));
@@ -155,7 +159,7 @@ export default function StudentBooksPage() {
       if (filters.availability.length > 0) {
         params.append("availability", filters.availability.join(","));
       }
-      
+
       const res = await fetch(`/api/student/books?${params}`, {
         cache: "no-store",
       });
@@ -281,7 +285,7 @@ export default function StudentBooksPage() {
             <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
               STUDENT
             </p>
-            <h1 className="text-4xl font-bold text-gray-900">Browse Books</h1>
+            <h1 className="text-4xl font-bold text-gray-900">Catalog</h1>
             <p className="text-sm text-gray-600">
               Explore available books and borrow them for your studies.
             </p>
@@ -501,8 +505,12 @@ export default function StudentBooksPage() {
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  onFocus={() =>
+                    suggestions.length > 0 && setShowSuggestions(true)
+                  }
+                  onBlur={() =>
+                    setTimeout(() => setShowSuggestions(false), 200)
+                  }
                   placeholder="Search books by title, author, ISBN, or publisher..."
                   className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-24 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                 />
@@ -512,7 +520,7 @@ export default function StudentBooksPage() {
                 >
                   Search
                 </button>
-                
+
                 {/* Auto-suggestions dropdown */}
                 {showSuggestions && suggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
@@ -935,7 +943,7 @@ export default function StudentBooksPage() {
             maxItems={8}
             context={searchInput ? "search" : "browse"}
             onRefresh={() => {
-              setRecommendationsKey(prev => prev + 1);
+              setRecommendationsKey((prev) => prev + 1);
               loadBooks();
             }}
           />

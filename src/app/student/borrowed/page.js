@@ -95,7 +95,7 @@ export default function StudentBorrowedPage() {
           </div>
           <Link href="/student/books" className="inline-flex items-center gap-2 rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">
             <BookIcon className="h-4 w-4" />
-            Browse Books
+            Catalog
           </Link>
         </header>
 
@@ -110,7 +110,7 @@ export default function StudentBorrowedPage() {
             </div>
             <h2 className="text-lg font-semibold text-zinc-900">No borrowed books</h2>
             <p className="text-sm text-zinc-600">You haven&apos;t borrowed any books yet. Browse the catalog to get started.</p>
-            <Link href="/student/books" className="mt-1 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-100">Browse Books</Link>
+            <Link href="/student/books" className="mt-1 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-100">Catalog</Link>
           </div>
         ) : (
           <section className="space-y-4">
