@@ -52,13 +52,16 @@ export const authOptions = {
 
         // We'll resolve a user object here and only return after verifying any expected role
         let resolvedUser = null;
+        let dbUserExists = false;
 
         // 1) Try database-backed users first
         try {
           const client = await clientPromise;
-          const db = client.db();
+          // Use default database (test) - or specify via MONGODB_DB_NAME env var
+          const db = client.db(process.env.MONGODB_DB_NAME || "test");
           const userDoc = await db.collection("users").findOne({ email });
           if (userDoc) {
+            dbUserExists = true;
             const valid = await comparePassword(password, userDoc.passwordHash);
             if (valid) {
               resolvedUser = {
@@ -67,32 +70,31 @@ export const authOptions = {
                 email: userDoc.email,
                 role: userDoc.role || "student",
               };
-            } else {
-              // If user exists but password invalid, fail immediately
-              throw new Error("Invalid credentials");
             }
+            // If password invalid, resolvedUser stays null but we know user exists
           }
         } catch (e) {
           // If DB is unreachable, fall back to demo users below
           console.warn("DB authorize fallback:", e?.message || e);
         }
 
-        if (!resolvedUser && email === STUDENT_DEMO.email && password === STUDENT_DEMO.password) {
-          resolvedUser = {
-            id: "student-demo",
-            name: "Student",
-            email,
-            role: "student",
-          };
-        }
-
-        if (!resolvedUser && email === ADMIN_DEMO.email && password === ADMIN_DEMO.password) {
-          resolvedUser = {
-            id: "admin-demo",
-            name: "Admin",
-            email,
-            role: "admin",
-          };
+        // Only try demo accounts if user doesn't exist in database
+        if (!resolvedUser && !dbUserExists) {
+          if (email === STUDENT_DEMO.email && password === STUDENT_DEMO.password) {
+            resolvedUser = {
+              id: "student-demo",
+              name: "Student",
+              email,
+              role: "student",
+            };
+          } else if (email === ADMIN_DEMO.email && password === ADMIN_DEMO.password) {
+            resolvedUser = {
+              id: "admin-demo",
+              name: "Admin",
+              email,
+              role: "admin",
+            };
+          }
         }
 
         if (!resolvedUser) {

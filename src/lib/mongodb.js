@@ -31,8 +31,17 @@ if (process.env.NODE_ENV === "development") {
 
 export default clientPromise;
 
-// Helper to get a db instance by name; defaults to the database from the URI
+// Default database name - change this if your data is in a different database
+const DEFAULT_DB_NAME = process.env.MONGODB_DB_NAME || "test";
+
+// Helper to get a db instance by name; defaults to the database from the URI or DEFAULT_DB_NAME
 export async function getDb(dbName) {
   const client = await clientPromise;
-  return client.db(dbName);
+  return client.db(dbName || DEFAULT_DB_NAME);
+}
+
+// Helper to get the default database
+export async function getDefaultDb() {
+  const client = await clientPromise;
+  return client.db(DEFAULT_DB_NAME);
 }
