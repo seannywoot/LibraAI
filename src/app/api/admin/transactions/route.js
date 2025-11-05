@@ -2,6 +2,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { sendMail } from "@/lib/email";
+import { 
+  buildRequestApprovedEmail, 
+  buildRequestDeniedEmail, 
+  buildReturnConfirmationEmail 
+} from "@/lib/email-templates";
 
 export async function GET(request) {
   try {
@@ -134,6 +140,49 @@ export async function POST(request) {
         ),
       ]);
 
+      // Send approval email notification
+      try {
+        const users = db.collection("users");
+        const user = await users.findOne({ email: transaction.userId });
+        
+        // Only send if user has notifications enabled
+        if (!user || user.emailNotifications !== false) {
+          const book = await books.findOne({ _id: bookObjectId });
+          
+          if (book) {
+            const formatDate = (date) => {
+              return new Date(date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              });
+            };
+
+            const emailData = buildRequestApprovedEmail({
+              studentName: user?.name || "Student",
+              toEmail: transaction.userId,
+              bookTitle: book.title,
+              bookAuthor: book.author,
+              dueDate: formatDate(parsedDueDate),
+              viewBorrowedUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/student/library`,
+              libraryName: "LibraAI Library",
+              supportEmail: process.env.EMAIL_FROM || "support@libra.ai",
+            });
+
+            await sendMail({
+              to: transaction.userId,
+              subject: emailData.subject,
+              html: emailData.html,
+              text: emailData.text,
+              templateParams: emailData.templateParams,
+            });
+          }
+        }
+      } catch (emailError) {
+        console.error("Failed to send approval email:", emailError);
+        // Don't fail the transaction if email fails
+      }
+
       return new Response(
         JSON.stringify({ ok: true, message: "Transaction approved" }),
         { status: 200, headers: { "content-type": "application/json" } }
@@ -167,6 +216,41 @@ export async function POST(request) {
           }
         ),
       ]);
+
+      // Send rejection email notification
+      try {
+        const users = db.collection("users");
+        const user = await users.findOne({ email: transaction.userId });
+        
+        // Only send if user has notifications enabled
+        if (!user || user.emailNotifications !== false) {
+          const book = await books.findOne({ _id: bookObjectId });
+          
+          if (book) {
+            const emailData = buildRequestDeniedEmail({
+              studentName: user?.name || "Student",
+              toEmail: transaction.userId,
+              bookTitle: book.title,
+              bookAuthor: book.author,
+              reason: body.reason || "", // Optional reason from admin
+              browseUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/student/books`,
+              libraryName: "LibraAI Library",
+              supportEmail: process.env.EMAIL_FROM || "support@libra.ai",
+            });
+
+            await sendMail({
+              to: transaction.userId,
+              subject: emailData.subject,
+              html: emailData.html,
+              text: emailData.text,
+              templateParams: emailData.templateParams,
+            });
+          }
+        }
+      } catch (emailError) {
+        console.error("Failed to send rejection email:", emailError);
+        // Don't fail the transaction if email fails
+      }
 
       return new Response(
         JSON.stringify({ ok: true, message: "Transaction rejected" }),
@@ -202,6 +286,50 @@ export async function POST(request) {
           }
         ),
       ]);
+
+      // Send return confirmation email
+      try {
+        const users = db.collection("users");
+        const user = await users.findOne({ email: transaction.userId });
+        
+        // Only send if user has notifications enabled
+        if (!user || user.emailNotifications !== false) {
+          const book = await books.findOne({ _id: bookObjectId });
+          
+          if (book) {
+            const formatDate = (date) => {
+              return new Date(date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              });
+            };
+
+            const emailData = buildReturnConfirmationEmail({
+              studentName: user?.name || "Student",
+              toEmail: transaction.userId,
+              bookTitle: book.title,
+              bookAuthor: book.author,
+              borrowDate: transaction.borrowedAt ? formatDate(transaction.borrowedAt) : "",
+              returnDate: formatDate(now),
+              viewHistoryUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/student/library`,
+              libraryName: "LibraAI Library",
+              supportEmail: process.env.EMAIL_FROM || "support@libra.ai",
+            });
+
+            await sendMail({
+              to: transaction.userId,
+              subject: emailData.subject,
+              html: emailData.html,
+              text: emailData.text,
+              templateParams: emailData.templateParams,
+            });
+          }
+        }
+      } catch (emailError) {
+        console.error("Failed to send return confirmation email:", emailError);
+        // Don't fail the transaction if email fails
+      }
 
       return new Response(
         JSON.stringify({ ok: true, message: "Return completed" }),

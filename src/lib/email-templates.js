@@ -249,3 +249,245 @@ export const DueReminderParamSchema = {
 //   finePolicyUrl: 'https://app.example.com/help/fines',
 //   footerMessage: 'You can update notification settings in your profile.',
 // });
+
+
+// ============================================================================
+// BORROW REQUEST STATUS NOTIFICATIONS
+// ============================================================================
+
+/**
+ * Build email for borrow request approval
+ * @param {Object} input
+ * @param {string} input.studentName - Student's name
+ * @param {string} input.toEmail - Student's email
+ * @param {string} input.bookTitle - Book title
+ * @param {string} input.bookAuthor - Book author (optional)
+ * @param {string} input.dueDate - Due date (formatted)
+ * @param {string} input.viewBorrowedUrl - Link to My Library
+ * @param {string} input.libraryName - Library name (default: 'LibraAI Library')
+ * @param {string} input.supportEmail - Support email
+ */
+export function buildRequestApprovedEmail(input) {
+  const {
+    studentName,
+    toEmail,
+    bookTitle,
+    bookAuthor,
+    dueDate,
+    viewBorrowedUrl,
+    libraryName = DEFAULT_LIBRARY_NAME,
+    supportEmail = DEFAULT_SUPPORT_EMAIL,
+  } = input || {};
+
+  const subject = `Request Approved: "${bookTitle}"`;
+
+  const templateParams = {
+    to_email: toEmail,
+    student_name: studentName,
+    book_title: bookTitle,
+    book_author: bookAuthor || '',
+    due_date: dueDate,
+    view_borrowed_url: viewBorrowedUrl || '',
+    library_name: libraryName,
+    support_email: supportEmail,
+  };
+
+  const authorPart = bookAuthor ? ` by ${escapeHTML(bookAuthor)}` : '';
+
+  const html = `
+  <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111827;max-width:640px;margin:0 auto;padding:24px;">
+    <h2 style="margin:0 0 4px;color:#16a34a;">✅ Request Approved</h2>
+    <p style="margin:0 0 16px;color:#6b7280">${escapeHTML(libraryName)}</p>
+
+    <p style="margin-top:0;">Hi ${escapeHTML(studentName || 'there')},</p>
+    <p>Great news! Your borrow request for <strong>${escapeHTML(bookTitle)}</strong>${authorPart} has been approved.</p>
+    
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px;margin:16px 0;">
+      <p style="margin:0;color:#166534;"><strong>Due Date:</strong> ${escapeHTML(dueDate)}</p>
+    </div>
+
+    ${viewBorrowedUrl ? `<div style="margin:16px 0;">
+      <a href="${escapeAttr(viewBorrowedUrl)}" style="background:#16a34a;color:#ffffff;padding:10px 14px;border-radius:6px;text-decoration:none;display:inline-block;">View My Library</a>
+    </div>` : ''}
+
+    <p style="color:#374151;">Please return the book by the due date to avoid any late fees.</p>
+    <p style="color:#374151;">Questions? Contact us at <a href="mailto:${escapeAttr(supportEmail)}" style="color:#2563eb">${escapeHTML(supportEmail)}</a>.</p>
+
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+    <p style="margin:0;color:#9ca3af;font-size:12px;">You're receiving this because you requested to borrow this book.</p>
+  </div>
+  `;
+
+  const text = [
+    `${libraryName} — Request Approved`,
+    `Hi ${studentName || 'there'},`,
+    `Great news! Your borrow request for "${bookTitle}"${bookAuthor ? ` by ${bookAuthor}` : ''} has been approved.`,
+    `Due Date: ${dueDate}`,
+    viewBorrowedUrl ? `View My Library: ${viewBorrowedUrl}` : null,
+    `Please return the book by the due date to avoid any late fees.`,
+    `Questions? Contact ${supportEmail}.`,
+  ].filter(Boolean).join('\n');
+
+  return { subject, html, text, templateParams };
+}
+
+/**
+ * Build email for borrow request denial
+ * @param {Object} input
+ * @param {string} input.studentName - Student's name
+ * @param {string} input.toEmail - Student's email
+ * @param {string} input.bookTitle - Book title
+ * @param {string} input.bookAuthor - Book author (optional)
+ * @param {string} input.reason - Reason for denial (optional)
+ * @param {string} input.browseUrl - Link to browse books
+ * @param {string} input.libraryName - Library name
+ * @param {string} input.supportEmail - Support email
+ */
+export function buildRequestDeniedEmail(input) {
+  const {
+    studentName,
+    toEmail,
+    bookTitle,
+    bookAuthor,
+    reason,
+    browseUrl,
+    libraryName = DEFAULT_LIBRARY_NAME,
+    supportEmail = DEFAULT_SUPPORT_EMAIL,
+  } = input || {};
+
+  const subject = `Request Not Approved: "${bookTitle}"`;
+
+  const templateParams = {
+    to_email: toEmail,
+    student_name: studentName,
+    book_title: bookTitle,
+    book_author: bookAuthor || '',
+    reason: reason || '',
+    browse_url: browseUrl || '',
+    library_name: libraryName,
+    support_email: supportEmail,
+  };
+
+  const authorPart = bookAuthor ? ` by ${escapeHTML(bookAuthor)}` : '';
+  const reasonPart = reason ? `<p style="color:#374151;"><strong>Reason:</strong> ${escapeHTML(reason)}</p>` : '';
+
+  const html = `
+  <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111827;max-width:640px;margin:0 auto;padding:24px;">
+    <h2 style="margin:0 0 4px;color:#dc2626;">Request Not Approved</h2>
+    <p style="margin:0 0 16px;color:#6b7280">${escapeHTML(libraryName)}</p>
+
+    <p style="margin-top:0;">Hi ${escapeHTML(studentName || 'there')},</p>
+    <p>Unfortunately, your borrow request for <strong>${escapeHTML(bookTitle)}</strong>${authorPart} was not approved at this time.</p>
+    
+    ${reasonPart}
+
+    ${browseUrl ? `<div style="margin:16px 0;">
+      <a href="${escapeAttr(browseUrl)}" style="background:#ffffff;border:1px solid #d1d5db;color:#111827;padding:10px 14px;border-radius:6px;text-decoration:none;display:inline-block;">Browse Other Books</a>
+    </div>` : ''}
+
+    <p style="color:#374151;">If you have questions about this decision, please contact us.</p>
+    <p style="color:#374151;">Contact: <a href="mailto:${escapeAttr(supportEmail)}" style="color:#2563eb">${escapeHTML(supportEmail)}</a>.</p>
+
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+    <p style="margin:0;color:#9ca3af;font-size:12px;">You're receiving this because you requested to borrow this book.</p>
+  </div>
+  `;
+
+  const text = [
+    `${libraryName} — Request Not Approved`,
+    `Hi ${studentName || 'there'},`,
+    `Unfortunately, your borrow request for "${bookTitle}"${bookAuthor ? ` by ${bookAuthor}` : ''} was not approved at this time.`,
+    reason ? `Reason: ${reason}` : null,
+    browseUrl ? `Browse Other Books: ${browseUrl}` : null,
+    `If you have questions about this decision, please contact us.`,
+    `Contact: ${supportEmail}.`,
+  ].filter(Boolean).join('\n');
+
+  return { subject, html, text, templateParams };
+}
+
+// ============================================================================
+// RETURN CONFIRMATION
+// ============================================================================
+
+/**
+ * Build email for book return confirmation
+ * @param {Object} input
+ * @param {string} input.studentName - Student's name
+ * @param {string} input.toEmail - Student's email
+ * @param {string} input.bookTitle - Book title
+ * @param {string} input.bookAuthor - Book author (optional)
+ * @param {string} input.borrowDate - Borrow date (formatted)
+ * @param {string} input.returnDate - Return date (formatted)
+ * @param {string} input.viewHistoryUrl - Link to borrowing history
+ * @param {string} input.libraryName - Library name
+ * @param {string} input.supportEmail - Support email
+ */
+export function buildReturnConfirmationEmail(input) {
+  const {
+    studentName,
+    toEmail,
+    bookTitle,
+    bookAuthor,
+    borrowDate,
+    returnDate,
+    viewHistoryUrl,
+    libraryName = DEFAULT_LIBRARY_NAME,
+    supportEmail = DEFAULT_SUPPORT_EMAIL,
+  } = input || {};
+
+  const subject = `Book Returned: "${bookTitle}"`;
+
+  const templateParams = {
+    to_email: toEmail,
+    student_name: studentName,
+    book_title: bookTitle,
+    book_author: bookAuthor || '',
+    borrow_date: borrowDate || '',
+    return_date: returnDate,
+    view_history_url: viewHistoryUrl || '',
+    library_name: libraryName,
+    support_email: supportEmail,
+  };
+
+  const authorPart = bookAuthor ? ` by ${escapeHTML(bookAuthor)}` : '';
+  const borrowPart = borrowDate ? `<p style="margin:0;color:#6b7280;">Borrowed: ${escapeHTML(borrowDate)}</p>` : '';
+
+  const html = `
+  <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111827;max-width:640px;margin:0 auto;padding:24px;">
+    <h2 style="margin:0 0 4px;color:#2563eb;">✓ Book Returned Successfully</h2>
+    <p style="margin:0 0 16px;color:#6b7280">${escapeHTML(libraryName)}</p>
+
+    <p style="margin-top:0;">Hi ${escapeHTML(studentName || 'there')},</p>
+    <p>Thank you for returning <strong>${escapeHTML(bookTitle)}</strong>${authorPart}.</p>
+    
+    <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:16px;margin:16px 0;">
+      ${borrowPart}
+      <p style="margin:0;color:#1e40af;"><strong>Returned:</strong> ${escapeHTML(returnDate)}</p>
+    </div>
+
+    ${viewHistoryUrl ? `<div style="margin:16px 0;">
+      <a href="${escapeAttr(viewHistoryUrl)}" style="background:#ffffff;border:1px solid #d1d5db;color:#111827;padding:10px 14px;border-radius:6px;text-decoration:none;display:inline-block;">View Borrowing History</a>
+    </div>` : ''}
+
+    <p style="color:#374151;">We hope you enjoyed the book! Feel free to borrow more anytime.</p>
+    <p style="color:#374151;">Questions? Contact us at <a href="mailto:${escapeAttr(supportEmail)}" style="color:#2563eb">${escapeHTML(supportEmail)}</a>.</p>
+
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+    <p style="margin:0;color:#9ca3af;font-size:12px;">This is a confirmation that your book return was processed.</p>
+  </div>
+  `;
+
+  const text = [
+    `${libraryName} — Book Returned Successfully`,
+    `Hi ${studentName || 'there'},`,
+    `Thank you for returning "${bookTitle}"${bookAuthor ? ` by ${bookAuthor}` : ''}.`,
+    borrowDate ? `Borrowed: ${borrowDate}` : null,
+    `Returned: ${returnDate}`,
+    viewHistoryUrl ? `View Borrowing History: ${viewHistoryUrl}` : null,
+    `We hope you enjoyed the book! Feel free to borrow more anytime.`,
+    `Questions? Contact ${supportEmail}.`,
+  ].filter(Boolean).join('\n');
+
+  return { subject, html, text, templateParams };
+}
