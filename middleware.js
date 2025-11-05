@@ -35,8 +35,10 @@ export async function middleware(request) {
   // If user is authenticated
   if (token) {
     // Redirect from auth page to appropriate dashboard
-    if (pathname === "/auth" || pathname.startsWith("/auth/")) {
+    // But allow password reset pages (/auth/forgot, /auth/reset)
+    if (pathname === "/auth") {
       const destination = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
+      console.log('[MIDDLEWARE] Authenticated user on /auth, redirecting to:', destination);
       return NextResponse.redirect(buildRedirect(request, destination));
     }
 

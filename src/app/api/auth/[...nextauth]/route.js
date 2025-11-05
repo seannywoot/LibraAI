@@ -33,11 +33,13 @@ export const authOptions = {
         expectedRole: { label: "Expected Role", type: "text" },
       },
       async authorize(credentials) {
+        console.log('[AUTH] Authorize called with email:', credentials?.email);
         const email = normalizeEmail(credentials?.email);
         const password = credentials?.password || "";
         const expectedRole = (credentials?.expectedRole || "").trim().toLowerCase();
 
         if (!email || !password) {
+          console.log('[AUTH] Missing credentials');
           throw new Error("Missing credentials");
         }
 
@@ -45,6 +47,7 @@ export const authOptions = {
         const lockStatus = isAccountLocked(email);
         if (lockStatus.locked) {
           const minutes = Math.ceil(lockStatus.remainingTime / 60);
+          console.log('[AUTH] Account locked:', email);
           throw new Error(
             `AccountLocked:${minutes}:Too many failed login attempts. Account locked for ${minutes} minute${minutes !== 1 ? 's' : ''}.`
           );
@@ -60,9 +63,11 @@ export const authOptions = {
           // Use default database (test) - or specify via MONGODB_DB_NAME env var
           const db = client.db(process.env.MONGODB_DB_NAME || "test");
           const userDoc = await db.collection("users").findOne({ email });
+          console.log('[AUTH] DB user lookup:', email, userDoc ? 'found' : 'not found');
           if (userDoc) {
             dbUserExists = true;
             const valid = await comparePassword(password, userDoc.passwordHash);
+            console.log('[AUTH] Password validation:', valid ? 'success' : 'failed');
             if (valid) {
               resolvedUser = {
                 id: userDoc._id.toString(),
@@ -75,12 +80,14 @@ export const authOptions = {
           }
         } catch (e) {
           // If DB is unreachable, fall back to demo users below
-          console.warn("DB authorize fallback:", e?.message || e);
+          console.warn("[AUTH] DB authorize fallback:", e?.message || e);
         }
 
         // Only try demo accounts if user doesn't exist in database
         if (!resolvedUser && !dbUserExists) {
+          console.log('[AUTH] Trying demo accounts for:', email);
           if (email === STUDENT_DEMO.email && password === STUDENT_DEMO.password) {
+            console.log('[AUTH] Student demo match');
             resolvedUser = {
               id: "student-demo",
               name: "Student",
@@ -88,6 +95,7 @@ export const authOptions = {
               role: "student",
             };
           } else if (email === ADMIN_DEMO.email && password === ADMIN_DEMO.password) {
+            console.log('[AUTH] Admin demo match');
             resolvedUser = {
               id: "admin-demo",
               name: "Admin",
@@ -98,6 +106,7 @@ export const authOptions = {
         }
 
         if (!resolvedUser) {
+          console.log('[AUTH] No user resolved, recording failed attempt');
           // Record failed attempt
           const attemptResult = recordFailedAttempt(email);
           
@@ -121,6 +130,7 @@ export const authOptions = {
 
         // Enforce portal-role match when an expectedRole is provided
         if (expectedRole && resolvedUser.role !== expectedRole) {
+          console.log('[AUTH] Role mismatch:', resolvedUser.role, 'vs expected', expectedRole);
           // Record failed attempt for role mismatch too
           recordFailedAttempt(email);
           throw new Error("RoleMismatch");
@@ -128,6 +138,7 @@ export const authOptions = {
 
         // Clear failed attempts on successful login
         clearFailedAttempts(email);
+        console.log('[AUTH] Login successful for:', email, 'role:', resolvedUser.role);
 
         return resolvedUser;
       },

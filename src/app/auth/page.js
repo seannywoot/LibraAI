@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 
@@ -11,7 +11,6 @@ const ADMIN_DEMO_EMAIL = "admin@libra.ai";
 const ADMIN_DEMO_PASSWORD = "ManageStacks!";
 
 function AuthContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState("student"); // 'student' | 'admin'
 
@@ -79,6 +78,8 @@ function AuthContent() {
         }
       }
 
+      console.log('[CLIENT] Attempting login for:', email, 'role:', role, 'destination:', destination);
+
       const result = await signIn("credentials", {
         redirect: false,
         email,
@@ -86,10 +87,10 @@ function AuthContent() {
         expectedRole: role,
       });
 
-      console.log('SignIn result:', { ok: result?.ok, error: result?.error, url: result?.url, status: result?.status });
+      console.log('[CLIENT] SignIn result:', { ok: result?.ok, error: result?.error, status: result?.status });
 
-      if (!result || result.error) {
-        console.error('Login failed:', { result, error: result?.error });
+      if (!result?.ok || result?.error) {
+        console.error('[CLIENT] Login failed:', { error: result?.error });
         const defaultCopy =
           role === "student"
             ? "Those credentials don’t match the student demo account. Use the demo credentials below."
@@ -121,8 +122,12 @@ function AuthContent() {
         }
 
         setError(errorMessage);
+        setIsSubmitting(false);
         return;
       }
+
+      // Login successful
+      console.log('[CLIENT] Login successful, preparing redirect to:', destination);
 
       if (role === "student") {
         try {
@@ -134,7 +139,7 @@ function AuthContent() {
             }
           }
         } catch (storageError) {
-          console.error(storageError);
+          console.error('[CLIENT] SessionStorage error:', storageError);
         }
 
         setStudentPassword("");
@@ -142,14 +147,16 @@ function AuthContent() {
         setAdminPassword("");
       }
 
-      // Force a hard navigation instead of client-side routing
-      const redirectUrl = result?.url || destination;
-      console.log('Redirecting to:', redirectUrl);
-      window.location.href = redirectUrl;
+      // Wait a brief moment for the session cookie to be set
+      // This ensures the middleware will see the authenticated session
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Now perform the redirect
+      console.log('[CLIENT] Redirecting to:', destination);
+      window.location.href = destination;
     } catch (error) {
-      console.error(error);
+      console.error('[CLIENT] Login exception:', error);
       setError("Unable to sign in right now. Please try again.");
-    } finally {
       setIsSubmitting(false);
     }
   };

@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import ClientUserName from "@/components/ClientUserName";
+import DashboardClient from "./dashboard-client";
 
 export default async function AdminDashboardPage() {
   const session = await getServerSession(authOptions);
@@ -36,55 +37,7 @@ export default async function AdminDashboardPage() {
           </div>
         </header>
 
-        <section className="grid gap-6 md:grid-cols-2">
-          <article className="rounded-2xl border border-zinc-200 bg-zinc-50 px-6 py-5 text-sm text-zinc-700">
-            <h2 className="text-base font-semibold text-zinc-900">Usage insights</h2>
-            <ul className="mt-4 space-y-3">
-              <li className="flex items-start gap-3">
-                <span className="mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full bg-emerald-400" aria-hidden />
-                182 active students this week with a 14% uptick in AI-generated summaries.
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full bg-sky-400" aria-hidden />
-                Most searched topic: &ldquo;Machine Learning Interpretability&rdquo;.
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full bg-amber-400" aria-hidden />
-                9 flagged requests awaiting librarian review.
-              </li>
-            </ul>
-          </article>
-
-          <article className="rounded-2xl border border-zinc-200 bg-zinc-50 px-6 py-5 text-sm text-zinc-700">
-            <h2 className="text-base font-semibold text-zinc-900">Priority actions</h2>
-            <div className="mt-4 grid gap-3">
-              <a
-                href="/admin/books/add"
-                className="rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-zinc-800"
-              >
-                Add a new book
-              </a>
-              <a
-                href="/admin/transactions"
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
-              >
-                View borrow transactions
-              </a>
-              <button
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
-                type="button"
-              >
-                Review flagged content
-              </button>
-              <button
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-zinc-900 hover:text-zinc-900"
-                type="button"
-              >
-                Export engagement report
-              </button>
-            </div>
-          </article>
-        </section>
+        <DashboardClient />
 
         <footer className="rounded-2xl border border-dashed border-zinc-200 bg-white/60 px-6 py-4 text-xs text-zinc-500">
           Tip: Return to the /auth page to switch between student and admin demo accounts.
