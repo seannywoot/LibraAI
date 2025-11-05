@@ -133,14 +133,14 @@ export async function GET(request) {
           supportEmail: process.env.EMAIL_FROM || "support@libra.ai",
         });
 
-        // Send email via EmailJS
+        // Send email via EmailJS (uses default template)
         await sendMail({
           to: transaction.userId,
           subject: emailData.subject,
           html: emailData.html,
           text: emailData.text,
           templateParams: emailData.templateParams,
-          templateId: process.env.EMAILJS_DUE_TEMPLATE_ID,
+          // No templateId specified = uses default EMAILJS_TEMPLATE_ID
         });
 
         results.sent++;

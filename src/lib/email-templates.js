@@ -119,13 +119,13 @@ function buildDueReminderHTML(params) {
     : 'soon';
 
   const authorPart = book_author ? ` by ${escapeHTML(book_author)}` : '';
-  const borrowPart = borrow_date ? `<p style="margin:0;color:#6b7280">Borrowed on ${escapeHTML(borrow_date)}</p>` : '';
-  const finePolicyPart = fine_policy_url
-    ? `<p style="margin:0;color:#6b7280">See our <a href="${escapeAttr(fine_policy_url)}" style="color:#2563eb">fine policy</a> for details.</p>`
-    : '';
-  const footerPart = footer_message
-    ? `<p style="margin-top:16px;color:#9ca3af;font-size:12px;">${escapeHTML(footer_message)}</p>`
-    : '';
+  const borrowPart = borrow_date ? `<p style="margin:0;color:#1e40af;">Borrowed: ${escapeHTML(borrow_date)}</p>` : '';
+  
+  // Determine color based on urgency
+  const headerColor = days_until_due <= 1 ? '#dc2626' : days_until_due <= 3 ? '#ea580c' : '#2563eb';
+  const boxColor = days_until_due <= 1 ? '#fef2f2' : days_until_due <= 3 ? '#fff7ed' : '#eff6ff';
+  const boxBorder = days_until_due <= 1 ? '#fecaca' : days_until_due <= 3 ? '#fed7aa' : '#93c5fd';
+  const textColor = days_until_due <= 1 ? '#991b1b' : days_until_due <= 3 ? '#9a3412' : '#1e40af';
 
   return `
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111827;max-width:640px;margin:0 auto;padding:24px;">
@@ -296,22 +296,22 @@ export function buildRequestApprovedEmail(input) {
 
   const html = `
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111827;max-width:640px;margin:0 auto;padding:24px;">
-    <h2 style="margin:0 0 4px;color:#16a34a;">✅ Request Approved</h2>
+    <h2 style="margin:0 0 4px;color:#16a34a;">Request Approved</h2>
     <p style="margin:0 0 16px;color:#6b7280">${escapeHTML(libraryName)}</p>
 
     <p style="margin-top:0;">Hi ${escapeHTML(studentName || 'there')},</p>
-    <p>Great news! Your borrow request for <strong>${escapeHTML(bookTitle)}</strong>${authorPart} has been approved.</p>
+    <p>Your borrow request for <strong>${escapeHTML(bookTitle)}</strong>${authorPart} has been approved.</p>
     
     <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px;margin:16px 0;">
       <p style="margin:0;color:#166534;"><strong>Due Date:</strong> ${escapeHTML(dueDate)}</p>
     </div>
 
     ${viewBorrowedUrl ? `<div style="margin:16px 0;">
-      <a href="${escapeAttr(viewBorrowedUrl)}" style="background:#16a34a;color:#ffffff;padding:10px 14px;border-radius:6px;text-decoration:none;display:inline-block;">View My Library</a>
+      <a href="${escapeAttr(viewBorrowedUrl)}" style="background:#ffffff;border:1px solid #d1d5db;color:#111827;padding:10px 14px;border-radius:6px;text-decoration:none;display:inline-block;">View My Library</a>
     </div>` : ''}
 
     <p style="color:#374151;">Please return the book by the due date to avoid any late fees.</p>
-    <p style="color:#374151;">Questions? Contact us at <a href="mailto:${escapeAttr(supportEmail)}" style="color:#2563eb">${escapeHTML(supportEmail)}</a>.</p>
+    <p style="color:#374151;">Have questions? Contact us at <a href="mailto:${escapeAttr(supportEmail)}" style="color:#2563eb">${escapeHTML(supportEmail)}</a>.</p>
 
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
     <p style="margin:0;color:#9ca3af;font-size:12px;">You're receiving this because you requested to borrow this book.</p>
@@ -369,7 +369,10 @@ export function buildRequestDeniedEmail(input) {
   };
 
   const authorPart = bookAuthor ? ` by ${escapeHTML(bookAuthor)}` : '';
-  const reasonPart = reason ? `<p style="color:#374151;"><strong>Reason:</strong> ${escapeHTML(reason)}</p>` : '';
+  const reasonPart = reason ? `
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:16px 0;">
+      <p style="margin:0;color:#991b1b;"><strong>Reason:</strong> ${escapeHTML(reason)}</p>
+    </div>` : '';
 
   const html = `
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111827;max-width:640px;margin:0 auto;padding:24px;">
@@ -377,7 +380,7 @@ export function buildRequestDeniedEmail(input) {
     <p style="margin:0 0 16px;color:#6b7280">${escapeHTML(libraryName)}</p>
 
     <p style="margin-top:0;">Hi ${escapeHTML(studentName || 'there')},</p>
-    <p>Unfortunately, your borrow request for <strong>${escapeHTML(bookTitle)}</strong>${authorPart} was not approved at this time.</p>
+    <p>Your borrow request for <strong>${escapeHTML(bookTitle)}</strong>${authorPart} was not approved at this time.</p>
     
     ${reasonPart}
 
@@ -386,7 +389,7 @@ export function buildRequestDeniedEmail(input) {
     </div>` : ''}
 
     <p style="color:#374151;">If you have questions about this decision, please contact us.</p>
-    <p style="color:#374151;">Contact: <a href="mailto:${escapeAttr(supportEmail)}" style="color:#2563eb">${escapeHTML(supportEmail)}</a>.</p>
+    <p style="color:#374151;">Have questions? Contact us at <a href="mailto:${escapeAttr(supportEmail)}" style="color:#2563eb">${escapeHTML(supportEmail)}</a>.</p>
 
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
     <p style="margin:0;color:#9ca3af;font-size:12px;">You're receiving this because you requested to borrow this book.</p>
@@ -451,27 +454,27 @@ export function buildReturnConfirmationEmail(input) {
   };
 
   const authorPart = bookAuthor ? ` by ${escapeHTML(bookAuthor)}` : '';
-  const borrowPart = borrowDate ? `<p style="margin:0;color:#6b7280;">Borrowed: ${escapeHTML(borrowDate)}</p>` : '';
+  const borrowPart = borrowDate ? `<p style="margin:0;color:#1e40af;">Borrowed: ${escapeHTML(borrowDate)}</p>` : '';
 
   const html = `
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111827;max-width:640px;margin:0 auto;padding:24px;">
-    <h2 style="margin:0 0 4px;color:#2563eb;">✓ Book Returned Successfully</h2>
+    <h2 style="margin:0 0 4px;color:#2563eb;">Book Returned</h2>
     <p style="margin:0 0 16px;color:#6b7280">${escapeHTML(libraryName)}</p>
 
     <p style="margin-top:0;">Hi ${escapeHTML(studentName || 'there')},</p>
-    <p>Thank you for returning <strong>${escapeHTML(bookTitle)}</strong>${authorPart}.</p>
+    <p>Your return of <strong>${escapeHTML(bookTitle)}</strong>${authorPart} has been processed.</p>
     
     <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:16px;margin:16px 0;">
       ${borrowPart}
-      <p style="margin:0;color:#1e40af;"><strong>Returned:</strong> ${escapeHTML(returnDate)}</p>
+      <p style="margin:${borrowPart ? '8px' : '0'} 0 0;color:#1e40af;"><strong>Returned:</strong> ${escapeHTML(returnDate)}</p>
     </div>
 
     ${viewHistoryUrl ? `<div style="margin:16px 0;">
       <a href="${escapeAttr(viewHistoryUrl)}" style="background:#ffffff;border:1px solid #d1d5db;color:#111827;padding:10px 14px;border-radius:6px;text-decoration:none;display:inline-block;">View Borrowing History</a>
     </div>` : ''}
 
-    <p style="color:#374151;">We hope you enjoyed the book! Feel free to borrow more anytime.</p>
-    <p style="color:#374151;">Questions? Contact us at <a href="mailto:${escapeAttr(supportEmail)}" style="color:#2563eb">${escapeHTML(supportEmail)}</a>.</p>
+    <p style="color:#374151;">Feel free to borrow more books anytime.</p>
+    <p style="color:#374151;">Have questions? Contact us at <a href="mailto:${escapeAttr(supportEmail)}" style="color:#2563eb">${escapeHTML(supportEmail)}</a>.</p>
 
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
     <p style="margin:0;color:#9ca3af;font-size:12px;">This is a confirmation that your book return was processed.</p>
