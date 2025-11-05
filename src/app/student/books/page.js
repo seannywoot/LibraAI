@@ -58,11 +58,11 @@ export default function StudentBooksPage() {
   const [filters, setFilters] = useState({
     resourceTypes: ["Books"],
     yearRange: [1950, 2025],
-    subjects: ["Computer Science"],
     availability: [],
     formats: [],
     categories: [],
   });
+  const [showFilters, setShowFilters] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -209,14 +209,7 @@ export default function StudentBooksPage() {
     }));
   }
 
-  function toggleSubject(subject) {
-    setFilters((prev) => ({
-      ...prev,
-      subjects: prev.subjects.includes(subject)
-        ? prev.subjects.filter((s) => s !== subject)
-        : [...prev.subjects, subject],
-    }));
-  }
+
 
   function toggleAvailability(status) {
     setFilters((prev) => ({
@@ -300,225 +293,319 @@ export default function StudentBooksPage() {
         </header>
 
         <div className="flex gap-6">
-          {/* Filters Sidebar */}
-          <aside className="w-56 shrink-0 space-y-6">
-            <div className="rounded-lg bg-white p-5 shadow-sm border border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Filters
-              </h2>
-
-              {/* Resource Type */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  Resource Type
-                </h3>
-                <div className="space-y-2">
-                  {[
-                    { label: "Books", count: total },
-                    { label: "Articles", count: 0 },
-                    { label: "Journals", count: 0 },
-                    { label: "Theses", count: 0 },
-                  ].map(({ label, count }) => (
-                    <label
-                      key={label}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.resourceTypes.includes(label)}
-                        onChange={() => toggleResourceType(label)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">
-                        {label} ({count})
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Format */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  Format
-                </h3>
-                <div className="space-y-2">
-                  {["Physical", "eBook"].map((format) => (
-                    <label
-                      key={format}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.formats.includes(format)}
-                        onChange={() => toggleFormat(format)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">{format}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Publication Year */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  Publication Year
-                </h3>
-                <input
-                  type="range"
-                  min="1950"
-                  max="2025"
-                  value={filters.yearRange[1]}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      yearRange: [prev.yearRange[0], parseInt(e.target.value)],
-                    }))
-                  }
-                  className="w-full h-2 bg-blue-500 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>1950</span>
-                  <span>2025</span>
-                </div>
-              </div>
-
-              {/* Category */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  Category
-                </h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {[
-                    "Fiction",
-                    "Non-Fiction",
-                    "Science",
-                    "Technology",
-                    "History",
-                    "Biography",
-                    "Self-Help",
-                    "Business",
-                    "Arts",
-                    "Education",
-                    "Children",
-                    "Young Adult",
-                  ].map((category) => (
-                    <label
-                      key={category}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.categories.includes(category)}
-                        onChange={() => toggleCategory(category)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">{category}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Subject */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  Subject
-                </h3>
-                <div className="space-y-2">
-                  {[
-                    "Computer Science",
-                    "Mathematics",
-                    "Engineering",
-                    "Data Science",
-                  ].map((subject) => (
-                    <label
-                      key={subject}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.subjects.includes(subject)}
-                        onChange={() => toggleSubject(subject)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">{subject}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Availability */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  Availability
-                </h3>
-                <div className="space-y-2">
-                  {["Available", "Checked Out", "Reserved"].map((status) => (
-                    <label
-                      key={status}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.availability.includes(status)}
-                        onChange={() => toggleAvailability(status)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">{status}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  setPage(1);
-                  loadBooks();
-                }}
-                className="w-full rounded-lg bg-black text-white py-2.5 text-sm font-medium hover:bg-gray-800 transition-colors"
+          {/* Filters Modal */}
+          {showFilters && (
+            <div 
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowFilters(false)}
+            >
+              <div 
+                className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col m-4"
+                onClick={(e) => e.stopPropagation()}
               >
-                Apply Filters
-              </button>
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Filters
+                  </h2>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Resource Type */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        Resource Type
+                      </h3>
+                      <div className="space-y-2">
+                        {[
+                          { label: "Books", count: total },
+                          { label: "Articles", count: 0 },
+                          { label: "Journals", count: 0 },
+                          { label: "Theses", count: 0 },
+                        ].map(({ label, count }) => (
+                          <label
+                            key={label}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={filters.resourceTypes.includes(label)}
+                              onChange={() => toggleResourceType(label)}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">
+                              {label} ({count})
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Format */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        Format
+                      </h3>
+                      <div className="space-y-2">
+                        {["Physical", "eBook"].map((format) => (
+                          <label
+                            key={format}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={filters.formats.includes(format)}
+                              onChange={() => toggleFormat(format)}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">{format}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Availability */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        Availability
+                      </h3>
+                      <div className="space-y-2">
+                        {["Available", "Checked Out", "Reserved"].map((status) => (
+                          <label
+                            key={status}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={filters.availability.includes(status)}
+                              onChange={() => toggleAvailability(status)}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">{status}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Publication Year */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        Publication Year
+                      </h3>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-600 mb-1">
+                            From
+                          </label>
+                          <input
+                            type="number"
+                            min="1950"
+                            max={filters.yearRange[1]}
+                            value={filters.yearRange[0]}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 1950;
+                              setFilters((prev) => ({
+                                ...prev,
+                                yearRange: [
+                                  Math.max(1950, Math.min(value, prev.yearRange[1])),
+                                  prev.yearRange[1],
+                                ],
+                              }));
+                            }}
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                          />
+                        </div>
+                        <span className="text-gray-400 mt-6">—</span>
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-600 mb-1">
+                            To
+                          </label>
+                          <input
+                            type="number"
+                            min={filters.yearRange[0]}
+                            max="2025"
+                            value={filters.yearRange[1]}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 2025;
+                              setFilters((prev) => ({
+                                ...prev,
+                                yearRange: [
+                                  prev.yearRange[0],
+                                  Math.min(2025, Math.max(value, prev.yearRange[0])),
+                                ],
+                              }));
+                            }}
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Category */}
+                    <div className="col-span-2">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        Category
+                      </h3>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          "Fiction",
+                          "Non-Fiction",
+                          "Science",
+                          "Technology",
+                          "History",
+                          "Biography",
+                          "Self-Help",
+                          "Business",
+                          "Arts",
+                          "Education",
+                          "Children",
+                          "Young Adult",
+                        ].map((category) => (
+                          <label
+                            key={category}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={filters.categories.includes(category)}
+                              onChange={() => toggleCategory(category)}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">{category}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPage(1);
+                      loadBooks();
+                      setShowFilters(false);
+                    }}
+                    className="px-6 py-2.5 rounded-lg bg-black text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
             </div>
-          </aside>
+          )}
 
           {/* Main Content */}
           <div className="flex-1 space-y-6">
             {/* Search Bar */}
             <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
-              <div className="relative">
-                <svg
-                  className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              <div className="relative flex items-center gap-2">
+                <div className="relative flex-1">
+                  <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onFocus={() =>
+                      suggestions.length > 0 && setShowSuggestions(true)
+                    }
+                    onBlur={() =>
+                      setTimeout(() => setShowSuggestions(false), 200)
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        loadBooks();
+                      }
+                    }}
+                    placeholder="Search books by title, author, ISBN, or publisher..."
+                    className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                   />
-                </svg>
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onFocus={() =>
-                    suggestions.length > 0 && setShowSuggestions(true)
-                  }
-                  onBlur={() =>
-                    setTimeout(() => setShowSuggestions(false), 200)
-                  }
-                  placeholder="Search books by title, author, ISBN, or publisher..."
-                  className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-24 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                />
+                </div>
                 <button
                   onClick={loadBooks}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-black px-6 py-1.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+                  className="p-2.5 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors"
+                  title="Search"
                 >
-                  Search
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setShowFilters(true)}
+                  className="relative p-2.5 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                  title="Filters"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                    />
+                  </svg>
+                  {(filters.formats.length > 0 ||
+                    filters.categories.length > 0 ||
+                    filters.availability.length > 0) && (
+                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-black rounded-full">
+                      {filters.formats.length +
+                        filters.categories.length +
+                        filters.availability.length}
+                    </span>
+                  )}
                 </button>
 
                 {/* Auto-suggestions dropdown */}
