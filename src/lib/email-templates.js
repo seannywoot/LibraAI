@@ -142,11 +142,11 @@ function buildDueReminderHTML(params) {
 
     <p style="color:#374151;">If you’ve already returned this book, you can ignore this message.</p>
     <p style="color:#374151;">Have questions? Contact us at <a href="mailto:${escapeAttr(support_email)}" style="color:#2563eb">${escapeHTML(support_email)}</a>.</p>
-    ${finePolicyPart}
+
 
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
     <p style="margin:0;color:#9ca3af;font-size:12px;">You’re receiving this because you enabled due-date reminders in your profile settings.</p>
-    ${footerPart}
+
   </div>
   `;
 }
