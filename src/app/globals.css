@@ -270,19 +270,36 @@
     color: #93c5fd !important;
   }
 
-  .dark .bg-black {
+  .dark .bg-black,
+  .dark .bg-zinc-900,
+  .dark .dark\:bg-zinc-900 {
     background-color: #60a5fa !important;
   }
 
   .dark .bg-black:hover,
   .dark .hover\:bg-black:hover,
   .dark .hover\:bg-gray-800:hover,
-  .dark .hover\:bg-gray-900:hover {
+  .dark .hover\:bg-gray-900:hover,
+  .dark .bg-zinc-900:hover,
+  .dark .hover\:bg-zinc-800:hover,
+  .dark .hover\:bg-zinc-900:hover,
+  .dark .dark\:hover\:bg-zinc-800:hover,
+  .dark .dark\:hover\:bg-zinc-900:hover {
     background-color: #7cb8ff !important;
   }
 
-  .dark .bg-black:disabled {
+  .dark .bg-black:disabled,
+  .dark .bg-zinc-900:disabled {
     background-color: #3c76c5 !important;
+  }
+
+  .dark .border-zinc-900,
+  .dark .dark\:border-zinc-900 {
+    border-color: #4c86d8 !important;
+  }
+
+  .dark .dark\:hover\:border-zinc-900:hover {
+    border-color: #5d9bee !important;
   }
 
   .dark .text-zinc-900,

@@ -14,7 +14,7 @@ function RowActions({ onEdit, onDelete }) {
         <EditIcon className="h-3.5 w-3.5" />
         Edit
       </button>
-      <button onClick={onDelete} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">
+      <button onClick={onDelete} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50">
         <Trash2 className="h-3.5 w-3.5" />
         Delete
       </button>
@@ -150,7 +150,7 @@ export default function AdminAuthorsPage() {
               <span className="text-zinc-700">Bio (optional)</span>
               <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Short biography" />
             </label>
-            <div className="flex justify-end"><button className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100" type="submit">Add</button></div>
+            <div className="flex justify-end"><button className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800" type="submit">Add</button></div>
           </form>
 
           <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
@@ -159,7 +159,7 @@ export default function AdminAuthorsPage() {
                 <span className="text-zinc-700">Search</span>
                 <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={s} onChange={(e) => setS(e.target.value)} placeholder="Filter by name" />
               </label>
-              <button onClick={() => { setPage(1); load(); }} className="mt-6 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100">Apply</button>
+              <button onClick={() => { setPage(1); load(); }} className="mt-6 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800">Apply</button>
             </div>
           </div>
         </section>

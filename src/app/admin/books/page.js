@@ -168,7 +168,7 @@ export default function AdminBooksListPage() {
                         <button
                           onClick={() => handleDelete(b._id, b.title)}
                           disabled={deleting === b._id}
-                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="rounded-lg border border-rose-500 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50 transition-colors"
                         >
                           {deleting === b._id ? "Deleting..." : "Delete"}
                         </button>
