@@ -78,11 +78,13 @@ export const authOptions = {
             const valid = await comparePassword(password, userDoc.passwordHash);
             console.log('[AUTH] Password validation:', valid ? 'success' : 'failed');
             if (valid) {
+              const normalizedTheme = userDoc.theme === "dark" ? "dark" : userDoc.theme === "light" ? "light" : null;
               resolvedUser = {
                 id: userDoc._id.toString(),
                 name: userDoc.name || "User",
                 email: userDoc.email,
                 role: userDoc.role || "student",
+                theme: normalizedTheme,
               };
             }
             // If password invalid, resolvedUser stays null but we know user exists
@@ -102,6 +104,7 @@ export const authOptions = {
               name: "Student",
               email,
               role: "student",
+              theme: null,
             };
           } else if (email === ADMIN_DEMO.email && password === ADMIN_DEMO.password) {
             console.log('[AUTH] Admin demo match');
@@ -110,6 +113,7 @@ export const authOptions = {
               name: "Admin",
               email,
               role: "admin",
+              theme: null,
             };
           }
         }
@@ -221,6 +225,9 @@ export const authOptions = {
       if (user) {
         token.role = user.role;
         if (user.name) token.name = user.name;
+        if (user.theme === "dark" || user.theme === "light") {
+          token.theme = user.theme;
+        }
         token.iat = Math.floor(Date.now() / 1000); // Issued at time
       }
 
@@ -231,6 +238,9 @@ export const authOptions = {
       // When a client calls useSession().update({ ... }), propagate allowed fields
       if (trigger === "update") {
         if (session?.name) token.name = session.name;
+        if (session?.theme === "dark" || session?.theme === "light") {
+          token.theme = session.theme;
+        }
       }
 
       return token;
@@ -243,6 +253,11 @@ export const authOptions = {
       session.user = session.user || {};
       session.user.role = token.role;
       if (token.name) session.user.name = token.name;
+      if (token.theme === "dark" || token.theme === "light") {
+        session.user.theme = token.theme;
+      } else {
+        session.user.theme = null;
+      }
       return session;
     },
   },

@@ -32,6 +32,33 @@ export default function AdminProfilePage() {
     }
   }, [darkMode]);
 
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const res = await fetch("/api/user/profile");
+        const data = await res.json().catch(() => ({}));
+        if (data?.ok && data?.user) {
+          if (typeof data.user.emailNotifications === "boolean") {
+            setEmailNotifications(data.user.emailNotifications);
+          }
+          const storedTheme = data.user.theme;
+          if (storedTheme === "dark" || storedTheme === "light") {
+            const isDark = storedTheme === "dark";
+            setPendingDarkMode(isDark);
+            initialDarkModeRef.current = isDark;
+            setDarkModePreference(isDark, { persist: false });
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load admin preferences:", err);
+      }
+    };
+
+    if (session?.user?.email) {
+      loadPreferences();
+    }
+  }, [session?.user?.email, setDarkModePreference]);
+
   const pushToast = (toast) => {
     const id = Date.now() + Math.random();
     const t = { id, duration: 2500, show: true, ...toast };
@@ -62,18 +89,37 @@ export default function AdminProfilePage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
+      const payload = { name, emailNotifications };
+      if (themeDirty) {
+        payload.theme = pendingDarkMode ? "dark" : "light";
+      }
+
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, emailNotifications }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to save changes");
       }
-      // Update session name on client if it changed; ignore errors from NextAuth update
-      if (update && name !== session?.user?.name) {
-        try { await update({ name }); } catch (e) { /* non-critical */ }
+      // Update session state locally to reflect saved preference values
+      if (update) {
+        const updatePayload = {};
+        if (name !== session?.user?.name) {
+          updatePayload.name = name;
+        }
+        if (themeDirty) {
+          updatePayload.theme = pendingDarkMode ? "dark" : "light";
+        }
+        if (Object.keys(updatePayload).length > 0) {
+          try {
+            await update(updatePayload);
+          } catch (e) {
+            // Session update is non-critical; surfacing in console is sufficient for debugging
+            console.warn("Session update skipped:", e);
+          }
+        }
       }
       if (themeDirty && pendingDarkMode !== initialDarkModeRef.current) {
         setDarkModePreference(pendingDarkMode, { persist: true });

@@ -54,7 +54,16 @@ export default function StudentProfilePage() {
         const res = await fetch("/api/user/profile");
         const data = await res.json();
         if (data?.ok && data?.user) {
-          setEmailNotifications(data.user.emailNotifications ?? true);
+          if (typeof data.user.emailNotifications === "boolean") {
+            setEmailNotifications(data.user.emailNotifications);
+          }
+          const storedTheme = data.user.theme;
+          if (storedTheme === "dark" || storedTheme === "light") {
+            const isDark = storedTheme === "dark";
+            setPendingDarkMode(isDark);
+            initialDarkModeRef.current = isDark;
+            setDarkModePreference(isDark, { persist: false });
+          }
         }
       } catch (err) {
         console.error("Failed to load preferences:", err);
@@ -63,7 +72,7 @@ export default function StudentProfilePage() {
     if (session?.user?.email) {
       loadPreferences();
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, setDarkModePreference]);
 
   const navigationLinks = getStudentLinks();
 
@@ -84,24 +93,37 @@ export default function StudentProfilePage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
+      const payload = { name, emailNotifications };
+      if (themeDirty) {
+        payload.theme = pendingDarkMode ? "dark" : "light";
+      }
+
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, emailNotifications }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to save changes");
       }
       
-      // Update client session for name only (if name changed)
-      if (update && name !== session?.user?.name) {
-        update({ name }).catch((e) => {
-          // Session update is non-critical, just log it
-          console.log("Session update skipped:", e);
-        });
+      // Update client session for changed fields so other tabs stay in sync
+      if (update) {
+        const updatePayload = {};
+        if (name !== session?.user?.name) {
+          updatePayload.name = name;
+        }
+        if (themeDirty) {
+          updatePayload.theme = pendingDarkMode ? "dark" : "light";
+        }
+        if (Object.keys(updatePayload).length > 0) {
+          update(updatePayload).catch((e) => {
+            console.log("Session update skipped:", e);
+          });
+        }
       }
-      
+
       if (themeDirty && pendingDarkMode !== initialDarkModeRef.current) {
         setDarkModePreference(pendingDarkMode, { persist: true });
         initialDarkModeRef.current = pendingDarkMode;

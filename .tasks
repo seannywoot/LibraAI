@@ -1,0 +1,5 @@
+DONE:
+- Update `src/app/api/user/profile/route.js` to persist theme preference and enforce Origin/Referer checks.
+- Extend NextAuth callbacks in `src/app/api/auth/[...nextauth]/route.js` to carry the theme preference through JWT/session updates.
+- Refresh profile settings pages to load and submit the persisted theme preference.
+- Sync stored theme on login via `src/components/SessionProvider.jsx`.

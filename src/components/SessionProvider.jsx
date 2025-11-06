@@ -2,7 +2,7 @@
 
 import { SessionProvider as NextAuthSessionProvider } from "next-auth/react";
 import { useSession, signOut } from "next-auth/react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   clearSessionStorage,
   markSessionStart,
@@ -12,10 +12,13 @@ import {
   shouldShowIdleWarning,
 } from "@/lib/session-handler";
 import IdleTimeoutWarning from "./idle-timeout-warning";
+import { useTheme } from "@/contexts/ThemeContext";
 
 function SessionValidator({ children }) {
   const { data: session, status } = useSession();
   const [showIdleWarning, setShowIdleWarning] = useState(false);
+  const { setDarkModePreference } = useTheme();
+  const themeSyncStateRef = useRef(null);
 
   // Track user activity
   const handleActivity = useCallback(() => {
@@ -95,6 +98,55 @@ function SessionValidator({ children }) {
       clearSessionStorage();
     }
   }, [status]);
+
+  useEffect(() => {
+    if (status !== "authenticated") {
+      themeSyncStateRef.current = null;
+      return;
+    }
+
+    const theme = session?.user?.theme;
+    if (theme === "dark" || theme === "light") {
+      themeSyncStateRef.current = theme;
+      setDarkModePreference(theme === "dark", { persist: true });
+      return;
+    }
+
+    if (themeSyncStateRef.current === "fetching" || themeSyncStateRef.current === "synced") {
+      return;
+    }
+
+    themeSyncStateRef.current = "fetching";
+    let cancelled = false;
+
+    const fetchThemePreference = async () => {
+      try {
+        const res = await fetch("/api/user/profile", { method: "GET" });
+        const data = await res.json().catch(() => ({}));
+        const fetchedTheme = data?.user?.theme;
+        if (!cancelled && (fetchedTheme === "dark" || fetchedTheme === "light")) {
+          themeSyncStateRef.current = fetchedTheme;
+          setDarkModePreference(fetchedTheme === "dark", { persist: true });
+        } else if (!cancelled) {
+          themeSyncStateRef.current = "synced";
+        }
+      } catch (err) {
+        if (!cancelled) {
+          themeSyncStateRef.current = "synced";
+          console.warn("Theme sync failed:", err);
+        }
+      }
+    };
+
+    fetchThemePreference();
+
+    return () => {
+      cancelled = true;
+      if (themeSyncStateRef.current === "fetching") {
+        themeSyncStateRef.current = null;
+      }
+    };
+  }, [status, session?.user?.theme, setDarkModePreference]);
 
   const handleExtendSession = () => {
     setShowIdleWarning(false);
