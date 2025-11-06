@@ -174,6 +174,16 @@ export default function DashboardSidebar({
             role="menu"
             className={`absolute bottom-14 left-0 right-0 z-50 rounded-2xl ${theme.navBackground} p-2 shadow-lg`}
           >
+            {/* Profile & Settings moved from sidebar into account menu */}
+            <Link
+              href={profileHref}
+              className={`${baseLinkStyles} ${theme.defaultLink} rounded-lg`}
+              role="menuitem"
+            >
+              <Settings className="h-4 w-4 mr-3" />
+              <span>Profile & Settings</span>
+            </Link>
+            <div className="my-1 h-px w-full bg-(--stroke)/60" />
             {SignOutComponent ? (
               <SignOutComponent className={`w-full justify-start ${theme.signOutVariant}`} />
             ) : (

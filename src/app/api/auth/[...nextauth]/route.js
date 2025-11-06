@@ -7,6 +7,12 @@ import {
   recordFailedAttempt,
   clearFailedAttempts,
 } from "@/lib/brute-force-protection";
+import {
+  notifyAccountLockout,
+  trackFailedLogin,
+  isNewAdminDevice,
+  notifyNewAdminLogin,
+} from "@/lib/security-notifications";
 
 const STUDENT_DEMO = {
   email: "student@demo.edu",
@@ -31,8 +37,11 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
         // Optional: the portal the user is attempting to access ("student" | "admin")
         expectedRole: { label: "Expected Role", type: "text" },
+        // Security tracking
+        ipAddress: { label: "IP Address", type: "text" },
+        userAgent: { label: "User Agent", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         console.log('[AUTH] Authorize called with email:', credentials?.email);
         const email = normalizeEmail(credentials?.email);
         const password = credentials?.password || "";
@@ -107,11 +116,28 @@ export const authOptions = {
 
         if (!resolvedUser) {
           console.log('[AUTH] No user resolved, recording failed attempt');
+          
+          // Track failed login for spike detection
+          trackFailedLogin({
+            email,
+            ipAddress: credentials?.ipAddress || 'unknown',
+            timestamp: Date.now(),
+          });
+          
           // Record failed attempt
           const attemptResult = recordFailedAttempt(email);
           
           if (attemptResult.locked) {
             const minutes = Math.ceil(attemptResult.remainingTime / 60);
+            
+            // Send lockout notification to admins (async, don't wait)
+            notifyAccountLockout({
+              lockedEmail: email,
+              role: expectedRole || 'unknown',
+              attempts: attemptResult.attempts,
+              lockWindowMinutes: minutes,
+            }).catch(err => console.error('[AUTH] Failed to send lockout notification:', err));
+            
             throw new Error(
               `AccountLocked:${minutes}:Too many failed login attempts. Account locked for ${minutes} minute${minutes !== 1 ? 's' : ''}.`
             );
@@ -139,6 +165,29 @@ export const authOptions = {
         // Clear failed attempts on successful login
         clearFailedAttempts(email);
         console.log('[AUTH] Login successful for:', email, 'role:', resolvedUser.role);
+
+        // Check for new admin device login
+        if (resolvedUser.role === 'admin') {
+          const userAgent = credentials?.userAgent || 'Unknown';
+          const ipAddress = credentials?.ipAddress || 'unknown';
+          
+          const isNew = isNewAdminDevice({
+            email,
+            ipAddress,
+            userAgent,
+          });
+          
+          if (isNew) {
+            console.log('[AUTH] New admin device detected for:', email);
+            // Send new device notification (async, don't wait)
+            notifyNewAdminLogin({
+              loginEmail: email,
+              ipAddress,
+              userAgent,
+              location: 'Unknown', // Could integrate IP geolocation service
+            }).catch(err => console.error('[AUTH] Failed to send new device notification:', err));
+          }
+        }
 
         return resolvedUser;
       },

@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
-import ToastContainer from "@/components/ToastContainer";
+import Toast from "@/components/Toast";
 import DarkModeToggle from "@/components/DarkModeToggle";
 
 export default function AdminProfilePage() {
@@ -20,7 +20,7 @@ export default function AdminProfilePage() {
 
   const pushToast = (toast) => {
     const id = Date.now() + Math.random();
-    const t = { id, duration: 2500, ...toast };
+    const t = { id, duration: 2500, show: true, ...toast };
     setToasts((prev) => [t, ...prev]);
     if (t.duration) {
       setTimeout(() => {
@@ -135,11 +135,20 @@ export default function AdminProfilePage() {
           </div>
         </form>
 
-        <ToastContainer
-          toasts={toasts}
-          onClose={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
-          position="top-right"
-        />
+        <div className="fixed top-4 right-4 z-50 flex max-h-[60vh] w-[min(92vw,26rem)] flex-col-reverse items-stretch gap-2 overflow-y-auto p-1">
+          {toasts.map((t) => (
+            <Toast
+              key={t.id}
+              show={t.show}
+              type={t.type}
+              title={t.title}
+              description={t.description}
+              duration={t.duration}
+              onClose={() => setToasts((prev) => prev.filter((toast) => toast.id !== t.id))}
+              floating={false}
+            />
+          ))}
+        </div>
       </main>
     </div>
   );

@@ -13,7 +13,6 @@ export function getStudentLinks() {
     { key: "student-authors", label: "Authors", href: "/student/authors", exact: true, icon: <Users className="h-4 w-4" /> },
     { key: "student-chat", label: "Chat", href: "/student/chat", exact: true, icon: <MessageCircle className="h-4 w-4" /> },
     { key: "student-faq", label: "FAQ", href: "/student/faq", exact: true, icon: <HelpCircle className="h-4 w-4" /> },
-    { key: "student-profile", label: "Profile & Settings", href: "/student/profile", exact: true, icon: <Settings className="h-4 w-4" /> },
   ];
 }
 
@@ -26,6 +25,5 @@ export function getAdminLinks() {
     { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true, icon: <Users className="h-4 w-4" /> },
     { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
     { key: "admin-faq", label: "FAQ Management", href: "/admin/faq-setup", exact: true, icon: <HelpCircle className="h-4 w-4" /> },
-    { key: "admin-profile", label: "Profile & Settings", href: "/admin/profile", exact: true, icon: <Settings className="h-4 w-4" /> },
   ];
 }

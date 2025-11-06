@@ -12,8 +12,6 @@ export default function StudentProfilePage() {
   const { data: session, update } = useSession();
   const [name, setName] = useState("Study Explorer");
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const [studyReminders, setStudyReminders] = useState(true);
-  
   const [toasts, setToasts] = useState([]);
 
   const pushToast = (toast) => {
@@ -141,15 +139,6 @@ export default function StudentProfilePage() {
                     type="checkbox"
                     checked={emailNotifications}
                     onChange={(e) => setEmailNotifications(e.target.checked)}
-                    className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
-                  />
-                </label>
-                <label className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-                  <span>Study reminders</span>
-                  <input
-                    type="checkbox"
-                    checked={studyReminders}
-                    onChange={(e) => setStudyReminders(e.target.checked)}
                     className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
                   />
                 </label>
