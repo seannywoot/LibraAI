@@ -5,6 +5,7 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Edit as EditIcon, Trash2 } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
+import { ToastContainer, showToast } from "@/components/ToastContainer";
 import Link from "next/link";
 
 function RowActions({ onEdit, onDelete }) {
@@ -27,6 +28,7 @@ export default function AdminAuthorsPage() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
+  const [totalBooks, setTotalBooks] = useState(0);
   const [s, setS] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -45,15 +47,25 @@ export default function AdminAuthorsPage() {
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (s) params.set("s", s);
-      const res = await fetch(`/api/admin/authors?${params.toString()}`, { cache: "no-store" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load authors");
       
-      const authorsData = data.items || [];
+      // Fetch authors and stats in parallel
+      const [authorsRes, statsRes] = await Promise.all([
+        fetch(`/api/admin/authors?${params.toString()}`, { cache: "no-store" }),
+        fetch("/api/admin/authors/stats", { cache: "no-store" })
+      ]);
+      
+      const [authorsData, statsData] = await Promise.all([
+        authorsRes.json().catch(() => ({})),
+        statsRes.json().catch(() => ({}))
+      ]);
+      
+      if (!authorsRes.ok || !authorsData?.ok) throw new Error(authorsData?.error || "Failed to load authors");
+      
+      const authors = authorsData.items || [];
       
       // Fetch book counts for each author
       const authorsWithCounts = await Promise.all(
-        authorsData.map(async (author) => {
+        authors.map(async (author) => {
           try {
             const booksRes = await fetch(`/api/admin/authors/${author._id}/books?pageSize=1`, { cache: "no-store" });
             const booksData = await booksRes.json().catch(() => ({}));
@@ -65,7 +77,8 @@ export default function AdminAuthorsPage() {
       );
       
       setItems(authorsWithCounts);
-      setTotal(data.total || 0);
+      setTotal(authorsData.total || 0);
+      setTotalBooks(statsData?.totalBooks || 0);
     } catch (e) {
       setError(e?.message || "Unknown error");
     } finally {
@@ -83,9 +96,12 @@ export default function AdminAuthorsPage() {
       const res = await fetch("/api/admin/authors", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: n, bio }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Create failed");
+      showToast(`Author "${n}" added successfully!`, "success");
       setName(""); setBio("");
       await load();
-    } catch (e) { alert(e?.message || "Error"); }
+    } catch (e) { 
+      showToast(e?.message || "Failed to add author", "error");
+    }
   }
 
   async function saveEdit(id) {
@@ -95,9 +111,12 @@ export default function AdminAuthorsPage() {
       const res = await fetch(`/api/admin/authors/${id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: n, bio: editingBio }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Update failed");
+      showToast(`Author "${n}" updated successfully!`, "success");
       setEditingId(null);
       await load();
-    } catch (e) { alert(e?.message || "Error"); }
+    } catch (e) { 
+      showToast(e?.message || "Failed to update author", "error");
+    }
   }
 
   async function deleteAuthor(id) {
@@ -106,8 +125,11 @@ export default function AdminAuthorsPage() {
       const res = await fetch(`/api/admin/authors/${id}`, { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Delete failed");
+      showToast("Author deleted successfully", "success");
       await load();
-    } catch (e) { alert(e?.message || "Error"); }
+    } catch (e) { 
+      showToast(e?.message || "Failed to delete author", "error");
+    }
   }
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -131,7 +153,7 @@ export default function AdminAuthorsPage() {
               </div>
               <div className="inline-flex items-center gap-2 rounded-lg bg-blue-100 px-3 py-2">
                 <span className="font-semibold text-blue-900">
-                  {items.reduce((sum, a) => sum + (a.bookCount || 0), 0)}
+                  {totalBooks}
                 </span>
                 <span className="text-blue-700">total books</span>
               </div>
@@ -245,6 +267,8 @@ export default function AdminAuthorsPage() {
           </section>
         )}
       </main>
+
+      <ToastContainer position="top-right" />
     </div>
   );
 }

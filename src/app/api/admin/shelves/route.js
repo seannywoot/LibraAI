@@ -21,10 +21,6 @@ export async function GET(request) {
     const db = client.db();
     const shelves = db.collection("shelves");
 
-    try {
-      await shelves.createIndex({ codeLower: 1 }, { unique: true });
-    } catch {}
-
     const query = s ? { $or: [
       { codeLower: { $regex: new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") } },
       { nameLower: { $regex: new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") } },
@@ -71,7 +67,17 @@ export async function POST(request) {
     const db = client.db();
     const shelves = db.collection("shelves");
 
-    await shelves.createIndex({ codeLower: 1 }, { unique: true });
+    // Ensure unique index exists (idempotent operation)
+    try {
+      const indexes = await shelves.indexes();
+      const hasCodeLowerIndex = indexes.some(idx => idx.name === 'codeLower_1');
+      if (!hasCodeLowerIndex) {
+        await shelves.createIndex({ codeLower: 1 }, { unique: true });
+      }
+    } catch (indexErr) {
+      // Index might already exist, continue
+      console.log("Index creation note:", indexErr.message);
+    }
 
     const now = new Date();
     const doc = {

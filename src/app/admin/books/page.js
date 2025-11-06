@@ -165,13 +165,21 @@ export default function AdminBooksListPage() {
                       <td className="px-4 py-3">{b.isbn || "—"}</td>
                       <td className="px-4 py-3">{b.barcode || "—"}</td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleDelete(b._id, b.title)}
-                          disabled={deleting === b._id}
-                          className="rounded-lg border border-rose-500 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50 transition-colors"
-                        >
-                          {deleting === b._id ? "Deleting..." : "Delete"}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/admin/books/${b._id}/edit`}
+                            className="rounded-lg border border-blue-500 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 transition-colors"
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(b._id, b.title)}
+                            disabled={deleting === b._id}
+                            className="rounded-lg border border-rose-500 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50 transition-colors"
+                          >
+                            {deleting === b._id ? "Deleting..." : "Delete"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

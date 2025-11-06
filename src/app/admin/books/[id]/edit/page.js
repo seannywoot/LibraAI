@@ -6,12 +6,15 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
-export default function AdminAddBookPage() {
+export default function AdminEditBookPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const params = useParams();
+  const bookId = params?.id;
 
+  const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [year, setYear] = useState("");
@@ -31,13 +34,42 @@ export default function AdminAddBookPage() {
   const [authors, setAuthors] = useState([]);
   const [loadingAuthors, setLoadingAuthors] = useState(true);
 
+  const ALLOWED_STATUS = ["available", "checked-out", "reserved", "maintenance", "lost"];
+  const ALLOWED_POLICIES = ["standard", "short-loan", "reference-only", "staff-only"];
+
   useEffect(() => {
     async function loadData() {
       try {
-        const [shelvesRes, authorsRes] = await Promise.all([
+        console.log("Loading book with ID:", bookId);
+        const [bookRes, shelvesRes, authorsRes] = await Promise.all([
+          fetch(`/api/admin/books/${bookId}`, { cache: "no-store" }),
           fetch("/api/admin/shelves?pageSize=100", { cache: "no-store" }),
           fetch("/api/admin/authors?pageSize=100", { cache: "no-store" })
         ]);
+        
+        console.log("Book response status:", bookRes.status);
+        const bookData = await bookRes.json().catch(() => ({}));
+        console.log("Book data:", bookData);
+        
+        if (bookRes.ok && bookData?.ok && bookData?.book) {
+          const book = bookData.book;
+          console.log("Setting book data:", book);
+          setTitle(book.title || "");
+          setAuthor(book.author || "");
+          setYear(book.year ? String(book.year) : "");
+          setShelf(book.shelf || "");
+          setIsbn(book.isbn || "");
+          setPublisher(book.publisher || "");
+          setFormat(book.format || "");
+          setEbookUrl(book.ebookUrl || "");
+          setBarcode(book.barcode || "");
+          setCategory(book.category || "");
+          setStatus(book.status || "available");
+          setLoanPolicy(book.loanPolicy || "standard");
+        } else {
+          console.error("Failed to load book:", bookData);
+          showToast(bookData?.error || "Failed to load book details", "error");
+        }
         
         const shelvesData = await shelvesRes.json().catch(() => ({}));
         if (shelvesRes.ok && shelvesData?.ok) {
@@ -50,16 +82,17 @@ export default function AdminAddBookPage() {
         }
       } catch (e) {
         console.error("Failed to load data:", e);
+        showToast(e?.message || "Failed to load book details", "error");
       } finally {
+        setLoading(false);
         setLoadingShelves(false);
         setLoadingAuthors(false);
       }
     }
-    loadData();
-  }, []);
-
-  const ALLOWED_STATUS = ["available", "checked-out", "reserved", "maintenance", "lost"];
-  const ALLOWED_POLICIES = ["standard", "short-loan", "reference-only", "staff-only"];
+    if (bookId) {
+      loadData();
+    }
+  }, [bookId]);
 
   function validateForm() {
     const e = {};
@@ -70,12 +103,10 @@ export default function AdminAddBookPage() {
     const trimmedPublisher = publisher.trim();
     const trimmedBarcode = barcode.trim();
     const currentYear = new Date().getFullYear();
-    const OLDEST_YEAR = 1450; // Gutenberg printing press era
+    const OLDEST_YEAR = 1450;
 
-    // Title validation
     if (!trimmedTitle) e.title = "Title is required";
 
-    // Author validation - must not contain numbers or excessive symbols
     if (!trimmedAuthor) {
       e.author = "Author is required";
     } else if (/\d/.test(trimmedAuthor)) {
@@ -84,7 +115,6 @@ export default function AdminAddBookPage() {
       e.author = "Author name contains invalid characters";
     }
 
-    // Year validation - must be numeric and within valid range
     if (year === "") {
       e.year = "Year is required";
     } else if (!/^\d+$/.test(year)) {
@@ -96,34 +126,28 @@ export default function AdminAddBookPage() {
       }
     }
 
-    // ISBN validation - either empty or exactly 13 digits
     if (trimmedIsbn !== "") {
       if (!/^\d{13}$/.test(trimmedIsbn)) {
         e.isbn = "ISBN must be either empty or exactly 13 digits";
       }
     }
 
-    // Publisher validation - optional, but if provided must not be just numbers
     if (trimmedPublisher !== "" && /^\d+$/.test(trimmedPublisher)) {
       e.publisher = "Publisher cannot be only numbers";
     }
 
-    // Barcode validation - optional, but if provided must have value
     if (trimmedBarcode !== "" && trimmedBarcode.length < 3) {
       e.barcode = "Item ID must be at least 3 characters if provided";
     }
 
-    // Format validation - required for book data integrity
     if (!format) {
       e.format = "Book format/type is required";
     }
 
-    // Category validation - required for book data integrity
     if (!category) {
       e.category = "Book category is required";
     }
 
-    // Shelf is only required for non-eBook formats
     if (format !== "eBook" && !trimmedShelf) {
       e.shelf = "Shelf is required";
     }
@@ -148,7 +172,6 @@ export default function AdminAddBookPage() {
     if (submitting) return;
     const { valid, firstKey } = validateForm();
     if (!valid) {
-      // Focus first invalid field
       const el = document.querySelector(`[data-field="${firstKey}"]`);
       if (el?.focus) el.focus();
       showToast("Please fix errors in the form", "error");
@@ -156,8 +179,8 @@ export default function AdminAddBookPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/admin/books/create", {
-        method: "POST",
+      const res = await fetch(`/api/admin/books/${bookId}`, {
+        method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title,
@@ -176,29 +199,26 @@ export default function AdminAddBookPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || "Failed to add book");
+        throw new Error(data?.error || "Failed to update book");
       }
-      showToast(`Book "${data.book?.title || title}" added successfully!`, "success");
-      // Reset form after success
-      setTitle("");
-      setAuthor("");
-      setYear("");
-      setShelf("");
-      setIsbn("");
-      setPublisher("");
-      setFormat("");
-      setEbookUrl("");
-      setBarcode("");
-      setCategory("");
-      setStatus("available");
-      setLoanPolicy("standard");
-      setErrors({});
-      // Optionally navigate to dashboard or a list page later
+      showToast(`Book "${data.book?.title || title}" updated successfully!`, "success");
+      setTimeout(() => router.push("/admin/books"), 1500);
     } catch (err) {
-      showToast(err?.message || "Failed to add book", "error");
+      showToast(err?.message || "Failed to update book", "error");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+        <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
+        <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+          <p className="text-zinc-600">Loading book details...</p>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -209,8 +229,8 @@ export default function AdminAddBookPage() {
         <header className="space-y-3 border-b border-(--stroke) pb-6">
           <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Add a Book</h1>
-            <p className="text-sm text-zinc-600">Enter basic bibliographic details to add a title to the catalog.</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Edit Book</h1>
+            <p className="text-sm text-zinc-600">Update bibliographic details for this title.</p>
           </div>
         </header>
 
@@ -500,7 +520,7 @@ export default function AdminAddBookPage() {
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              onClick={() => router.push("/admin/dashboard")}
+              onClick={() => router.push("/admin/books")}
               className="rounded-xl border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
             >
               Cancel
@@ -510,7 +530,7 @@ export default function AdminAddBookPage() {
               disabled={submitting}
               className="rounded-xl border border-zinc-900 bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? "Adding…" : "Add book"}
+              {submitting ? "Updating…" : "Update book"}
             </button>
           </div>
         </form>

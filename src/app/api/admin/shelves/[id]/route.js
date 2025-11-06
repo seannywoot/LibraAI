@@ -8,12 +8,13 @@ function safeObjectId(id) { try { return new ObjectId(id); } catch { return null
 
 export async function GET(request, { params }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session || session.user?.role !== "admin") {
       return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
     }
 
-    const _id = safeObjectId(params.id);
+    const _id = safeObjectId(id);
     if (!_id) return new Response(JSON.stringify({ ok: false, error: "Invalid id" }), { status: 400, headers: { "content-type": "application/json" } });
 
     const client = await clientPromise;
@@ -32,12 +33,13 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session || session.user?.role !== "admin") {
       return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
     }
 
-    const _id = safeObjectId(params.id);
+    const _id = safeObjectId(id);
     if (!_id) return new Response(JSON.stringify({ ok: false, error: "Invalid id" }), { status: 400, headers: { "content-type": "application/json" } });
 
     const body = await request.json().catch(() => ({}));
@@ -60,7 +62,17 @@ export async function PUT(request, { params }) {
     const db = client.db();
     const shelves = db.collection("shelves");
 
-    await shelves.createIndex({ codeLower: 1 }, { unique: true });
+    // Ensure unique index exists (idempotent operation)
+    try {
+      const indexes = await shelves.indexes();
+      const hasCodeLowerIndex = indexes.some(idx => idx.name === 'codeLower_1');
+      if (!hasCodeLowerIndex) {
+        await shelves.createIndex({ codeLower: 1 }, { unique: true });
+      }
+    } catch (indexErr) {
+      // Index might already exist, continue
+      console.log("Index creation note:", indexErr.message);
+    }
 
     const now = new Date();
     const res = await shelves.updateOne(
@@ -90,12 +102,13 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session || session.user?.role !== "admin") {
       return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
     }
 
-    const _id = safeObjectId(params.id);
+    const _id = safeObjectId(id);
     if (!_id) return new Response(JSON.stringify({ ok: false, error: "Invalid id" }), { status: 400, headers: { "content-type": "application/json" } });
 
     const client = await clientPromise;
@@ -103,18 +116,33 @@ export async function DELETE(request, { params }) {
     const shelves = db.collection("shelves");
 
     const shelf = await shelves.findOne({ _id }, { projection: { code: 1 } });
-    if (!shelf) return new Response(JSON.stringify({ ok: false, error: "Not found" }), { status: 404, headers: { "content-type": "application/json" } });
-
-    // Reference safety: any book with shelf code equal (case-insensitive)?
-    const books = db.collection("books");
-    const codeRegex = new RegExp(`^${shelf.code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
-    const inUse = await books.findOne({ shelf: { $regex: codeRegex } }, { projection: { _id: 1 } });
-    if (inUse) {
-      return new Response(JSON.stringify({ ok: false, error: "Cannot delete: shelf is referenced by books" }), { status: 409, headers: { "content-type": "application/json" } });
+    if (!shelf) {
+      console.log("DELETE shelf: Shelf not found with id:", id);
+      return new Response(JSON.stringify({ ok: false, error: "Shelf not found" }), { status: 404, headers: { "content-type": "application/json" } });
     }
 
-    await shelves.deleteOne({ _id });
-    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "content-type": "application/json" } });
+    console.log("DELETE shelf: Checking if shelf code", shelf.code, "is in use");
+
+    // Reference safety: unassign any books that reference this shelf code before deletion
+    const books = db.collection("books");
+    const shelfCodePattern = new RegExp(`^${shelf.code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+    const now = new Date();
+    const unassignResult = await books.updateMany(
+      { shelf: shelfCodePattern },
+      { $set: { shelf: null, updatedAt: now } }
+    );
+
+    if (unassignResult.modifiedCount > 0) {
+      console.log(`DELETE shelf: Unassigned ${unassignResult.modifiedCount} book(s) previously on shelf`, shelf.code);
+    } else {
+      console.log("DELETE shelf: No books were referencing shelf", shelf.code);
+    }
+
+    console.log("DELETE shelf: Proceeding with deletion");
+    const deleteResult = await shelves.deleteOne({ _id });
+    console.log("DELETE shelf: Deletion result:", deleteResult);
+    
+    return new Response(JSON.stringify({ ok: true, unassignedBooks: unassignResult.modifiedCount, message: unassignResult.modifiedCount > 0 ? `Shelf deleted and ${unassignResult.modifiedCount} linked book${unassignResult.modifiedCount === 1 ? "" : "s"} unassigned.` : "Shelf deleted successfully." }), { status: 200, headers: { "content-type": "application/json" } });
   } catch (err) {
     console.error("Delete shelf failed:", err);
     return new Response(JSON.stringify({ ok: false, error: err?.message || "Unknown error" }), { status: 500, headers: { "content-type": "application/json" } });

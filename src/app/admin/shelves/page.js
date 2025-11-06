@@ -5,6 +5,7 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Edit as EditIcon, Trash2 } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
+import { ToastContainer, showToast } from "@/components/ToastContainer";
 import Link from "next/link";
 
 function RowActions({ onEdit, onDelete }) {
@@ -86,9 +87,12 @@ export default function AdminShelvesPage() {
       const res = await fetch("/api/admin/shelves", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: c, name, location, capacity: capacity === "" ? null : Number(capacity), notes }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Create failed");
+      showToast(`Shelf "${c}" added successfully!`, "success");
       setCode(""); setName(""); setLocation(""); setCapacity(""); setNotes("");
       await load();
-    } catch (e) { alert(e?.message || "Error"); }
+    } catch (e) { 
+      showToast(e?.message || "Failed to add shelf", "error");
+    }
   }
 
   async function saveEdit(id) {
@@ -99,9 +103,12 @@ export default function AdminShelvesPage() {
       const res = await fetch(`/api/admin/shelves/${id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Update failed");
+      showToast(`Shelf "${c}" updated successfully!`, "success");
       setEditingId(null);
       await load();
-    } catch (e) { alert(e?.message || "Error"); }
+    } catch (e) { 
+      showToast(e?.message || "Failed to update shelf", "error");
+    }
   }
 
   async function deleteShelf(id) {
@@ -110,8 +117,12 @@ export default function AdminShelvesPage() {
       const res = await fetch(`/api/admin/shelves/${id}`, { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Delete failed");
+      const successMessage = data?.message || "Shelf deleted successfully";
+      showToast(successMessage, "success");
       await load();
-    } catch (e) { alert(e?.message || "Error"); }
+    } catch (e) { 
+      showToast(e?.message || "Failed to delete shelf", "error");
+    }
   }
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -272,6 +283,8 @@ export default function AdminShelvesPage() {
           </section>
         )}
       </main>
+
+      <ToastContainer position="top-right" />
     </div>
   );
 }

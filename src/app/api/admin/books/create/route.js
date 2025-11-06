@@ -63,6 +63,20 @@ export async function POST(request) {
         { status: 400, headers: { "content-type": "application/json" } }
       );
     }
+    // Format is required for book data integrity
+    if (!format) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Book format/type is required" }),
+        { status: 400, headers: { "content-type": "application/json" } }
+      );
+    }
+    // Category is required for book data integrity
+    if (!category) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Book category is required" }),
+        { status: 400, headers: { "content-type": "application/json" } }
+      );
+    }
     // Shelf is only required for non-eBook formats
     if (format !== "eBook" && !shelf) {
       return new Response(
@@ -71,9 +85,17 @@ export async function POST(request) {
       );
     }
     const currentYear = new Date().getFullYear();
-    if (!Number.isFinite(year) || year < 0 || year > currentYear + 1) {
+    const OLDEST_YEAR = 1450;
+    if (!Number.isFinite(year) || year < OLDEST_YEAR || year > currentYear) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Year must be a valid number" }),
+        JSON.stringify({ ok: false, error: `Year must be between ${OLDEST_YEAR} and ${currentYear}` }),
+        { status: 400, headers: { "content-type": "application/json" } }
+      );
+    }
+    // ISBN validation - either empty or exactly 13 digits
+    if (isbn && !/^\d{13}$/.test(isbn)) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "ISBN must be exactly 13 digits if provided" }),
         { status: 400, headers: { "content-type": "application/json" } }
       );
     }
@@ -101,6 +123,51 @@ export async function POST(request) {
         books.createIndex({ barcode: 1 }),
       ]);
     } catch (_) {}
+
+    // Check for duplicate entries - same title, author, and year
+    const duplicateCheck = await books.findOne({
+      title: { $regex: new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      author: { $regex: new RegExp(`^${author.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      year: year
+    });
+
+    if (duplicateCheck) {
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: "A book with the same title, author, and year already exists. Please use a unique identifier or check existing entries." 
+        }),
+        { status: 409, headers: { "content-type": "application/json" } }
+      );
+    }
+
+    // Check for duplicate ISBN if provided
+    if (isbn) {
+      const isbnCheck = await books.findOne({ isbn });
+      if (isbnCheck) {
+        return new Response(
+          JSON.stringify({ 
+            ok: false, 
+            error: "A book with this ISBN already exists in the system." 
+          }),
+          { status: 409, headers: { "content-type": "application/json" } }
+        );
+      }
+    }
+
+    // Check for duplicate barcode if provided
+    if (barcode) {
+      const barcodeCheck = await books.findOne({ barcode });
+      if (barcodeCheck) {
+        return new Response(
+          JSON.stringify({ 
+            ok: false, 
+            error: "A book with this barcode/item ID already exists in the system." 
+          }),
+          { status: 409, headers: { "content-type": "application/json" } }
+        );
+      }
+    }
 
     const now = new Date();
     const doc = {
