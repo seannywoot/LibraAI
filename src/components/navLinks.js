@@ -26,6 +26,7 @@ export function getAdminLinks() {
     { key: "admin-transactions", label: "Transactions", href: "/admin/transactions", exact: true, icon: <History className="h-4 w-4" /> },
     { key: "admin-authors", label: "Authors", href: "/admin/authors", exact: true, icon: <Users className="h-4 w-4" /> },
     { key: "admin-shelves", label: "Shelves", href: "/admin/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
+    { key: "admin-faq", label: "FAQ Management", href: "/admin/faq-setup", exact: true, icon: <HelpCircle className="h-4 w-4" /> },
     { key: "admin-profile", label: "Profile", href: "/admin/profile", exact: true, icon: <User className="h-4 w-4" /> },
     { key: "admin-settings", label: "Settings", href: "/admin/settings", exact: true, icon: <Settings className="h-4 w-4" /> },
   ];

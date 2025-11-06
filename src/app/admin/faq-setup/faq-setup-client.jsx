@@ -5,11 +5,10 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { Plus, Edit2, Trash2, X } from "lucide-react";
+import { ToastContainer, showToast } from "@/components/ToastContainer";
 
 export default function FAQSetupClient() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
   const [faqs, setFaqs] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingFaq, setEditingFaq] = useState(null);
@@ -28,44 +27,22 @@ export default function FAQSetupClient() {
 
   const fetchFAQs = async () => {
     try {
-      const response = await fetch("/api/faq");
+      const response = await fetch("/api/faq?includeInactive=true");
       const data = await response.json();
       if (data.success) {
         setFaqs(data.faqs);
+      } else {
+        showToast("Failed to load FAQs", "error");
       }
     } catch (err) {
       console.error("Failed to fetch FAQs:", err);
-    }
-  };
-
-  const handleSeed = async () => {
-    setLoading(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const response = await fetch("/api/faq/seed", {
-        method: "POST",
-      });
-      const data = await response.json();
-
-      if (data.success) {
-        setResult(data);
-        fetchFAQs();
-      } else {
-        setError(data.error || "Failed to seed FAQs");
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      showToast("Failed to load FAQs", "error");
     }
   };
 
   const handleAddFAQ = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch("/api/faq", {
@@ -79,14 +56,15 @@ export default function FAQSetupClient() {
       const data = await response.json();
 
       if (data.success) {
+        showToast("FAQ added successfully!", "success");
         setShowAddModal(false);
         setFormData({ question: "", answer: "", category: "general", keywords: "" });
         fetchFAQs();
       } else {
-        setError(data.error || "Failed to add FAQ");
+        showToast(data.error || "Failed to add FAQ", "error");
       }
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Failed to add FAQ", "error");
     } finally {
       setLoading(false);
     }
@@ -95,7 +73,6 @@ export default function FAQSetupClient() {
   const handleUpdateFAQ = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch(`/api/faq/${editingFaq._id}`, {
@@ -109,14 +86,15 @@ export default function FAQSetupClient() {
       const data = await response.json();
 
       if (data.success) {
+        showToast("FAQ updated successfully!", "success");
         setEditingFaq(null);
         setFormData({ question: "", answer: "", category: "general", keywords: "" });
         fetchFAQs();
       } else {
-        setError(data.error || "Failed to update FAQ");
+        showToast(data.error || "Failed to update FAQ", "error");
       }
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Failed to update FAQ", "error");
     } finally {
       setLoading(false);
     }
@@ -132,12 +110,13 @@ export default function FAQSetupClient() {
       const data = await response.json();
 
       if (data.success) {
+        showToast("FAQ deleted successfully!", "success");
         fetchFAQs();
       } else {
-        setError(data.error || "Failed to delete FAQ");
+        showToast(data.error || "Failed to delete FAQ", "error");
       }
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Failed to delete FAQ", "error");
     }
   };
 
@@ -163,6 +142,7 @@ export default function FAQSetupClient() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+      <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"
         links={navigationLinks}
@@ -188,63 +168,6 @@ export default function FAQSetupClient() {
             Add New FAQ
           </button>
         </div>
-
-        <div className="grid gap-6 lg:grid-cols-2 mb-6">
-          {/* Seed Database Card */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-zinc-800 mb-2">
-              Seed FAQ Database
-            </h2>
-            <p className="text-sm text-zinc-600 mb-4">
-              Populate with 11 default FAQs across 4 categories
-            </p>
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
-              <p className="text-xs text-amber-800">
-                ⚠️ This will delete all existing FAQs
-              </p>
-            </div>
-            <button
-              onClick={handleSeed}
-              disabled={loading}
-              className="w-full px-4 py-2 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 disabled:opacity-50 transition"
-            >
-              {loading ? "Seeding..." : "Seed Database"}
-            </button>
-          </div>
-
-          {/* Stats Card */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-zinc-800 mb-4">
-              FAQ Statistics
-            </h2>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-zinc-600">Total FAQs</span>
-                <span className="text-2xl font-bold text-zinc-900">{faqs.length}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-zinc-600">Categories</span>
-                <span className="text-2xl font-bold text-zinc-900">
-                  {new Set(faqs.map(f => f.category)).size}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {result && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm font-semibold text-green-800">
-              ✅ {result.message} - {result.count} FAQs added
-            </p>
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm font-semibold text-red-800">❌ {error}</p>
-          </div>
-        )}
 
         {/* Existing FAQs */}
         <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm">

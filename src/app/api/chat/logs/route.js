@@ -2,60 +2,66 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { ObjectId } from "mongodb";
 
-export async function GET(request) {
+export async function PATCH(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session) {
+    if (!session || session.user?.role !== "admin") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
+    const { logId, convertedToFAQ, dismissed } = await request.json();
+
+    if (!logId) {
+      return NextResponse.json(
+        { success: false, error: "Log ID is required" },
+        { status: 400 }
+      );
+    }
+
     const db = await getDb();
     const chatLogsCollection = db.collection("chat_logs");
 
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const conversationId = searchParams.get("conversationId");
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const skip = parseInt(searchParams.get("skip") || "0");
-
-    let query = {};
-
-    // Admin can see all logs, users can only see their own
-    if (session.user.role !== "admin") {
-      query.userId = session.user.email;
-    } else if (userId) {
-      query.userId = userId;
+    // Build update object based on action
+    const updateFields = {};
+    
+    if (convertedToFAQ !== undefined) {
+      updateFields.convertedToFAQ = convertedToFAQ;
+      updateFields.convertedAt = new Date();
+      updateFields.convertedBy = session.user.email;
+    }
+    
+    if (dismissed !== undefined) {
+      updateFields.dismissed = dismissed;
+      updateFields.dismissedAt = new Date();
+      updateFields.dismissedBy = session.user.email;
     }
 
-    if (conversationId) {
-      query.conversationId = conversationId;
+    const result = await chatLogsCollection.updateOne(
+      { _id: new ObjectId(logId) },
+      { $set: updateFields }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { success: false, error: "Chat log not found" },
+        { status: 404 }
+      );
     }
-
-    const logs = await chatLogsCollection
-      .find(query)
-      .sort({ timestamp: -1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
-
-    const total = await chatLogsCollection.countDocuments(query);
 
     return NextResponse.json({
       success: true,
-      logs,
-      total,
-      page: Math.floor(skip / limit) + 1,
-      totalPages: Math.ceil(total / limit),
+      message: "Chat log updated successfully"
     });
   } catch (error) {
-    console.error("Chat logs fetch error:", error);
+    console.error("Error updating chat log:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch chat logs" },
+      { success: false, error: "Failed to update chat log" },
       { status: 500 }
     );
   }

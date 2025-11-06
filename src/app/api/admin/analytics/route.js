@@ -14,6 +14,11 @@ export async function GET(request) {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const queriesPage = parseInt(searchParams.get("queriesPage") || "1", 10);
+    const feedbackPage = parseInt(searchParams.get("feedbackPage") || "1", 10);
+    const pageSize = 5;
+
     const db = await getDb();
     
     // Get total searches (chat logs)
@@ -36,62 +41,103 @@ export async function GET(request) {
       createdAt: { $gte: sevenDaysAgo }
     });
     
-    // Get unanswered questions (from chat logs with specific patterns)
-    const unansweredQuestions = await chatLogsCollection.find({
-      $or: [
-        { aiResponse: /I don't have|I'm not sure|I cannot/i },
-        { userMessage: /how to|what is|where can/i }
+    // Improved filtering for unanswered questions
+    // Patterns indicating the AI couldn't answer properly
+    const uncertaintyPatterns = [
+      /I don't have|I'm not sure|I cannot|I can't|I apologize|I'm sorry/i,
+      /don't know|unable to|not able to|no information|not available/i,
+      /try again|please rephrase|could you clarify|need more context/i,
+      /having trouble|can't help with that|outside my knowledge/i,
+      /I'm having trouble generating|failed to get response/i
+    ];
+    
+    // Patterns indicating user is asking a question
+    const questionPatterns = [
+      /^(how|what|when|where|why|who|which|can|could|would|should|is|are|do|does)/i,
+      /\?$/,  // Ends with question mark
+      /tell me|show me|explain|help me|I need|I want to know/i,
+      /looking for|searching for|find out|wondering/i
+    ];
+    
+    // Build query for unanswered questions
+    const unansweredQuery = {
+      $and: [
+        {
+          $or: [
+            // AI response indicates uncertainty or inability to answer
+            ...uncertaintyPatterns.map(pattern => ({ aiResponse: pattern })),
+            // User message looks like a question
+            ...questionPatterns.map(pattern => ({ userMessage: pattern }))
+          ]
+        },
+        // Exclude already converted questions
+        { convertedToFAQ: { $ne: true } },
+        // Exclude dismissed questions
+        { dismissed: { $ne: true } },
+        // Exclude very short messages (likely not real questions)
+        { $expr: { $gte: [{ $strLenCP: "$userMessage" }, 10] } }
       ]
-    })
+    };
+    
+    // Get total count of unanswered questions (excluding converted ones)
+    const totalUnansweredCount = await chatLogsCollection.countDocuments(unansweredQuery);
+    
+    // Get unanswered questions with pagination (5 per page, excluding converted ones)
+    const unansweredQuestions = await chatLogsCollection.find(unansweredQuery)
     .sort({ timestamp: -1 })
-    .limit(10)
+    .skip((queriesPage - 1) * pageSize)
+    .limit(pageSize)
     .toArray();
     
-    // Get FAQ feedback (simulated - you can add a feedback collection later)
-    const faqFeedback = await faqCollection.aggregate([
-      {
-        $project: {
-          question: 1,
-          category: 1,
-          createdAt: 1,
-          feedback: { $ifNull: ["$feedback", "helpful"] }
-        }
-      },
-      { $sort: { createdAt: -1 } },
-      { $limit: 10 }
-    ]).toArray();
+    // Get FAQ feedback from the feedback collection
+    const feedbackCollection = db.collection("faq_feedback");
     
-    // Get most searched keywords
-    const topKeywords = await chatLogsCollection.aggregate([
-      { $match: { timestamp: { $gte: sevenDaysAgo } } },
-      {
-        $project: {
-          words: {
-            $split: [
-              { $toLower: "$userMessage" },
-              " "
-            ]
-          }
-        }
-      },
-      { $unwind: "$words" },
-      {
-        $match: {
-          words: {
-            $nin: ["the", "a", "an", "is", "are", "how", "what", "where", "when", "why", "can", "i", "you", "to", "in", "on", "at", "for", "of", "with"]
-          },
-          $expr: { $gte: [{ $strLenCP: "$words" }, 4] }
-        }
-      },
-      {
-        $group: {
-          _id: "$words",
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]).toArray();
+    // Get total count of FAQ feedback
+    const totalFeedbackCount = await feedbackCollection.countDocuments();
+    
+    // Get FAQ feedback with pagination (5 per page)
+    const faqFeedback = await feedbackCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .skip((feedbackPage - 1) * pageSize)
+      .limit(pageSize)
+      .toArray();
+
+    // Get transaction statistics
+    const transactionsCollection = db.collection("transactions");
+    
+    // Pending borrow requests
+    const pendingBorrowRequests = await transactionsCollection.countDocuments({
+      status: "pending-approval"
+    });
+    
+    // Recent pending requests (last 24 hours)
+    const recentPendingRequests = await transactionsCollection.countDocuments({
+      status: "pending-approval",
+      requestedAt: { $gte: oneDayAgo }
+    });
+    
+    // Return requests
+    const returnRequests = await transactionsCollection.countDocuments({
+      status: "return-requested"
+    });
+    
+    // Recent return requests (last 24 hours)
+    const recentReturnRequests = await transactionsCollection.countDocuments({
+      status: "return-requested",
+      returnRequestedAt: { $gte: oneDayAgo }
+    });
+    
+    // Total active transactions (borrowed books)
+    const activeTransactions = await transactionsCollection.countDocuments({
+      status: "borrowed"
+    });
+    
+    // Recent transactions (last 24 hours)
+    const recentTransactions = await transactionsCollection.countDocuments({
+      status: "borrowed",
+      borrowedAt: { $gte: oneDayAgo }
+    });
 
     return NextResponse.json({
       success: true,
@@ -100,24 +146,40 @@ export async function GET(request) {
         recentSearches,
         totalFAQs,
         recentFAQs,
-        unansweredCount: unansweredQuestions.length,
+        unansweredCount: totalUnansweredCount,
         unansweredQuestions: unansweredQuestions.map(q => ({
           id: q._id,
           question: q.userMessage,
           timestamp: q.timestamp,
           user: q.userName || "Anonymous"
         })),
+        unansweredPagination: {
+          currentPage: queriesPage,
+          pageSize,
+          totalItems: totalUnansweredCount,
+          totalPages: Math.ceil(totalUnansweredCount / pageSize)
+        },
         faqFeedback: faqFeedback.map(f => ({
           id: f._id,
           question: f.question,
           category: f.category,
           feedback: f.feedback,
-          date: f.createdAt
+          userName: f.userName,
+          createdAt: f.createdAt
         })),
-        topKeywords: topKeywords.map(k => ({
-          keyword: k._id,
-          count: k.count
-        }))
+        feedbackPagination: {
+          currentPage: feedbackPage,
+          pageSize,
+          totalItems: totalFeedbackCount,
+          totalPages: Math.ceil(totalFeedbackCount / pageSize)
+        },
+        // Transaction statistics
+        pendingBorrowRequests,
+        recentPendingRequests,
+        returnRequests,
+        recentReturnRequests,
+        activeTransactions,
+        recentTransactions
       }
     });
   } catch (error) {

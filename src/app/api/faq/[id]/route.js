@@ -6,8 +6,21 @@ export async function PUT(request, { params }) {
   try {
     const db = await getDb();
     const faqCollection = db.collection("faqs");
-    const { id } = params;
+    
+    // Await params in Next.js 15
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
     const updates = await request.json();
+
+    console.log("Updating FAQ with ID:", id);
+
+    // Validate ObjectId
+    if (!ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid FAQ ID format" },
+        { status: 400 }
+      );
+    }
 
     // Add updatedAt timestamp
     updates.updatedAt = new Date();
@@ -29,7 +42,7 @@ export async function PUT(request, { params }) {
   } catch (error) {
     console.error("FAQ update error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to update FAQ" },
+      { success: false, error: error.message || "Failed to update FAQ" },
       { status: 500 }
     );
   }
@@ -39,7 +52,20 @@ export async function DELETE(request, { params }) {
   try {
     const db = await getDb();
     const faqCollection = db.collection("faqs");
-    const { id } = params;
+    
+    // Await params in Next.js 15
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
+
+    console.log("Deleting FAQ with ID:", id);
+
+    // Validate ObjectId
+    if (!ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid FAQ ID format" },
+        { status: 400 }
+      );
+    }
 
     const result = await faqCollection.deleteOne({ _id: new ObjectId(id) });
 
@@ -54,7 +80,7 @@ export async function DELETE(request, { params }) {
   } catch (error) {
     console.error("FAQ deletion error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to delete FAQ" },
+      { success: false, error: error.message || "Failed to delete FAQ" },
       { status: 500 }
     );
   }

@@ -9,8 +9,9 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const search = searchParams.get("search");
+    const includeInactive = searchParams.get("includeInactive") === "true";
 
-    let query = { isActive: true };
+    let query = includeInactive ? {} : { isActive: true };
 
     if (category) {
       query.category = category;
@@ -36,7 +37,13 @@ export async function GET(request) {
         .toArray();
     }
 
-    return NextResponse.json({ success: true, faqs });
+    // Convert ObjectId to string for client-side usage
+    const faqsWithStringId = faqs.map(faq => ({
+      ...faq,
+      _id: faq._id.toString()
+    }));
+
+    return NextResponse.json({ success: true, faqs: faqsWithStringId });
   } catch (error) {
     console.error("FAQ fetch error:", error);
     return NextResponse.json(

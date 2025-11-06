@@ -31,10 +31,13 @@ export default function StudentDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const navigationLinks = getStudentLinks();
 
   useEffect(() => {
     loadDashboardData();
+    loadStats();
   }, []);
 
   async function loadDashboardData() {
@@ -72,6 +75,21 @@ export default function StudentDashboardPage() {
     }
   }
 
+  async function loadStats() {
+    setStatsLoading(true);
+    try {
+      const res = await fetch("/api/student/stats", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        setStats(data.stats);
+      }
+    } catch (e) {
+      console.error("Failed to load stats:", e);
+    } finally {
+      setStatsLoading(false);
+    }
+  }
+
   // Books that are overdue or due within 1 day (red alert)
   const criticalBooks = borrowedBooks.filter(book => {
     const daysUntil = getDaysUntilDue(book.dueDate);
@@ -101,6 +119,98 @@ export default function StudentDashboardPage() {
             Here&apos;s an overview of your borrowed books and personalized recommendations.
           </p>
         </header>
+
+        {/* Reading Statistics Widget */}
+        {!statsLoading && stats && (
+          <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {/* Total Borrowed */}
+            <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Borrowed</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalBorrowed}</p>
+                  <p className="text-xs text-gray-500 mt-1">All time</p>
+                </div>
+                <div className="rounded-full bg-blue-100 p-3">
+                  <Book className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Currently Borrowed */}
+            <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Currently Reading</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats.currentlyBorrowed}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {stats.pendingRequests > 0 && `${stats.pendingRequests} pending`}
+                  </p>
+                </div>
+                <div className="rounded-full bg-amber-100 p-3">
+                  <Clock className="h-6 w-6 text-amber-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Books Returned */}
+            <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Books Returned</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalReturned}</p>
+                  {stats.totalReturned > 0 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {Math.round((stats.onTimeReturns / stats.totalReturned) * 100)}% on time
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-full bg-green-100 p-3">
+                  <Book className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Books Viewed This Month */}
+            <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Viewed This Month</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats.booksViewedThisMonth}</p>
+                  <p className="text-xs text-gray-500 mt-1">Books explored</p>
+                </div>
+                <div className="rounded-full bg-purple-100 p-3">
+                  <Book className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Favorite Categories */}
+        {!statsLoading && stats && stats.favoriteCategories.length > 0 && (
+          <section>
+            <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Your Favorite Categories</h3>
+              <div className="space-y-2">
+                {stats.favoriteCategories.map((category, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">{category.name}</span>
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      {category.count} views
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <Link
+                href="/student/books"
+                className="inline-block mt-3 text-xs font-medium text-gray-600 hover:text-gray-900"
+              >
+                Explore more →
+              </Link>
+            </div>
+          </section>
+        )}
 
         {/* Alerts Section */}
         {!loading && (criticalBooks.length > 0 || dueSoonBooks.length > 0) && (
@@ -196,7 +306,7 @@ export default function StudentDashboardPage() {
                 return (
                   <Link
                     key={transaction._id}
-                    href={`/student/books/${transaction.bookId}`}
+                    href="/student/library?tab=borrowed"
                     className={`block rounded-lg border p-4 hover:shadow-md transition-shadow ${
                       isCritical
                         ? "border-rose-200 bg-rose-50"

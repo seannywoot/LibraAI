@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { Search } from "@/components/icons";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ThumbsUp, ThumbsDown } from "lucide-react";
 
 export default function FAQContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("borrowing");
   const [faqData, setFaqData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [feedbackGiven, setFeedbackGiven] = useState({});
 
   const categories = [
     { id: "borrowing", label: "Borrowing" },
@@ -47,6 +49,31 @@ export default function FAQContent() {
     faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
     faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleFeedback = async (faqId, feedbackType) => {
+    try {
+      const response = await fetch("/api/faq/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          faqId,
+          feedback: feedbackType
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Mark this FAQ as having feedback given
+        setFeedbackGiven(prev => ({
+          ...prev,
+          [faqId]: feedbackType
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to submit feedback:", error);
+    }
+  };
 
   return (
     <main className="max-w-4xl mx-auto">
@@ -109,16 +136,30 @@ export default function FAQContent() {
                 </AccordionTrigger>
                 <AccordionContent className="text-zinc-600">
                   {faq.answer}
-                  <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
-                    <span>Was this helpful?</span>
-                    <button className="flex items-center gap-1 hover:text-zinc-700 transition-colors">
-                      <span>👍</span>
-                      <span>Helpful</span>
-                    </button>
-                    <button className="flex items-center gap-1 hover:text-zinc-700 transition-colors">
-                      <span>👎</span>
-                      <span>Not Helpful</span>
-                    </button>
+                  <div className="mt-4 flex items-center gap-3 text-xs">
+                    <span className="text-zinc-500">Was this helpful?</span>
+                    {feedbackGiven[faq._id] ? (
+                      <span className="text-zinc-600 font-medium">
+                        Thanks for your feedback!
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleFeedback(faq._id, "helpful")}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                          <span>Helpful</span>
+                        </button>
+                        <button
+                          onClick={() => handleFeedback(faq._id, "not-helpful")}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 hover:border-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                          <span>Not Helpful</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
