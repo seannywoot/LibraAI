@@ -122,7 +122,7 @@ export default function StudentDashboardPage() {
 
         {/* Reading Statistics Widget */}
         {!statsLoading && stats && (
-          <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <section className="grid gap-4 md:grid-cols-3">
             {/* Total Borrowed */}
             <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
               <div className="flex items-center justify-between">
@@ -167,20 +167,6 @@ export default function StudentDashboardPage() {
                 </div>
                 <div className="rounded-full bg-green-100 p-3">
                   <Book className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            {/* Books Viewed This Month */}
-            <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Viewed This Month</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats.booksViewedThisMonth}</p>
-                  <p className="text-xs text-gray-500 mt-1">Books explored</p>
-                </div>
-                <div className="rounded-full bg-purple-100 p-3">
-                  <Book className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </div>

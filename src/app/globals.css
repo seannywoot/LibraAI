@@ -270,6 +270,21 @@
     color: #93c5fd !important;
   }
 
+  .dark .bg-black {
+    background-color: #60a5fa !important;
+  }
+
+  .dark .bg-black:hover,
+  .dark .hover\:bg-black:hover,
+  .dark .hover\:bg-gray-800:hover,
+  .dark .hover\:bg-gray-900:hover {
+    background-color: #7cb8ff !important;
+  }
+
+  .dark .bg-black:disabled {
+    background-color: #3c76c5 !important;
+  }
+
   .dark .text-zinc-900,
   .dark .text-zinc-800,
   .dark .text-gray-900,

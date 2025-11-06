@@ -34,7 +34,6 @@ export async function GET(request) {
             pendingRequests: 0,
             favoriteCategories: [],
             favoriteAuthors: [],
-            booksViewedThisMonth: 0,
             memberSince: new Date().toISOString()
           }
         }),
@@ -122,17 +121,6 @@ export async function GET(request) {
       { $limit: 3 }
     ]).toArray();
 
-    // Get books viewed this month
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const booksViewedThisMonth = await interactions.countDocuments({
-      userId: user._id,
-      eventType: "view",
-      timestamp: { $gte: startOfMonth }
-    });
-
     return new Response(
       JSON.stringify({
         ok: true,
@@ -151,7 +139,6 @@ export async function GET(request) {
             name: a._id,
             count: a.count
           })),
-          booksViewedThisMonth,
           memberSince: user.createdAt || new Date().toISOString()
         }
       }),
