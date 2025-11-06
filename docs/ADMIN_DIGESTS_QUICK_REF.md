@@ -197,3 +197,27 @@ Subject: [Daily Digest] No overdue books
 - Full docs: `docs/ADMIN_DAILY_DIGESTS.md`
 - Email templates: `src/lib/admin-email-templates.js`
 - Cron job: `src/app/api/cron/admin-digests/route.js`
+
+
+## Authentication & Links
+
+### Email Links Behavior
+
+When admins click links in digest emails:
+
+**If logged in:**
+- ✅ Goes directly to the transactions page
+- ✅ Filters applied automatically (overdue or pending)
+
+**If NOT logged in:**
+- ✅ Redirects to login page: `/auth?redirect=/admin/transactions?status=...`
+- ✅ After successful login, automatically redirects to the original page
+- ✅ Filters preserved in the redirect
+
+**Security:**
+- ✅ Middleware validates authentication
+- ✅ Auth page validates admin role
+- ✅ Only admins can access `/admin/*` routes
+- ✅ Redirect parameter is validated (must start with `/admin`)
+
+This is handled automatically by your existing middleware and auth system!

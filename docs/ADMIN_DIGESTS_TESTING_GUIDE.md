@@ -359,6 +359,34 @@ Click these links in email:
 - "View All Transactions" → Should go to `/admin/transactions?status=borrowed`
 - "Review & Approve Requests" → Should go to `/admin/transactions?status=pending-approval`
 
+### Test Authentication Flow
+
+**Test 1: Logged In Admin**
+1. Log in as admin
+2. Click "Review & Approve Requests" link in email
+3. **Expected:** Goes directly to `/admin/transactions?status=pending-approval` ✅
+4. **Expected:** Filters applied automatically ✅
+
+**Test 2: Logged Out Admin**
+1. Log out (or open link in incognito)
+2. Click "Review & Approve Requests" link in email
+3. **Expected:** Redirects to `/auth?redirect=/admin/transactions?status=pending-approval` ✅
+4. Log in as admin
+5. **Expected:** Automatically redirected to `/admin/transactions?status=pending-approval` ✅
+6. **Expected:** Filters preserved ✅
+
+**Test 3: Security (Non-Admin)**
+1. Log in as student
+2. Try to access `/admin/transactions?status=pending-approval` directly
+3. **Expected:** Redirected to `/student/dashboard` ✅
+4. **Expected:** Cannot access admin routes ✅
+
+**How It Works:**
+- Middleware (`middleware.js`) validates authentication
+- Auth page (`src/app/auth/page.js`) handles redirect parameter
+- Redirect parameter validated (must start with `/admin`)
+- This is all automatic - no configuration needed!
+
 ---
 
 ## Performance Testing

@@ -246,6 +246,31 @@ Recommended Actions:
 • Check book availability before approving
 ```
 
+## Email Link Authentication
+
+### How Links Work
+
+When admins click links in digest emails (e.g., "Review & Approve Requests"):
+
+**If admin is logged in:**
+- ✅ Goes directly to `/admin/transactions?status=pending-approval`
+- ✅ Filters applied automatically
+- ✅ Ready to take action immediately
+
+**If admin is NOT logged in:**
+- ✅ Middleware detects no authentication
+- ✅ Redirects to `/auth?redirect=/admin/transactions?status=pending-approval`
+- ✅ Admin logs in
+- ✅ Automatically redirected back to the original page with filters intact
+
+**Security:**
+- ✅ Middleware validates authentication on all `/admin/*` routes
+- ✅ Auth page validates admin role before redirect
+- ✅ Redirect parameter is validated (must start with `/admin`)
+- ✅ Non-admins cannot access admin routes
+
+This authentication flow is handled automatically by your existing middleware (`middleware.js`) and auth page (`src/app/auth/page.js`). No additional configuration needed!
+
 ## API Endpoint
 
 ### GET `/api/cron/admin-digests`
