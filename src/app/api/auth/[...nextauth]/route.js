@@ -175,11 +175,9 @@ export const authOptions = {
         token.iat = Math.floor(Date.now() / 1000); // Issued at time
       }
 
-      // Check if token has expired (24 hours)
-      const tokenAge = Math.floor(Date.now() / 1000) - (token.iat || 0);
-      if (tokenAge > 24 * 60 * 60) {
-        return null; // Force re-authentication
-      }
+      // Rely on NextAuth's built-in maxAge handling instead of hard-nullifying the token.
+      // Returning null here can cause client-side JSON parse errors when the session endpoint
+      // responds with an empty body. We'll let NextAuth manage session expiration via maxAge.
 
       // When a client calls useSession().update({ ... }), propagate allowed fields
       if (trigger === "update") {

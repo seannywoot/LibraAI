@@ -6,13 +6,14 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import Toast from "@/components/Toast";
+import DarkModeToggle from "@/components/DarkModeToggle";
 
 export default function StudentProfilePage() {
   const { data: session, update } = useSession();
   const [name, setName] = useState("Study Explorer");
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [studyReminders, setStudyReminders] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  
   const [toasts, setToasts] = useState([]);
 
   const pushToast = (toast) => {
@@ -119,6 +120,16 @@ export default function StudentProfilePage() {
                   />
                 </label>
               </div>
+              <label className="grid gap-2 text-sm">
+                <span className="text-zinc-700">Email (notifications will be sent here)</span>
+                <input
+                  className="cursor-not-allowed rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
+                  type="email"
+                  value={session?.user?.email || ""}
+                  disabled
+                  aria-readonly
+                />
+              </label>
             </section>
 
             <section id="settings" className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
@@ -142,15 +153,13 @@ export default function StudentProfilePage() {
                     className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
                   />
                 </label>
-                <label className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-                  <span>Dark mode preference</span>
-                  <input
-                    type="checkbox"
-                    checked={darkMode}
-                    onChange={(e) => setDarkMode(e.target.checked)}
-                    className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
-                  />
-                </label>
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-4 py-3">
+                  <div className="flex flex-col">
+                    <span>Dark mode</span>
+                    <span className="text-xs text-zinc-500">Toggle the app theme</span>
+                  </div>
+                  <DarkModeToggle className="ml-2" />
+                </div>
               </div>
             </section>
 

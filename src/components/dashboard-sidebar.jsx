@@ -84,7 +84,6 @@ export default function DashboardSidebar({
 
   const role = session?.user?.role === "admin" ? "admin" : "student";
   const profileHref = role === "admin" ? "/admin/profile" : "/student/profile";
-  const settingsHref = role === "admin" ? "/admin/settings" : "/student/settings";
 
   // Filter out profile/settings from the main nav to match the new UX
   const filteredLinks = Array.isArray(links)
@@ -175,23 +174,6 @@ export default function DashboardSidebar({
             role="menu"
             className={`absolute bottom-14 left-0 right-0 z-50 rounded-2xl ${theme.navBackground} p-2 shadow-lg`}
           >
-            <Link
-              href={profileHref}
-              role="menuitem"
-              className={`${baseLinkStyles} ${theme.defaultLink}`}
-              onClick={() => setOpen(false)}
-            >
-              <span className="flex items-center gap-3"><User className="h-4 w-4" /> Profile</span>
-            </Link>
-            <Link
-              href={settingsHref}
-              role="menuitem"
-              className={`${baseLinkStyles} ${theme.defaultLink}`}
-              onClick={() => setOpen(false)}
-            >
-              <span className="flex items-center gap-3"><Settings className="h-4 w-4" /> Settings</span>
-            </Link>
-            <div className={`my-1 border-t ${theme.divider}`} />
             {SignOutComponent ? (
               <SignOutComponent className={`w-full justify-start ${theme.signOutVariant}`} />
             ) : (

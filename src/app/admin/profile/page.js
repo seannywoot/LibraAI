@@ -6,13 +6,12 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import ToastContainer from "@/components/ToastContainer";
+import DarkModeToggle from "@/components/DarkModeToggle";
 
 export default function AdminProfilePage() {
   const { data: session, update } = useSession();
   const [name, setName] = useState("Library Steward");
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const [weeklyReport, setWeeklyReport] = useState(true);
-  const [betaFeatures, setBetaFeatures] = useState(false);
   const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
@@ -38,14 +37,17 @@ export default function AdminProfilePage() {
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, emailNotifications }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to save changes");
       }
-      try { await update({ name }); } catch {}
-      pushToast({ type: "success", title: "Changes saved", description: "Your profile was updated." });
+      // Update session name on client if it changed; ignore errors from NextAuth update
+      if (update && name !== session?.user?.name) {
+        try { await update({ name }); } catch (e) { /* non-critical */ }
+      }
+      pushToast({ type: "success", title: "Changes saved", description: "Your profile and notification preferences were updated." });
     } catch (err) {
       pushToast({ type: "error", title: "Save failed", description: err?.message || "Unknown error" });
     }
@@ -89,6 +91,16 @@ export default function AdminProfilePage() {
                 />
               </label>
             </div>
+            <label className="grid gap-2 text-sm">
+              <span className="text-zinc-700">Email (notifications will be sent here)</span>
+              <input
+                className="cursor-not-allowed rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
+                type="email"
+                value={session?.user?.email || ""}
+                disabled
+                aria-readonly
+              />
+            </label>
           </section>
 
           <section id="settings" className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
@@ -103,24 +115,13 @@ export default function AdminProfilePage() {
                   className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
                 />
               </label>
-              <label className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-                <span>Weekly engagement report</span>
-                <input
-                  type="checkbox"
-                  checked={weeklyReport}
-                  onChange={(e) => setWeeklyReport(e.target.checked)}
-                  className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
-                />
-              </label>
-              <label className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-                <span>Enable beta features</span>
-                <input
-                  type="checkbox"
-                  checked={betaFeatures}
-                  onChange={(e) => setBetaFeatures(e.target.checked)}
-                  className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
-                />
-              </label>
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-4 py-3">
+                <div className="flex flex-col">
+                  <span>Dark mode</span>
+                  <span className="text-xs text-zinc-500">Toggle the app theme</span>
+                </div>
+                <DarkModeToggle className="ml-2" />
+              </div>
             </div>
           </section>
 
