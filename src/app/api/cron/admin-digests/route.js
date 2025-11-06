@@ -5,7 +5,7 @@ import {
   buildOverdueBooksDigestEmail, 
   buildPendingRequestsDigestEmail 
 } from "@/lib/admin-email-templates";
-import { sendMail } from "@/lib/email";
+import { sendDigestEmail } from "@/lib/email";
 
 // This cron job sends daily digest emails to admins:
 // - Overdue books summary
@@ -149,12 +149,11 @@ export async function GET(request) {
           libraryName: "LibraAI Library",
         });
 
-        await sendMail({
+        await sendDigestEmail({
           to: admin.email,
           subject: emailData.subject,
           html: emailData.html,
           text: emailData.text,
-          templateParams: emailData.templateParams,
         });
 
         console.log(`✅ Overdue digest sent to ${admin.email}`);
@@ -225,12 +224,11 @@ export async function GET(request) {
           libraryName: "LibraAI Library",
         });
 
-        await sendMail({
+        await sendDigestEmail({
           to: admin.email,
           subject: emailData.subject,
           html: emailData.html,
           text: emailData.text,
-          templateParams: emailData.templateParams,
         });
 
         console.log(`✅ Pending requests digest sent to ${admin.email}`);

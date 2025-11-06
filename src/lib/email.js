@@ -20,6 +20,7 @@ async function sendViaEmailJS({
   text,
   templateParams,
   templateId,
+  useCustomHTML = false,
 }) {
   const service_id = process.env.EMAILJS_SERVICE_ID;
   const template_id = templateId || process.env.EMAILJS_TEMPLATE_ID;
@@ -36,6 +37,7 @@ async function sendViaEmailJS({
   const endpoint = "https://api.emailjs.com/api/v1.0/email/send";
   const headers = { "Content-Type": "application/json" };
 
+  // For digest emails and custom HTML, prioritize the HTML content over template
   const baseParams = {
     to_email: to,
     subject: subject,
@@ -45,22 +47,38 @@ async function sendViaEmailJS({
     from_name: from_name || undefined,
   };
 
+  // If useCustomHTML is true, ensure the HTML is used directly
+  const finalTemplateParams = useCustomHTML
+    ? {
+        ...baseParams,
+        email: to,
+        to_email: to,
+        // Override any template variables with our custom content
+        html_content: html,
+        text_content: text,
+        email_subject: subject,
+        ...(templateParams || {}),
+      }
+    : {
+        ...baseParams,
+        email: to,
+        to_email: to,
+        ...(templateParams || {}),
+      };
+
   const body = {
     service_id,
     template_id,
     user_id: publicKey,
     accessToken: privateKey,
-    template_params: {
-      ...baseParams,
-      email: to,
-      to_email: to,
-      ...(templateParams || {}),
-    },
+    template_params: finalTemplateParams,
   };
 
   console.log("[EmailJS] Sending email to:", to);
   console.log("[EmailJS] Using service:", service_id);
   console.log("[EmailJS] Using template:", template_id);
+  console.log("[EmailJS] Custom HTML mode:", useCustomHTML);
+  console.log("[EmailJS] Subject:", subject);
   console.log("[EmailJS] Public key configured:", !!publicKey);
   console.log("[EmailJS] Private key configured:", !!privateKey);
 
@@ -98,6 +116,7 @@ export async function sendMail({
   text,
   templateParams,
   templateId,
+  useCustomHTML = false,
 }) {
   if (!isEmailJSConfigured()) {
     throw new Error(
@@ -112,7 +131,80 @@ export async function sendMail({
     text,
     templateParams,
     templateId,
+    useCustomHTML,
   });
+}
+
+/**
+ * Send digest email with custom HTML (bypasses EmailJS template)
+ * Use this for admin digests and other emails with custom HTML content
+ */
+export async function sendDigestEmail({ to, subject, html, text }) {
+  if (!isEmailJSConfigured()) {
+    throw new Error(
+      "EmailJS is not configured. Please set EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, and EMAILJS_PRIVATE_KEY environment variables."
+    );
+  }
+
+  const service_id = process.env.EMAILJS_SERVICE_ID;
+  const publicKeyRaw =
+    process.env.EMAILJS_PUBLIC_KEY || process.env.EMAILJS_USER_ID;
+  const privateKeyRaw = process.env.EMAILJS_PRIVATE_KEY;
+
+  const publicKey = (publicKeyRaw || "").trim().replace(/^public_/i, "");
+  const privateKey = (privateKeyRaw || "").trim().replace(/^pr_/i, "");
+  const from = process.env.EMAIL_FROM || "LibraAI <no-reply@example.com>";
+  const { name: from_name, email: reply_to } = parseNameEmail(from);
+
+  // Use a minimal template approach - send HTML directly
+  const endpoint = "https://api.emailjs.com/api/v1.0/email/send";
+  const headers = { "Content-Type": "application/json" };
+
+  const body = {
+    service_id,
+    template_id: process.env.EMAILJS_TEMPLATE_ID, // Still need a template ID
+    user_id: publicKey,
+    accessToken: privateKey,
+    template_params: {
+      to_email: to,
+      from_name: from_name || "LibraAI",
+      reply_to: reply_to,
+      subject: subject,
+      // Send both HTML and text versions
+      message_html: html,
+      message: text,
+      // Additional params that might be used by template
+      html_content: html,
+      text_content: text,
+      email_subject: subject,
+    },
+  };
+
+  console.log("[EmailJS] Sending digest email to:", to);
+  console.log("[EmailJS] Subject:", subject);
+  console.log("[EmailJS] Using service:", service_id);
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  const textBody = await res.text();
+  console.log("[EmailJS] Response status:", res.status);
+
+  if (!res.ok) {
+    if (res.status === 403 && textBody.includes("non-browser")) {
+      throw new Error(
+        `EmailJS API calls are disabled for server-side applications. ` +
+          `Please enable server-side access in your EmailJS dashboard.`
+      );
+    }
+    throw new Error(`EmailJS send failed (${res.status}): ${textBody}`);
+  }
+
+  console.log(`✓ Digest email sent via EmailJS to ${to}`);
+  return { provider: "emailjs", ok: true, status: res.status };
 }
 
 export async function sendPasswordResetEmail(
