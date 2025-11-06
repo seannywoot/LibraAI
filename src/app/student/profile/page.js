@@ -1,18 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import Toast from "@/components/Toast";
 import DarkModeToggle from "@/components/DarkModeToggle";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function StudentProfilePage() {
   const { data: session, update } = useSession();
   const [name, setName] = useState("Study Explorer");
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [toasts, setToasts] = useState([]);
+  const { darkMode, setDarkModePreference } = useTheme();
+  const [pendingDarkMode, setPendingDarkMode] = useState(darkMode);
+  const initialDarkModeRef = useRef(darkMode);
+  const initializedDarkModeRef = useRef(false);
+  const [themeDirty, setThemeDirty] = useState(false);
 
   const pushToast = (toast) => {
     const id = Date.now() + Math.random();
@@ -33,6 +39,14 @@ export default function StudentProfilePage() {
     }
   }, [session?.user?.name]);
 
+  useEffect(() => {
+    if (!initializedDarkModeRef.current) {
+      setPendingDarkMode(darkMode);
+      initialDarkModeRef.current = darkMode;
+      initializedDarkModeRef.current = true;
+    }
+  }, [darkMode]);
+
   // Load user preferences from database
   useEffect(() => {
     const loadPreferences = async () => {
@@ -52,6 +66,20 @@ export default function StudentProfilePage() {
   }, [session?.user?.email]);
 
   const navigationLinks = getStudentLinks();
+
+  useEffect(() => {
+    return () => {
+      if (themeDirty && pendingDarkMode !== initialDarkModeRef.current) {
+        setDarkModePreference(initialDarkModeRef.current, { persist: false });
+      }
+    };
+  }, [themeDirty, pendingDarkMode, setDarkModePreference]);
+
+  const handleDarkModeChange = (nextValue) => {
+    setPendingDarkMode(nextValue);
+    setThemeDirty(nextValue !== initialDarkModeRef.current);
+    setDarkModePreference(nextValue, { persist: false });
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -74,6 +102,12 @@ export default function StudentProfilePage() {
         });
       }
       
+      if (themeDirty && pendingDarkMode !== initialDarkModeRef.current) {
+        setDarkModePreference(pendingDarkMode, { persist: true });
+        initialDarkModeRef.current = pendingDarkMode;
+        setThemeDirty(false);
+      }
+
       pushToast({ type: "success", title: "Changes saved", description: "Your profile and notification preferences were updated." });
     } catch (err) {
       pushToast({ type: "error", title: "Save failed", description: err?.message || "Unknown error" });
@@ -147,7 +181,7 @@ export default function StudentProfilePage() {
                     <span>Dark mode</span>
                     <span className="text-xs text-zinc-500">Toggle the app theme</span>
                   </div>
-                  <DarkModeToggle className="ml-2" />
+                  <DarkModeToggle className="ml-2" value={pendingDarkMode} onChange={handleDarkModeChange} persist={false} />
                 </div>
               </div>
             </section>

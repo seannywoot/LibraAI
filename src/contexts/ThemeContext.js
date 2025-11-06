@@ -5,22 +5,24 @@ import { createContext, startTransition, useCallback, useContext, useEffect, use
 const ThemeContext = createContext({
   darkMode: false,
   toggleDarkMode: () => {},
+  setDarkModePreference: () => {},
 });
 
 export function ThemeProvider({ children, initialDarkMode = false }) {
-  const [darkMode, setDarkMode] = useState(initialDarkMode);
-
+  const [darkMode, setDarkModeState] = useState(initialDarkMode);
   const syncTheme = useCallback((isDark, { persist = true } = {}) => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
     root.dataset.theme = isDark ? "dark" : "light";
     root.classList.toggle("dark", isDark);
 
+    if (!persist) {
+      return;
+    }
+
     try {
       document.cookie = `theme=${isDark ? "dark" : "light"}; path=/; max-age=31536000`;
-      if (persist) {
-        localStorage.setItem("theme", isDark ? "dark" : "light");
-      }
+      localStorage.setItem("theme", isDark ? "dark" : "light");
     } catch (_) {
       // Silently ignore storage issues (e.g. privacy mode)
     }
@@ -57,7 +59,7 @@ export function ThemeProvider({ children, initialDarkMode = false }) {
     const resolvedDark = resolveInitial();
     if (resolvedDark !== darkMode) {
       startTransition(() => {
-        setDarkMode(resolvedDark);
+        setDarkModeState(resolvedDark);
       });
     }
     syncTheme(resolvedDark);
@@ -65,7 +67,7 @@ export function ThemeProvider({ children, initialDarkMode = false }) {
     const handleStorage = (event) => {
       if (event.key === "theme") {
         const isDark = event.newValue === "dark";
-        setDarkMode(isDark);
+        setDarkModeState(isDark);
         syncTheme(isDark, { persist: false });
       }
     };
@@ -79,7 +81,7 @@ export function ThemeProvider({ children, initialDarkMode = false }) {
         // If storage is unavailable, honour the system preference change
       }
 
-      setDarkMode(event.matches);
+      setDarkModeState(event.matches);
       syncTheme(event.matches);
     };
 
@@ -104,16 +106,23 @@ export function ThemeProvider({ children, initialDarkMode = false }) {
     };
   }, [darkMode, syncTheme]);
 
-  const toggleDarkMode = useCallback(() => {
-    setDarkMode((prev) => {
+  const setDarkModePreference = useCallback((isDark, { persist = true } = {}) => {
+    setDarkModeState(() => {
+      syncTheme(isDark, { persist });
+      return isDark;
+    });
+  }, [syncTheme]);
+
+  const toggleDarkMode = useCallback(({ persist = true } = {}) => {
+    setDarkModeState((prev) => {
       const next = !prev;
-      syncTheme(next);
+      syncTheme(next, { persist });
       return next;
     });
   }, [syncTheme]);
 
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
+    <ThemeContext.Provider value={{ darkMode, toggleDarkMode, setDarkModePreference }}>
       {children}
     </ThemeContext.Provider>
   );
