@@ -225,14 +225,14 @@ export default function AdminTransactionsPage() {
               <table className="w-full border-separate border-spacing-y-3">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-zinc-500">
-                    <th className="px-4 py-2">Book</th>
-                    <th className="px-4 py-2">User</th>
-                    <th className="px-4 py-2">Requested</th>
-                    <th className="px-4 py-2">Borrowed</th>
-                    <th className="px-4 py-2">Due Date</th>
-                    <th className="px-4 py-2">Returned</th>
-                    <th className="px-4 py-2">Status</th>
-                    <th className="px-4 py-2">Actions</th>
+                    <th className="px-6 py-2">Book</th>
+                    <th className="px-6 py-2">User</th>
+                    <th className="px-6 py-2">Requested</th>
+                    <th className="px-6 py-2">Borrowed</th>
+                    <th className="px-6 py-2">Due Date</th>
+                    <th className="px-6 py-2">Returned</th>
+                    <th className="px-6 py-2 pr-2">Status</th>
+                    <th className="pl-2 py-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -253,22 +253,22 @@ export default function AdminTransactionsPage() {
 
                     return (
                       <tr key={t._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
-                        <td className="px-4 py-3">
+                        <td className="px-6 py-3">
                           <div className="font-medium text-zinc-900">{t.bookTitle}</div>
                           <div className="text-xs text-zinc-600">{t.bookAuthor}</div>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-6 py-3">
                           <div className="font-medium">{t.userName}</div>
                           <div className="text-xs text-zinc-600">{t.userId}</div>
                         </td>
-                        <td className="px-4 py-3">{formatDate(t.requestedAt)}</td>
-                        <td className="px-4 py-3">{formatDate(t.borrowedAt)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-6 py-3">{formatDate(t.requestedAt)}</td>
+                        <td className="px-6 py-3">{formatDate(t.borrowedAt)}</td>
+                        <td className="px-6 py-3">
                           <div>{formatDate(dueDateValue)}</div>
                           {durationLabel && <div className="text-xs text-zinc-500">{durationLabel}</div>}
                         </td>
-                        <td className="px-4 py-3">{formatDate(t.returnedAt)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-6 py-3">{formatDate(t.returnedAt)}</td>
+                        <td className="px-6 py-3 pr-2">
                           <div className="space-y-2">
                             <StatusBadge status={t.status} />
                             {t.status === "rejected" && t.rejectionReason && (
@@ -284,11 +284,11 @@ export default function AdminTransactionsPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="pl-2 py-3">
                           {t.status === "pending-approval" && (
                             <div className="space-y-2">
-                              <div className="flex flex-col gap-2 text-xs text-zinc-600">
-                                <span>Due Date</span>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs text-zinc-600">Due Date</span>
                                 <CalendarDatePicker
                                   value={dueDates[t._id] || ""}
                                   min={todayInputDate}
@@ -300,7 +300,7 @@ export default function AdminTransactionsPage() {
                                   }
                                 />
                               </div>
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex gap-2">
                                 <button
                                   className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
                                   disabled={actionLoading === `${t._id}:approve`}

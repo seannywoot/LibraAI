@@ -180,15 +180,15 @@ export default function CalendarDatePicker({ value, min, onChange }) {
                   const base = selected
                     ? "bg-violet-600 text-white hover:bg-violet-500"
                     : todayMatch
-                    ? "border border-violet-400 text-violet-600"
-                    : "text-zinc-700 hover:bg-zinc-100";
+                    ? "border border-violet-400 text-violet-600 hover:bg-violet-50"
+                    : "text-zinc-700 hover:bg-zinc-200 hover:text-zinc-900";
                   return (
                     <button
                       key={`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`}
                       type="button"
                       disabled={disabled}
                       onClick={() => handleSelect(date)}
-                      className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150 ${
                         disabled
                           ? "cursor-not-allowed text-zinc-300"
                           : base
