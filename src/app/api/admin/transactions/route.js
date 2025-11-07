@@ -209,9 +209,9 @@ export async function POST(request) {
         );
       }
 
-      if (rejectionReason.length > 500) {
+      if (rejectionReason.length > 100) {
         return new Response(
-          JSON.stringify({ ok: false, error: "Rejection reason must be 500 characters or fewer" }),
+          JSON.stringify({ ok: false, error: "Rejection reason must be 100 characters or fewer" }),
           { status: 400, headers: { "content-type": "application/json" } }
         );
       }

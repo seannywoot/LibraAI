@@ -400,7 +400,7 @@ export default function AdminTransactionsPage() {
                     setRejectReason(e.target.value);
                     if (rejectError) setRejectError("");
                   }}
-                  maxLength={500}
+                  maxLength={100}
                   placeholder="Explain why this request is being rejected…"
                   disabled={rejectProcessing}
                 />
