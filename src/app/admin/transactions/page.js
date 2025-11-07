@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { History } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
@@ -41,6 +41,13 @@ function toInputDate(value) {
   return iso.slice(0, 10);
 }
 
+function getTodayInputDate() {
+  const now = new Date();
+  const offsetMs = now.getTimezoneOffset() * 60 * 1000;
+  const localMidnight = new Date(now.getTime() - offsetMs);
+  return localMidnight.toISOString().slice(0, 10);
+}
+
 export default function AdminTransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -56,6 +63,9 @@ export default function AdminTransactionsPage() {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError] = useState("");
+
+  const todayInputDateRef = useRef(getTodayInputDate());
+  const todayInputDate = todayInputDateRef.current;
 
   const rejectProcessing = rejectTarget ? actionLoading === `${rejectTarget._id}:reject` : false;
 
@@ -86,6 +96,7 @@ export default function AdminTransactionsPage() {
   }, [page, pageSize, statusFilter, refreshKey]);
 
   useEffect(() => {
+    const today = todayInputDateRef.current;
     setDueDates((prev) => {
       const next = { ...prev };
       const seen = new Set();
@@ -93,8 +104,12 @@ export default function AdminTransactionsPage() {
         if (t.status === "pending-approval") {
           const key = t._id;
           seen.add(key);
+          const initial = toInputDate(t.requestedDueDate || t.requestedAt) || today;
+          const safeInitial = initial < today ? today : initial;
           if (!next[key]) {
-            next[key] = toInputDate(t.requestedDueDate || t.requestedAt);
+            next[key] = safeInitial;
+          } else if (next[key] < today) {
+            next[key] = today;
           }
         }
       });
@@ -276,10 +291,11 @@ export default function AdminTransactionsPage() {
                                 <input
                                   type="date"
                                   value={dueDates[t._id] || ""}
+                                  min={todayInputDate}
                                   onChange={(e) =>
                                     setDueDates((prev) => ({
                                       ...prev,
-                                      [t._id]: e.target.value,
+                                      [t._id]: e.target.value && e.target.value < todayInputDate ? todayInputDate : e.target.value,
                                     }))
                                   }
                                   className="rounded-lg border border-zinc-300 px-2 py-1 text-sm text-zinc-800"
