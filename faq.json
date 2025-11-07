@@ -1,0 +1,73 @@
+{
+  "General Overview": {
+    "What is LibraAI?": "LibraAI is an AI-powered Smart Library Assistant that helps users search, recommend, and manage books through intelligent chat-based interaction. It’s designed to make research faster, smarter, and more personalized.",
+    "Why was LibraAI created?": "It was developed to address common library challenges — such as time-consuming manual searches, lack of personalization, and limited accessibility — by using modern AI technology to improve how students and librarians interact with library systems.",
+    "Who can access LibraAI?": "Anyone! LibraAI is available to students, librarians, and faculty members within a specific institution. You just need to create your library and share it with others. Guest access may be added in future updates.",
+    "Is LibraAI available on mobile devices?": "Yes! LibraAI is fully responsive — it works on laptops, tablets, and smartphones without needing any installation.",
+    "Can LibraAI work offline?": "Not yet. Because LibraAI relies on a cloud-based MongoDB and AI API, an internet connection is required to use its full features."
+  },
+  "Student / User Questions": {
+    "How can I search for books efficiently?": "You can use keywords or natural language — for example: 'Find me research papers about data analytics published in 2022.' LibraAI understands context and filters results automatically.",
+    "Can I filter search results by author or subject?": "Yes! The search bar supports filters such as: author: J.K. Rowling, subject: Artificial Intelligence, year: 2023.",
+    "How does the AI chatbot help me?": [
+      "Answer frequently asked library questions",
+      "Recommend books",
+      "Help you locate resources",
+      "Assist with citations and references",
+      "Guide you in using library services"
+    ],
+    "Can I favorite or bookmark books?": "Yes. You can click the ⭐ 'Add to Favorites' button to keep track of books or papers you plan to read later.",
+    "How do I make notes while reading?": "You can use the Notes Panel, which looks like Notion. Your notes are saved automatically, and you can export them to PDF, DOCX, or Markdown anytime.",
+    "What if I forget my password?": "You can click 'Forgot Password?' on the login page. A reset link will be sent to your registered email.",
+    "Can I request new books through LibraAI?": "Yes! Use the Borrow option, and your librarian will review and approve it based on availability or demand."
+  },
+  "Librarian / Admin Questions": {
+    "What can librarians manage in the system?": [
+      "Add, edit, or delete books",
+      "Manage users and roles",
+      "View analytics and most searched topics",
+      "Handle user requests and unanswered chatbot queries",
+      "Upload digital copies or metadata"
+    ],
+    "How can librarians handle user feedback?": "All chatbot feedback and book requests appear in the Feedback Center, where librarians can approve, reject, or respond to user inputs."
+  },
+  "AI & Behavior Questions": {
+    "How does the chatbot learn new information?": "When users ask unanswered questions, librarians can feed those into the FAQ Manager. LibraAI retrains its FAQ dataset periodically.",
+    "Does LibraAI replace librarians?": "No — it assists, not replaces. Librarians still manage physical collections, verify AI data, and maintain system integrity.",
+    "Can LibraAI summarize PDFs or research papers?": "Yes! Users can upload a PDF, and LibraAI generates a summary, keywords, and highlights using its NLP (Natural Language Processing) model.",
+    "Does LibraAI support multiple languages?": "Currently, LibraAI supports English, but future updates may include Tagalog and other languages for accessibility.",
+    "Can LibraAI detect plagiarism?": "In later updates, LibraAI will include a plagiarism detection module using API integration to help students ensure originality in reports or theses."
+  },
+  "Troubleshooting & Support": {
+    "The chatbot isn’t responding — what should I do?": "Check your internet connection and refresh the page. If the issue continues, contact support at support@libraai.edu.ph.",
+    "My uploaded file didn’t process. Why?": "Ensure your file is in PDF, DOCX, or TXT format and under the 50MB limit. Cloudinary might reject larger uploads.",
+    "The dashboard isn’t loading properly.": "Clear your browser cache or try using Google Chrome or Edge. The system is optimized for modern browsers.",
+    "Who do I contact for technical issues?": "You can email the development team or librarian support through the 'Email Us' button inside the system.",
+    "Can LibraAI recommend books by academic course?": "Yes! Future updates will allow course-based filtering.",
+    "Will AI voice assistant be added?": "Voice search and read-aloud features are planned for accessibility in future versions."
+  },
+  "Library Hours & Facilities": {
+    "What are the library’s operating hours?": "The library is open from 8:00 AM to 6:00 PM, Monday through Friday. Weekend hours may vary depending on academic schedules or special events.",
+    "Is the library open during holidays?": "No. The library is closed on official holidays and campus breaks. However, LibraAI’s online catalog and chatbot remain available 24/7.",
+    "Can I access the library facilities without a library card?": "Yes, you may enter the library to browse. However, a valid library card or student ID is required to borrow books.",
+    "What facilities are available in the library?": [
+      "Quiet study areas and reading zones",
+      "Computers for digital access",
+      "Wi-Fi access"
+    ]
+  },
+  "Borrowing & Returns": {
+    "How many books can I borrow at once?": "Students can borrow up to 5 books at a time for 7 days. Faculty members may borrow up to 10 books for 14 days.",
+    "What happens if I return a book late?": "Late returns are subject to a fine of ₱5.00 per day per item. You won’t be able to borrow new books until fines are cleared.",
+    "How do I renew borrowed books?": "Go to 'My Borrowed Books' in LibraAI and click 'Renew' next to the title. Renewals are allowed once, provided there are no holds from other users.",
+    "What if the book I borrowed is damaged or lost?": "Report it immediately to the librarian. You may be asked to replace the book or pay the current market value plus processing fees.",
+    "Can I borrow reference or reserved books?": "Reference and reserved materials are for in-library use only, but some may be borrowed for short-term use with librarian approval."
+  },
+  "Library Policies": {
+    "Can I eat or drink inside the library?": "Food is not allowed, but water in sealed containers is permitted.",
+    "What are the rules for using library computers?": "Computers are for academic and research use only. Users must log in with their student credentials and log out after use.",
+    "Can I bring my laptop to the library?": "Absolutely! Free Wi-Fi and charging stations are provided in designated areas.",
+    "What happens if I violate library rules?": "Depending on the offense, you may face a temporary suspension of privileges, fines, or disciplinary actions as per school policy.",
+    "Are eBooks available in LibraAI?": "Yes! LibraAI includes a digital collection of eBooks and PDFs that can be accessed directly online."
+  }
+}

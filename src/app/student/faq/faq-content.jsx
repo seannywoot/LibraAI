@@ -3,20 +3,25 @@
 import { useState, useEffect } from "react";
 import { Search } from "@/components/icons";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Mail } from "lucide-react";
 
 export default function FAQContent() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("borrowing");
+  const [activeCategory, setActiveCategory] = useState("general");
   const [faqData, setFaqData] = useState({});
   const [loading, setLoading] = useState(true);
   const [feedbackGiven, setFeedbackGiven] = useState({});
 
   const categories = [
-    { id: "borrowing", label: "Borrowing" },
-    { id: "hours", label: "Hours" },
+    { id: "general", label: "General Overview" },
+    { id: "student", label: "Student / User" },
+    { id: "admin", label: "Librarian / Admin" },
+    { id: "ai", label: "AI & Behavior" },
+    { id: "support", label: "Troubleshooting" },
+    { id: "hours", label: "Hours & Facilities" },
     { id: "facilities", label: "Facilities" },
-    { id: "policies", label: "Policies" },
+    { id: "borrowing", label: "Borrowing & Returns" },
+    { id: "policies", label: "Library Policies" },
   ];
 
   useEffect(() => {
@@ -102,21 +107,18 @@ export default function FAQContent() {
       </div>
 
       {/* Category Tabs */}
-      <div className="mb-8 flex gap-2 border-b border-zinc-200">
+      <div className="mb-8 bg-zinc-50 rounded-xl p-1.5 flex flex-wrap gap-1.5">
         {categories.map((category) => (
           <button
             key={category.id}
             onClick={() => setActiveCategory(category.id)}
-            className={`px-4 py-3 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
               activeCategory === category.id
-                ? "text-zinc-900"
-                : "text-zinc-500 hover:text-zinc-700"
+                ? "bg-white text-zinc-900 shadow-sm"
+                : "text-zinc-600 hover:text-zinc-900 hover:bg-white/50"
             }`}
           >
             {category.label}
-            {activeCategory === category.id && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900" />
-            )}
           </button>
         ))}
       </div>
@@ -168,7 +170,30 @@ export default function FAQContent() {
         )}
       </div>
 
-
+      {/* Contact Us Section */}
+      <div className="rounded-2xl border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white shadow-sm p-8 text-center">
+        <div className="flex justify-center mb-4">
+          <div className="rounded-full bg-zinc-100 p-3">
+            <Mail className="h-6 w-6 text-zinc-700" />
+          </div>
+        </div>
+        <h2 className="text-xl font-semibold text-zinc-800 mb-2">
+          Still have questions?
+        </h2>
+        <p className="text-zinc-600 mb-4">
+          Can&apos;t find the answer you&apos;re looking for? Feel free to reach out to us.
+        </p>
+        <a
+          href="mailto:libraaismartlibraryassistant@gmail.com"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-lg font-medium hover:bg-zinc-800 transition-colors"
+        >
+          <Mail className="h-4 w-4" />
+          Contact Us
+        </a>
+        <p className="text-sm text-zinc-500 mt-3">
+          libraaismartlibraryassistant@gmail.com
+        </p>
+      </div>
     </main>
   );
 }
