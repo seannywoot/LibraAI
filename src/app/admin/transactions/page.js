@@ -6,6 +6,7 @@ import { History } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import CalendarDatePicker from "@/components/admin/calendar-date-picker";
+import { ToastContainer, showToast } from "@/components/ToastContainer";
 
 function formatDate(dateStr) {
   if (!dateStr) return "—";
@@ -52,7 +53,6 @@ function getTodayInputDate() {
 export default function AdminTransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [feedback, setFeedback] = useState("");
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
@@ -132,7 +132,6 @@ export default function AdminTransactionsPage() {
     const actionKey = `${transactionId}:${action}`;
     setActionLoading(actionKey);
     setError("");
-    setFeedback("");
     try {
       const res = await fetch("/api/admin/transactions", {
         method: "POST",
@@ -143,11 +142,11 @@ export default function AdminTransactionsPage() {
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to update transaction");
       }
-      setFeedback(data?.message || "Action completed");
+      showToast(data?.message || "Action completed", "success");
       setRefreshKey((k) => k + 1);
       return { ok: true, message: data?.message };
     } catch (e) {
-      setError(e?.message || "Failed to update transaction");
+      showToast(e?.message || "Failed to update transaction", "error");
       return { ok: false, error: e?.message || "Failed to update transaction" };
     } finally {
       setActionLoading("");
@@ -175,6 +174,7 @@ export default function AdminTransactionsPage() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+      <ToastContainer position="top-right" />
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
@@ -188,7 +188,6 @@ export default function AdminTransactionsPage() {
             <select
               value={statusFilter}
               onChange={(e) => {
-                setFeedback("");
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
@@ -218,9 +217,6 @@ export default function AdminTransactionsPage() {
           </div>
         ) : (
           <section className="space-y-4">
-            {feedback && (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">{feedback}</div>
-            )}
             <div className="overflow-x-auto">
               <table className="w-full border-separate border-spacing-y-3">
                 <thead>
@@ -317,7 +313,6 @@ export default function AdminTransactionsPage() {
                                   disabled={actionLoading === `${t._id}:reject`}
                                   onClick={() => {
                                     setError("");
-                                    setFeedback("");
                                     setRejectTarget(t);
                                     setRejectReason("");
                                     setRejectError("");
@@ -360,7 +355,6 @@ export default function AdminTransactionsPage() {
                 <button
                   className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-700 disabled:opacity-50"
                   onClick={() => {
-                    setFeedback("");
                     setPage((p) => Math.max(1, p - 1));
                   }}
                   disabled={page <= 1}
@@ -370,7 +364,6 @@ export default function AdminTransactionsPage() {
                 <button
                   className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-700 disabled:opacity-50"
                   onClick={() => {
-                    setFeedback("");
                     setPage((p) => Math.min(totalPages, p + 1));
                   }}
                   disabled={page >= totalPages}

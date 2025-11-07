@@ -7,6 +7,7 @@ import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import Link from "next/link";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
+import ConfirmDialog from "@/components/confirm-dialog";
 
 function StatusChip({ status }) {
   const map = {
@@ -34,6 +35,7 @@ export default function AdminBooksListPage() {
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
   const [deleting, setDeleting] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
@@ -62,14 +64,12 @@ export default function AdminBooksListPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  async function handleDelete(bookId, bookTitle) {
-    if (!confirm(`Are you sure you want to delete "${bookTitle}"? This action cannot be undone.`)) {
-      return;
-    }
+  async function handleDelete(book) {
+    if (!book) return;
 
-    setDeleting(bookId);
+    setDeleting(book._id);
     try {
-      const res = await fetch(`/api/admin/books/${bookId}`, {
+      const res = await fetch(`/api/admin/books/${book._id}`, {
         method: "DELETE",
       });
       const data = await res.json().catch(() => ({}));
@@ -79,6 +79,7 @@ export default function AdminBooksListPage() {
       }
 
       showToast("Book deleted successfully", "success");
+      setPendingDelete(null);
       
       // Reload the books list
       const reloadRes = await fetch(`/api/admin/books?page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
@@ -98,6 +99,8 @@ export default function AdminBooksListPage() {
       setDeleting(null);
     }
   }
+
+  const isDeletingCurrent = pendingDelete ? deleting === pendingDelete._id : false;
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
@@ -173,7 +176,7 @@ export default function AdminBooksListPage() {
                             Edit
                           </Link>
                           <button
-                            onClick={() => handleDelete(b._id, b.title)}
+                            onClick={() => setPendingDelete(b)}
                             disabled={deleting === b._id}
                             className="rounded-lg border border-rose-500 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50 transition-colors"
                           >
@@ -209,6 +212,23 @@ export default function AdminBooksListPage() {
           </section>
         )}
       </main>
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Delete Book"
+        description={pendingDelete ? `Are you sure you want to delete "${pendingDelete.title}"? This action cannot be undone.` : ""}
+        confirmLabel={isDeletingCurrent ? "Deleting..." : "Delete"}
+        cancelLabel="Cancel"
+        destructive
+        loading={isDeletingCurrent}
+        onCancel={() => {
+          if (!isDeletingCurrent) setPendingDelete(null);
+        }}
+        onConfirm={() => {
+          if (pendingDelete && !isDeletingCurrent) {
+            void handleDelete(pendingDelete);
+          }
+        }}
+      />
     </div>
   );
 }

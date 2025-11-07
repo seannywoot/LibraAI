@@ -6,6 +6,7 @@ import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { Plus, Edit2, Trash2, X } from "lucide-react";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
+import ConfirmDialog from "@/components/confirm-dialog";
 
 export default function FAQSetupClient() {
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,8 @@ export default function FAQSetupClient() {
     category: "general",
     keywords: ""
   });
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const navigationLinks = getAdminLinks();
 
@@ -101,7 +104,9 @@ export default function FAQSetupClient() {
   };
 
   const handleDeleteFAQ = async (id) => {
-    if (!confirm("Are you sure you want to delete this FAQ?")) return;
+    if (!id) return;
+
+    setDeletingId(id);
 
     try {
       const response = await fetch(`/api/faq/${id}`, {
@@ -111,12 +116,15 @@ export default function FAQSetupClient() {
 
       if (data.success) {
         showToast("FAQ deleted successfully!", "success");
+        setPendingDelete(null);
         fetchFAQs();
       } else {
         showToast(data.error || "Failed to delete FAQ", "error");
       }
     } catch (err) {
       showToast(err.message || "Failed to delete FAQ", "error");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -139,6 +147,8 @@ export default function FAQSetupClient() {
     { value: "billing", label: "Billing" },
     { value: "support", label: "Support" }
   ];
+
+  const isDeletingCurrent = pendingDelete ? deletingId === pendingDelete._id : false;
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
@@ -207,7 +217,7 @@ export default function FAQSetupClient() {
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteFAQ(faq._id)}
+                        onClick={() => setPendingDelete(faq)}
                         className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -321,6 +331,26 @@ export default function FAQSetupClient() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Delete FAQ"
+        description={pendingDelete ? `Are you sure you want to delete "${pendingDelete.question}"? This cannot be undone.` : ""}
+        confirmLabel={isDeletingCurrent ? "Deleting..." : "Delete"}
+        cancelLabel="Cancel"
+        destructive
+        loading={isDeletingCurrent}
+        onCancel={() => {
+          if (!isDeletingCurrent) {
+            setPendingDelete(null);
+          }
+        }}
+        onConfirm={() => {
+          if (pendingDelete && !isDeletingCurrent) {
+            void handleDeleteFAQ(pendingDelete._id);
+          }
+        }}
+      />
     </div>
   );
 }

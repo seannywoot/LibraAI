@@ -6,6 +6,7 @@ import { Edit as EditIcon, Trash2 } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
+import ConfirmDialog from "@/components/confirm-dialog";
 import Link from "next/link";
 
 function RowActions({ onEdit, onDelete }) {
@@ -38,6 +39,8 @@ export default function AdminAuthorsPage() {
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const [editingBio, setEditingBio] = useState("");
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
@@ -120,19 +123,24 @@ export default function AdminAuthorsPage() {
   }
 
   async function deleteAuthor(id) {
-    if (!confirm("Delete this author? This cannot be undone.")) return;
+    if (!id) return;
+    setDeletingId(id);
     try {
       const res = await fetch(`/api/admin/authors/${id}`, { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Delete failed");
       showToast("Author deleted successfully", "success");
+      setPendingDelete(null);
       await load();
     } catch (e) { 
       showToast(e?.message || "Failed to delete author", "error");
+    } finally {
+      setDeletingId(null);
     }
   }
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const isDeletingCurrent = pendingDelete ? deletingId === pendingDelete._id : false;
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
@@ -247,7 +255,7 @@ export default function AdminAuthorsPage() {
                         ) : (
                           <RowActions
                             onEdit={() => { setEditingId(a._id); setEditingName(a.name); setEditingBio(a.bio || ""); }}
-                            onDelete={() => deleteAuthor(a._id)}
+                            onDelete={() => setPendingDelete(a)}
                           />
                         )}
                       </td>
@@ -269,6 +277,23 @@ export default function AdminAuthorsPage() {
       </main>
 
       <ToastContainer position="top-right" />
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Delete Author"
+        description={pendingDelete ? `Are you sure you want to delete "${pendingDelete.name}"? This cannot be undone.` : ""}
+        confirmLabel={isDeletingCurrent ? "Deleting..." : "Delete"}
+        cancelLabel="Cancel"
+        destructive
+        loading={isDeletingCurrent}
+        onCancel={() => {
+          if (!isDeletingCurrent) setPendingDelete(null);
+        }}
+        onConfirm={() => {
+          if (pendingDelete && !isDeletingCurrent) {
+            void deleteAuthor(pendingDelete._id);
+          }
+        }}
+      />
     </div>
   );
 }

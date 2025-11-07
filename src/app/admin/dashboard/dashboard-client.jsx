@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Search, HelpCircle, AlertTriangle, FileText, ThumbsUp, ThumbsDown, ChevronLeft, ChevronRight, BookOpen, RotateCcw, Clock, X, Trash2 } from "lucide-react";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
+import ConfirmDialog from "@/components/confirm-dialog";
 
 export default function DashboardClient() {
   const [analytics, setAnalytics] = useState(null);
@@ -19,6 +20,8 @@ export default function DashboardClient() {
     category: "general",
     keywords: ""
   });
+  const [dismissTarget, setDismissTarget] = useState(null);
+  const [dismissingId, setDismissingId] = useState(null);
 
   useEffect(() => {
     fetchAnalytics();
@@ -143,9 +146,9 @@ export default function DashboardClient() {
   };
 
   const handleDismissQuery = async (questionId) => {
-    if (!confirm("Are you sure you want to dismiss this query? It will be removed from the list.")) {
-      return;
-    }
+    if (!questionId) return;
+
+    setDismissingId(questionId);
 
     try {
       const response = await fetch("/api/chat/logs", {
@@ -161,12 +164,15 @@ export default function DashboardClient() {
 
       if (data.success) {
         showToast("Query dismissed successfully", "success");
+        setDismissTarget(null);
         fetchAnalytics();
       } else {
         showToast(data.error || "Failed to dismiss query", "error");
       }
     } catch (err) {
       showToast(err.message || "Failed to dismiss query", "error");
+    } finally {
+      setDismissingId(null);
     }
   };
 
@@ -179,6 +185,8 @@ export default function DashboardClient() {
     { value: "billing", label: "Billing" },
     { value: "support", label: "Support" }
   ];
+
+  const isDismissingCurrent = dismissTarget ? dismissingId === dismissTarget.id : false;
 
   if (loading) {
     return (
@@ -374,7 +382,7 @@ export default function DashboardClient() {
                           Convert to FAQ
                         </button>
                         <button
-                          onClick={() => handleDismissQuery(question.id)}
+                          onClick={() => setDismissTarget(question)}
                           className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Dismiss query"
                         >
@@ -487,6 +495,24 @@ export default function DashboardClient() {
     </div>
 
     {/* Convert to FAQ Modal */}
+    <ConfirmDialog
+      open={Boolean(dismissTarget)}
+      title="Dismiss Query"
+      description={dismissTarget ? "Are you sure you want to dismiss this query? It will be removed from the list." : ""}
+      confirmLabel={isDismissingCurrent ? "Dismissing..." : "Dismiss"}
+      cancelLabel="Cancel"
+      destructive
+      loading={isDismissingCurrent}
+      onCancel={() => {
+        if (!isDismissingCurrent) setDismissTarget(null);
+      }}
+      onConfirm={() => {
+        if (dismissTarget && !isDismissingCurrent) {
+          void handleDismissQuery(dismissTarget.id);
+        }
+      }}
+    />
+
     {showConvertModal && selectedQuestion && (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">

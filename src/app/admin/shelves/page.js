@@ -6,6 +6,7 @@ import { Edit as EditIcon, Trash2 } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
+import ConfirmDialog from "@/components/confirm-dialog";
 import Link from "next/link";
 
 function RowActions({ onEdit, onDelete }) {
@@ -40,6 +41,8 @@ export default function AdminShelvesPage() {
 
   const [editingId, setEditingId] = useState(null);
   const [editing, setEditing] = useState({ code: "", name: "", location: "", capacity: "", notes: "" });
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
@@ -112,20 +115,25 @@ export default function AdminShelvesPage() {
   }
 
   async function deleteShelf(id) {
-    if (!confirm("Delete this shelf? This cannot be undone.")) return;
+    if (!id) return;
+    setDeletingId(id);
     try {
       const res = await fetch(`/api/admin/shelves/${id}`, { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Delete failed");
       const successMessage = data?.message || "Shelf deleted successfully";
       showToast(successMessage, "success");
+      setPendingDelete(null);
       await load();
     } catch (e) { 
       showToast(e?.message || "Failed to delete shelf", "error");
+    } finally {
+      setDeletingId(null);
     }
   }
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const isDeletingCurrent = pendingDelete ? deletingId === pendingDelete._id : false;
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
@@ -264,7 +272,7 @@ export default function AdminShelvesPage() {
                             <button onClick={() => setEditingId(null)} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Cancel</button>
                           </div>
                         ) : (
-                          <RowActions onEdit={() => { setEditingId(a._id); setEditing({ code: a.code, name: a.name || "", location: a.location || "", capacity: a.capacity ?? "", notes: a.notes || "" }); }} onDelete={() => deleteShelf(a._id)} />
+                          <RowActions onEdit={() => { setEditingId(a._id); setEditing({ code: a.code, name: a.name || "", location: a.location || "", capacity: a.capacity ?? "", notes: a.notes || "" }); }} onDelete={() => setPendingDelete(a)} />
                         )}
                       </td>
                     </tr>
@@ -285,6 +293,23 @@ export default function AdminShelvesPage() {
       </main>
 
       <ToastContainer position="top-right" />
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Delete Shelf"
+        description={pendingDelete ? `Are you sure you want to delete shelf "${pendingDelete.code}"? This cannot be undone.` : ""}
+        confirmLabel={isDeletingCurrent ? "Deleting..." : "Delete"}
+        cancelLabel="Cancel"
+        destructive
+        loading={isDeletingCurrent}
+        onCancel={() => {
+          if (!isDeletingCurrent) setPendingDelete(null);
+        }}
+        onConfirm={() => {
+          if (pendingDelete && !isDeletingCurrent) {
+            void deleteShelf(pendingDelete._id);
+          }
+        }}
+      />
     </div>
   );
 }
