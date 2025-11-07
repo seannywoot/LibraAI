@@ -1,7 +1,9 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, Send, Paperclip, History, X } from "@/components/icons";
+import { shouldRegenerateTitle, heuristicTitle, buildTitleRequestPayload } from "@/utils/chatTitle";
+import { MessageCircle, Send, Paperclip, History, X, Trash2 } from "@/components/icons";
 
 // Helper function to render message content with clickable links
 const renderMessageContent = (content) => {
@@ -27,7 +29,7 @@ const renderMessageContent = (content) => {
   });
 };
 
-export default function ChatInterface({ userName }) {
+export default function ChatInterface({ userName, showHistorySidebar = false }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -40,11 +42,15 @@ export default function ChatInterface({ userName }) {
   const [showHistory, setShowHistory] = useState(false);
   const [conversationHistory, setConversationHistory] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
+  const [autoTitle, setAutoTitle] = useState(null); // improved generated title
+  const generatingTitleRef = useRef(false);
   const [attachedFile, setAttachedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   const [typingMessage, setTypingMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [lastUserMessage, setLastUserMessage] = useState("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -73,9 +79,10 @@ export default function ChatInterface({ userName }) {
     const currentChat = localStorage.getItem("currentChat");
     if (currentChat) {
       try {
-        const { messages: savedMessages, conversationId } = JSON.parse(currentChat);
+        const { messages: savedMessages, conversationId, title } = JSON.parse(currentChat);
         setMessages(savedMessages);
         setCurrentConversationId(conversationId);
+        if (title) setAutoTitle(title);
       } catch (e) {
         console.error("Failed to load current chat:", e);
       }
@@ -87,22 +94,22 @@ export default function ChatInterface({ userName }) {
     if (messages.length > 1) {
       localStorage.setItem("currentChat", JSON.stringify({
         messages,
-        conversationId: currentConversationId
+        conversationId: currentConversationId,
+        title: autoTitle
       }));
     }
-  }, [messages, currentConversationId]);
+  }, [messages, currentConversationId, autoTitle]);
 
   // Auto-save conversation when messages change
   useEffect(() => {
     if (messages.length <= 1) return; // Don't save if only greeting exists
 
     const timer = setTimeout(() => {
-      const firstUserMessage = messages.find(m => m.role === "user");
-      if (!firstUserMessage) return;
-
-      const title = firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? "..." : "");
+      const conversationId = currentConversationId || Date.now();
+      const fallback = heuristicTitle(messages);
+      const title = autoTitle || fallback;
       const conversationData = {
-        id: currentConversationId || Date.now(),
+        id: conversationId,
         title,
         messages,
         lastUpdated: new Date().toISOString()
@@ -110,22 +117,56 @@ export default function ChatInterface({ userName }) {
 
       setConversationHistory(prev => {
         const filtered = prev.filter(c => c.id !== conversationData.id);
-        const updated = [conversationData, ...filtered].slice(0, 20); // Keep last 20 conversations
+        const updated = [conversationData, ...filtered].slice(0, 20);
         localStorage.setItem("chatHistory", JSON.stringify(updated));
         return updated;
       });
 
       if (!currentConversationId) {
-        setCurrentConversationId(conversationData.id);
+        setCurrentConversationId(conversationId);
       }
-    }, 1000);
+    }, 800);
 
     return () => clearTimeout(timer);
-  }, [messages, currentConversationId]);
+  }, [messages, currentConversationId, autoTitle]);
+
+  // Title generation & drift detection
+  useEffect(() => {
+    const userMessages = messages.filter(m=>m.role==='user');
+    if (userMessages.length === 0) return;
+
+    const shouldGenerateInitial = !autoTitle && userMessages.length >= 2 && messages.length >= 4;
+    const lastMessage = messages[messages.length-1];
+    const lastIsUser = lastMessage?.role === 'user';
+    const drift = autoTitle && lastIsUser && shouldRegenerateTitle(messages, autoTitle);
+    if ((!shouldGenerateInitial && !drift) || generatingTitleRef.current) return;
+
+    (async () => {
+      try {
+        generatingTitleRef.current = true;
+        const payload = buildTitleRequestPayload(messages);
+        const res = await fetch('/api/chat/title', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: payload })
+        });
+        if (!res.ok) throw new Error('Title request failed');
+        const data = await res.json();
+        if (data.title) setAutoTitle(data.title);
+      } catch (e) {
+        console.warn('Falling back to heuristic title:', e.message);
+        if (!autoTitle) setAutoTitle(heuristicTitle(messages));
+      } finally {
+        generatingTitleRef.current = false;
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
 
   const loadConversation = (conversation) => {
     setMessages(conversation.messages);
     setCurrentConversationId(conversation.id);
+    setAutoTitle(conversation.title || null);
     setShowHistory(false);
   };
 
@@ -138,6 +179,7 @@ export default function ChatInterface({ userName }) {
       }
     ]);
     setCurrentConversationId(null);
+    setAutoTitle(null);
     setShowHistory(false);
     // Clear current chat from localStorage
     localStorage.removeItem("currentChat");
@@ -188,16 +230,30 @@ export default function ChatInterface({ userName }) {
     }, typingSpeed);
   }, []);
 
-  const deleteConversation = (id, e) => {
+  const openDeleteModal = (conv, e) => {
     e.stopPropagation();
-    setConversationHistory(prev => {
-      const updated = prev.filter(c => c.id !== id);
-      localStorage.setItem("chatHistory", JSON.stringify(updated));
-      return updated;
-    });
-    if (currentConversationId === id) {
-      startNewConversation();
+    setConversationToDelete(conv);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (conversationToDelete) {
+      setConversationHistory(prev => {
+        const updated = prev.filter(c => c.id !== conversationToDelete.id);
+        localStorage.setItem("chatHistory", JSON.stringify(updated));
+        return updated;
+      });
+      if (currentConversationId === conversationToDelete.id) {
+        startNewConversation();
+      }
     }
+    setDeleteModalOpen(false);
+    setConversationToDelete(null);
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setConversationToDelete(null);
   };
 
   const handleFileSelect = (e) => {
@@ -356,92 +412,95 @@ export default function ChatInterface({ userName }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col relative">
-      {/* Chat Header */}
-      <div className="border-b border-zinc-200 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white">
-              <MessageCircle className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-zinc-900">LibraAI Assistant</h1>
-              <p className="text-sm text-zinc-500">Ask me anything about literature</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={startNewConversation}
-              className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-zinc-800 transition"
-            >
-              + New Chat
-            </button>
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50"
-              aria-label="Chat history"
-            >
-              <History className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* History Sidebar */}
-      {showHistory && (
-        <>
-          <div 
-            className="fixed inset-0 bg-black/20 z-40"
-            onClick={() => setShowHistory(false)}
-          />
-          <div className="absolute top-0 right-0 bottom-0 w-80 bg-white border-l border-zinc-200 shadow-xl z-50 flex flex-col">
-            <div className="border-b border-zinc-200 p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-zinc-900">Chat History</h2>
-                <button
-                  onClick={() => setShowHistory(false)}
-                  className="text-zinc-500 hover:text-zinc-900"
-                >
-                  ✕
-                </button>
+    <>
+      <div className="flex-1 flex flex-col relative">
+        {/* Chat Header */}
+        <div className="border-b border-zinc-200 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white">
+                <MessageCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-zinc-900">{autoTitle || 'LibraAI Assistant'}</h1>
+                <p className="text-sm text-zinc-500">{autoTitle ? 'Topic • Auto‑generated' : 'Ask me anything about literature'}</p>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {conversationHistory.length === 0 ? (
-                <p className="text-sm text-zinc-500 text-center py-8">No conversation history yet</p>
-              ) : (
-                conversationHistory.map((conv) => (
-                  <div
-                    key={conv.id}
-                    onClick={() => loadConversation(conv)}
-                    className={`group p-3 rounded-lg border cursor-pointer transition ${
-                      currentConversationId === conv.id
-                        ? "border-zinc-900 bg-zinc-50"
-                        : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
-                        <p className="text-xs text-zinc-500 mt-1">
-                          {new Date(conv.lastUpdated).toLocaleDateString()} • {conv.messages.length} messages
-                        </p>
-                      </div>
-                      <button
-                        onClick={(e) => deleteConversation(conv.id, e)}
-                        className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-600 transition"
-                        aria-label="Delete conversation"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                ))
+            <div className="flex items-center gap-2">
+              <button
+                onClick={startNewConversation}
+                className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-zinc-800 transition"
+              >
+                + New Chat
+              </button>
+              {!showHistorySidebar && (
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50"
+                  aria-label="Chat history"
+                >
+                  <History className="h-5 w-5" />
+                </button>
               )}
             </div>
           </div>
-        </>
-      )}
+        </div>
+
+        {/* History Sidebar Overlay (only when not using persistent sidebar) */}
+        {!showHistorySidebar && showHistory && (
+          <>
+            <div 
+              className="fixed inset-0 bg-black/20 z-40"
+              onClick={() => setShowHistory(false)}
+            />
+            <div className="absolute top-0 right-0 bottom-0 w-80 bg-white border-l border-zinc-200 shadow-xl z-50 flex flex-col">
+              <div className="border-b border-zinc-200 p-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-zinc-900">Chat History</h2>
+                  <button
+                    onClick={() => setShowHistory(false)}
+                    className="text-zinc-500 hover:text-zinc-900"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {conversationHistory.length === 0 ? (
+                  <p className="text-sm text-zinc-500 text-center py-8">No conversation history yet</p>
+                ) : (
+                  conversationHistory.map((conv) => (
+                    <div
+                      key={conv.id}
+                      onClick={() => loadConversation(conv)}
+                      className={`group p-3 rounded-lg border cursor-pointer transition ${
+                        currentConversationId === conv.id
+                          ? "border-zinc-900 bg-zinc-50"
+                          : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                          <p className="text-xs text-zinc-500 mt-1">
+                            {new Date(conv.lastUpdated).toLocaleDateString()} • {conv.messages.length} messages
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => openDeleteModal(conv, e)}
+                          className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
+                          aria-label="Delete conversation"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -596,7 +655,7 @@ export default function ChatInterface({ userName }) {
               onKeyDown={handleKeyDown}
               rows={1}
               disabled={isLoading || isTyping}
-              className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 disabled:opacity-50 min-h-[40px] max-h-[120px]"
+              className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 disabled:opacity-50 min-h-10 max-h-[120px]"
               style={{ height: 'auto' }}
               onInput={(e) => {
                 e.target.style.height = 'auto';
@@ -625,6 +684,95 @@ export default function ChatInterface({ userName }) {
           )}
         </form>
       </div>
-    </div>
+      </div>
+
+      {/* Persistent History Sidebar */}
+      {showHistorySidebar && (
+        <div className="w-80 border-l border-zinc-200 bg-zinc-50 flex flex-col">
+          <div className="border-b border-zinc-200 p-4">
+            <h2 className="text-lg font-semibold text-zinc-900">Chat History</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {conversationHistory.length === 0 ? (
+              <p className="text-sm text-zinc-500 text-center py-8">No conversation history yet</p>
+            ) : (
+              conversationHistory.map((conv) => (
+                <div
+                  key={conv.id}
+                  onClick={() => loadConversation(conv)}
+                  className={`group p-3 rounded-lg border cursor-pointer transition ${
+                    currentConversationId === conv.id
+                      ? "border-zinc-900 bg-white shadow-sm"
+                      : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                      <p className="text-xs text-zinc-500 mt-1">
+                        {new Date(conv.lastUpdated).toLocaleDateString()} • {conv.messages.length} messages
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => openDeleteModal(conv, e)}
+                      className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
+                      aria-label="Delete conversation"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+            onClick={cancelDelete}
+          >
+            <div 
+              className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-900 mb-2">
+                  Delete Conversation?
+                </h3>
+                <p className="text-sm text-zinc-600 mb-1">
+                  Are you sure you want to delete this conversation?
+                </p>
+                {conversationToDelete && (
+                  <p className="text-sm font-medium text-zinc-900 mt-2 p-2 bg-zinc-50 rounded-lg border border-zinc-200">
+                    {conversationToDelete.title}
+                  </p>
+                )}
+                <p className="text-sm text-zinc-500 mt-3">
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={cancelDelete}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-200 bg-white text-zinc-700 font-medium hover:bg-zinc-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }
