@@ -5,6 +5,7 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { History } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
+import CalendarDatePicker from "@/components/admin/calendar-date-picker";
 
 function formatDate(dateStr) {
   if (!dateStr) return "—";
@@ -286,21 +287,19 @@ export default function AdminTransactionsPage() {
                         <td className="px-4 py-3">
                           {t.status === "pending-approval" && (
                             <div className="space-y-2">
-                              <label className="flex flex-col gap-1 text-xs text-zinc-600">
-                                Due Date
-                                <input
-                                  type="date"
+                              <div className="flex flex-col gap-2 text-xs text-zinc-600">
+                                <span>Due Date</span>
+                                <CalendarDatePicker
                                   value={dueDates[t._id] || ""}
                                   min={todayInputDate}
-                                  onChange={(e) =>
+                                  onChange={(nextValue) =>
                                     setDueDates((prev) => ({
                                       ...prev,
-                                      [t._id]: e.target.value && e.target.value < todayInputDate ? todayInputDate : e.target.value,
+                                      [t._id]: nextValue && nextValue < todayInputDate ? todayInputDate : nextValue,
                                     }))
                                   }
-                                  className="rounded-lg border border-zinc-300 px-2 py-1 text-sm text-zinc-800"
                                 />
-                              </label>
+                              </div>
                               <div className="flex flex-wrap gap-2">
                                 <button
                                   className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
