@@ -1,9 +1,36 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { useTheme } from "@/contexts/ThemeContext";
+
+function useForceLightTheme() {
+  const { setDarkModePreference, darkMode } = useTheme();
+  const initialDarkMode = useRef(darkMode);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return undefined;
+    }
+
+    const root = document.documentElement;
+    const hadDarkClass = root.classList.contains("dark");
+    const initialDatasetTheme = root.dataset.theme === "dark" ? "dark" : "light";
+    const initialDarkPreference = initialDarkMode.current;
+    // Force the auth route to render with the light theme while preserving the original preference for later pages.
+
+    if (initialDatasetTheme !== "light" || hadDarkClass || initialDarkPreference) {
+      setDarkModePreference(false, { persist: false });
+    }
+
+    return () => {
+      const restoreDark = initialDarkPreference || initialDatasetTheme === "dark" || hadDarkClass;
+      setDarkModePreference(restoreDark, { persist: false });
+    };
+  }, [setDarkModePreference]);
+}
 
 const STUDENT_DEMO_EMAIL = "student@demo.edu";
 const STUDENT_DEMO_PASSWORD = "ReadSmart123";
@@ -11,6 +38,7 @@ const ADMIN_DEMO_EMAIL = "admin@libra.ai";
 const ADMIN_DEMO_PASSWORD = "ManageStacks!";
 
 function AuthContent() {
+  useForceLightTheme();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState("student"); // 'student' | 'admin'
 
