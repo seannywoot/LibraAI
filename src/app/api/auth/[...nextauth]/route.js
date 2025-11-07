@@ -46,6 +46,9 @@ export const authOptions = {
         const email = normalizeEmail(credentials?.email);
         const password = credentials?.password || "";
         const expectedRole = (credentials?.expectedRole || "").trim().toLowerCase();
+        const isStudentDemoEmail = email === STUDENT_DEMO.email;
+        const isAdminDemoEmail = email === ADMIN_DEMO.email;
+        const attemptedDemoAccount = isStudentDemoEmail || isAdminDemoEmail;
 
         if (!email || !password) {
           console.log('[AUTH] Missing credentials');
@@ -56,15 +59,32 @@ export const authOptions = {
         const lockStatus = isAccountLocked(email);
         if (lockStatus.locked) {
           const minutes = Math.ceil(lockStatus.remainingTime / 60);
+          let lockReason = lockStatus.reasonCode;
+          if (!lockReason) {
+            if (attemptedDemoAccount) {
+              lockReason = 'invalid-credentials';
+            } else {
+              try {
+                const client = await clientPromise;
+                const db = client.db(process.env.MONGODB_DB_NAME || "test");
+                const existingUser = await db.collection("users").findOne({ email }, { projection: { _id: 1 } });
+                lockReason = existingUser ? 'invalid-credentials' : 'account-not-found';
+              } catch (lookupError) {
+                console.warn('[AUTH] Failed to determine lock reason:', lookupError?.message || lookupError);
+                lockReason = 'unknown';
+              }
+            }
+          }
           console.log('[AUTH] Account locked:', email);
           throw new Error(
-            `AccountLocked:${minutes}:Too many failed login attempts. Account locked for ${minutes} minute${minutes !== 1 ? 's' : ''}.`
+            `AccountLocked:${minutes}:${lockReason}:Too many failed login attempts. Account locked for ${minutes} minute${minutes !== 1 ? 's' : ''}.`
           );
         }
 
         // We'll resolve a user object here and only return after verifying any expected role
         let resolvedUser = null;
-        let dbUserExists = false;
+  let dbUserExists = false;
+  let dbLookupFailed = false;
 
         // 1) Try database-backed users first
         try {
@@ -92,12 +112,13 @@ export const authOptions = {
         } catch (e) {
           // If DB is unreachable, fall back to demo users below
           console.warn("[AUTH] DB authorize fallback:", e?.message || e);
+          dbLookupFailed = true;
         }
 
         // Only try demo accounts if user doesn't exist in database
         if (!resolvedUser && !dbUserExists) {
           console.log('[AUTH] Trying demo accounts for:', email);
-          if (email === STUDENT_DEMO.email && password === STUDENT_DEMO.password) {
+          if (isStudentDemoEmail && password === STUDENT_DEMO.password) {
             console.log('[AUTH] Student demo match');
             resolvedUser = {
               id: "student-demo",
@@ -106,7 +127,7 @@ export const authOptions = {
               role: "student",
               theme: null,
             };
-          } else if (email === ADMIN_DEMO.email && password === ADMIN_DEMO.password) {
+          } else if (isAdminDemoEmail && password === ADMIN_DEMO.password) {
             console.log('[AUTH] Admin demo match');
             resolvedUser = {
               id: "admin-demo",
@@ -128,8 +149,11 @@ export const authOptions = {
             timestamp: Date.now(),
           });
           
+          const accountExists = dbUserExists || attemptedDemoAccount;
+          const failureReason = dbLookupFailed ? 'unknown' : (accountExists ? 'invalid-credentials' : 'account-not-found');
+          
           // Record failed attempt
-          const attemptResult = recordFailedAttempt(email);
+          const attemptResult = recordFailedAttempt(email, { reasonCode: failureReason });
           
           if (attemptResult.locked) {
             const minutes = Math.ceil(attemptResult.remainingTime / 60);
@@ -140,10 +164,11 @@ export const authOptions = {
               role: expectedRole || 'unknown',
               attempts: attemptResult.attempts,
               lockWindowMinutes: minutes,
+              reason: failureReason,
             }).catch(err => console.error('[AUTH] Failed to send lockout notification:', err));
             
             throw new Error(
-              `AccountLocked:${minutes}:Too many failed login attempts. Account locked for ${minutes} minute${minutes !== 1 ? 's' : ''}.`
+              `AccountLocked:${minutes}:${failureReason}:Too many failed login attempts. Account locked for ${minutes} minute${minutes !== 1 ? 's' : ''}.`
             );
           }
           
@@ -154,7 +179,7 @@ export const authOptions = {
           
           const remaining = attemptResult.remainingAttempts;
           throw new Error(
-            `InvalidCredentials:${remaining}:Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`
+            `InvalidCredentials:${remaining}:${failureReason}:Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`
           );
         }
 
@@ -162,7 +187,7 @@ export const authOptions = {
         if (expectedRole && resolvedUser.role !== expectedRole) {
           console.log('[AUTH] Role mismatch:', resolvedUser.role, 'vs expected', expectedRole);
           // Record failed attempt for role mismatch too
-          recordFailedAttempt(email);
+          recordFailedAttempt(email, { reasonCode: 'role-mismatch' });
           throw new Error("RoleMismatch");
         }
 

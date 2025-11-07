@@ -124,19 +124,60 @@ function AuthContent() {
             ? "Those credentials don’t match the student demo account. Use the demo credentials below."
             : "Those credentials don’t match the admin demo account. Use the demo credentials below.";
 
+        const portalLabel = role === "student" ? "student" : "admin";
+
         let errorMessage = "Unable to sign in. Check your credentials and try again.";
 
         // Handle account locked errors
         if (result?.error?.startsWith("AccountLocked:")) {
-          const parts = result.error.split(":");
-          const minutes = parts[1];
-          errorMessage = `🔒 Account temporarily locked due to multiple failed login attempts. Please try again in ${minutes} minute${minutes !== "1" ? "s" : ""}.`;
+          const parts = (result.error || "").split(":");
+          const rawMinutes = parts[1];
+          const reasonCode = parts[2];
+          const minutesValue = Number.parseInt(rawMinutes, 10);
+          const minutesDisplay = Number.isFinite(minutesValue) && minutesValue > 0 ? minutesValue : (rawMinutes || "15");
+          const minuteSuffix = Number.isFinite(minutesValue) && minutesValue === 1 ? "" : "s";
+
+          // If lockout reason indicates the email doesn't exist, show the explicit message
+          if (reasonCode === "account-not-found") {
+            errorMessage = `We couldn’t find a ${portalLabel} account with that email address. Please check your spelling or Contact us at libraaismartlibraryassistant@gmail.com`;
+          } else {
+            let reasonCopy = "";
+            if (reasonCode === "invalid-credentials") {
+              reasonCopy = ` Repeated invalid credentials were entered for an existing ${portalLabel} account.`;
+            } else if (reasonCode === "role-mismatch") {
+              reasonCopy = " The lockout was triggered by signing in with the wrong portal for this account.";
+            } else if (reasonCode === "unknown") {
+              reasonCopy = " The system could not determine whether the account exists.";
+            }
+
+            errorMessage = `🔒 Account temporarily locked due to multiple failed login attempts. Please try again in ${minutesDisplay} minute${minuteSuffix}.`;
+            if (reasonCopy) {
+              errorMessage += reasonCopy;
+            }
+          }
         }
         // Handle invalid credentials with remaining attempts
         else if (result?.error?.startsWith("InvalidCredentials:")) {
-          const parts = result.error.split(":");
-          const remaining = parts[1];
-          errorMessage = `❌ Invalid credentials. You have ${remaining} attempt${remaining !== "1" ? "s" : ""} remaining before your account is temporarily locked.`;
+          const parts = (result.error || "").split(":");
+          const rawRemaining = parts[1];
+          const reasonCode = parts[2];
+          const remainingValue = Number.parseInt(rawRemaining, 10);
+          const remainingCopy = Number.isFinite(remainingValue) && remainingValue >= 0
+            ? ` You have ${remainingValue} attempt${remainingValue === 1 ? "" : "s"} remaining before your account is temporarily locked.`
+            : "";
+
+          if (reasonCode === "account-not-found") {
+            // For non-existing users, do NOT show remaining attempts since there's no account to lock
+            errorMessage = `We couldn’t find a ${portalLabel} account with that email address. Please check your spelling or Contact us at libraaismartlibraryassistant@gmail.com`;
+          } else if (reasonCode === "invalid-credentials") {
+            errorMessage = `❌ Invalid credentials for an existing ${portalLabel} account. Double-check the password or use the demo credentials below.${remainingCopy}`;
+          } else if (reasonCode === "role-mismatch") {
+            errorMessage = `⚠️ That email belongs to a different portal. Switch to the correct tab and try again.${remainingCopy}`;
+          } else if (reasonCode === "unknown") {
+            errorMessage = `⚠️ The system couldn't verify whether this ${portalLabel} account exists. Please try again in a moment.${remainingCopy}`;
+          } else {
+            errorMessage = `${defaultCopy}${remainingCopy}`;
+          }
         }
         // Handle role mismatch
         else if (result?.error === "RoleMismatch") {

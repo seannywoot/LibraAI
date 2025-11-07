@@ -40,6 +40,7 @@ export function isAccountLocked(identifier) {
       remainingTime,
       lockedUntil: lockInfo.lockedUntil,
       attempts: lockInfo.attempts,
+      reasonCode: lockInfo.reasonCode || null,
     };
   }
   
@@ -52,7 +53,8 @@ export function isAccountLocked(identifier) {
 /**
  * Record a failed login attempt
  */
-export function recordFailedAttempt(identifier) {
+export function recordFailedAttempt(identifier, options = {}) {
+  const { reasonCode = null } = options;
   const now = Date.now();
   let attempts = failedAttempts.get(identifier) || [];
   
@@ -70,6 +72,7 @@ export function recordFailedAttempt(identifier) {
       lockedUntil,
       attempts: attempts.length,
       lockedAt: now,
+      reasonCode,
     });
     
     return {
@@ -77,6 +80,7 @@ export function recordFailedAttempt(identifier) {
       attempts: attempts.length,
       lockedUntil,
       remainingTime: Math.ceil(CONFIG.LOCKOUT_DURATION / 1000),
+      reasonCode,
     };
   }
   
@@ -85,6 +89,7 @@ export function recordFailedAttempt(identifier) {
     attempts: attempts.length,
     remainingAttempts: CONFIG.MAX_ATTEMPTS - attempts.length,
     delay: getProgressiveDelay(attempts.length),
+    reasonCode,
   };
 }
 
