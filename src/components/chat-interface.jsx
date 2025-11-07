@@ -51,10 +51,17 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
   const [lastUserMessage, setLastUserMessage] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState(null);
+  const [hasMigrated, setHasMigrated] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const [retryQueue, setRetryQueue] = useState([]);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingIntervalRef = useRef(null);
+  const saveTimerRef = useRef(null);
+  const retryTimerRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,29 +71,360 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     scrollToBottom();
   }, [messages]);
 
-  // Load conversation history and current conversation from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("chatHistory");
-    if (saved) {
-      try {
-        setConversationHistory(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to load chat history:", e);
+  // Toast notification system
+  const showToast = useCallback((message, type = 'info', duration = 5000) => {
+    const id = Date.now();
+    const toast = { id, message, type };
+    setToasts(prev => [...prev, toast]);
+    
+    if (duration > 0) {
+      setTimeout(() => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+      }, duration);
+    }
+    
+    return id;
+  }, []);
+
+  const dismissToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  // Retry mechanism for failed operations
+  const addToRetryQueue = useCallback((operation, data) => {
+    setRetryQueue(prev => [...prev, { operation, data, timestamp: Date.now() }]);
+  }, []);
+
+  // Load conversations from database
+  const loadConversationsFromDB = useCallback(async () => {
+    try {
+      setIsSyncing(true);
+      setSyncError(null);
+      
+      const response = await fetch('/api/chat/conversations', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.warn('User not authenticated, falling back to localStorage');
+          showToast('Not authenticated. Using local storage only.', 'warning', 4000);
+          return;
+        }
+        throw new Error(`Failed to load conversations: ${response.status}`);
       }
+
+      const data = await response.json();
+      
+      if (data.success && data.conversations) {
+        setConversationHistory(data.conversations);
+        // Update localStorage cache
+        localStorage.setItem('chatHistory', JSON.stringify(data.conversations));
+      }
+    } catch (error) {
+      console.error('Error loading conversations from DB:', error);
+      setSyncError('Failed to load conversations from server');
+      showToast('Failed to load conversations from server. Using local cache.', 'error', 5000);
+      // Fall back to localStorage
+      const saved = localStorage.getItem('chatHistory');
+      if (saved) {
+        try {
+          setConversationHistory(JSON.parse(saved));
+        } catch (e) {
+          console.error('Failed to load from localStorage:', e);
+          showToast('Failed to load conversations from local storage.', 'error', 5000);
+        }
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [showToast]);
+
+  // Save conversation to database with debouncing
+  const saveConversationToDB = useCallback(async (conversationData) => {
+    try {
+      setIsSyncing(true);
+      setSyncError(null);
+
+      const response = await fetch('/api/chat/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          conversationId: conversationData.id,
+          title: conversationData.title,
+          messages: conversationData.messages,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.warn('User not authenticated, saving to localStorage only');
+          showToast('Not authenticated. Saving locally only.', 'warning', 3000);
+          return;
+        }
+        throw new Error(`Failed to save conversation: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update localStorage cache after successful save
+        const updated = [conversationData, ...conversationHistory.filter(c => c.id !== conversationData.id)].slice(0, 20);
+        localStorage.setItem('chatHistory', JSON.stringify(updated));
+      }
+    } catch (error) {
+      console.error('Error saving conversation to DB:', error);
+      setSyncError('Failed to sync conversation to server');
+      showToast('Failed to sync conversation. Saved locally and will retry.', 'error', 5000);
+      
+      // Add to retry queue
+      addToRetryQueue('save', conversationData);
+      
+      // Still save to localStorage as fallback
+      const updated = [conversationData, ...conversationHistory.filter(c => c.id !== conversationData.id)].slice(0, 20);
+      localStorage.setItem('chatHistory', JSON.stringify(updated));
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [conversationHistory, showToast, addToRetryQueue]);
+
+  // Delete conversation from database
+  const deleteConversationFromDB = useCallback(async (conversationId) => {
+    try {
+      setIsSyncing(true);
+      setSyncError(null);
+
+      const response = await fetch(`/api/chat/conversations/${conversationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          showToast('Not authenticated. Cannot delete from server.', 'error', 4000);
+          throw new Error('User not authenticated');
+        }
+        if (response.status === 404) {
+          console.warn('Conversation not found in database, removing from local state');
+          showToast('Conversation not found on server. Removed locally.', 'warning', 3000);
+          return true;
+        }
+        throw new Error(`Failed to delete conversation: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        showToast('Conversation deleted successfully', 'success', 3000);
+      }
+      return data.success;
+    } catch (error) {
+      console.error('Error deleting conversation from DB:', error);
+      setSyncError('Failed to delete conversation from server');
+      showToast('Failed to delete from server. Will retry.', 'error', 5000);
+      
+      // Add to retry queue
+      addToRetryQueue('delete', conversationId);
+      throw error;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [showToast, addToRetryQueue]);
+
+  // Process retry queue - defined after save/delete functions to avoid hoisting issues
+  const processRetryQueue = useCallback(async () => {
+    if (retryQueue.length === 0) return;
+
+    const item = retryQueue[0];
+    const timeSinceFailure = Date.now() - item.timestamp;
+    
+    // Exponential backoff: wait 5s, 15s, 45s before retries
+    const retryDelay = Math.min(5000 * Math.pow(3, item.retryCount || 0), 45000);
+    
+    if (timeSinceFailure < retryDelay) return;
+
+    try {
+      if (item.operation === 'save') {
+        await saveConversationToDB(item.data);
+        setRetryQueue(prev => prev.filter(i => i !== item));
+        showToast('Conversation synced successfully', 'success', 3000);
+      } else if (item.operation === 'delete') {
+        await deleteConversationFromDB(item.data);
+        setRetryQueue(prev => prev.filter(i => i !== item));
+        showToast('Conversation deleted successfully', 'success', 3000);
+      }
+    } catch (error) {
+      // Increment retry count
+      const updatedItem = { ...item, retryCount: (item.retryCount || 0) + 1 };
+      
+      // Remove if max retries (3) reached
+      if (updatedItem.retryCount >= 3) {
+        setRetryQueue(prev => prev.filter(i => i !== item));
+        showToast('Failed to sync after multiple attempts. Changes saved locally.', 'error', 7000);
+      } else {
+        setRetryQueue(prev => prev.map(i => i === item ? updatedItem : i));
+      }
+    }
+  }, [retryQueue, saveConversationToDB, deleteConversationFromDB, showToast]);
+
+  // Process retry queue periodically
+  useEffect(() => {
+    if (retryQueue.length > 0) {
+      retryTimerRef.current = setInterval(processRetryQueue, 2000);
+    } else if (retryTimerRef.current) {
+      clearInterval(retryTimerRef.current);
+      retryTimerRef.current = null;
     }
 
-    // Load current conversation
-    const currentChat = localStorage.getItem("currentChat");
-    if (currentChat) {
-      try {
-        const { messages: savedMessages, conversationId, title } = JSON.parse(currentChat);
-        setMessages(savedMessages);
-        setCurrentConversationId(conversationId);
-        if (title) setAutoTitle(title);
-      } catch (e) {
-        console.error("Failed to load current chat:", e);
+    return () => {
+      if (retryTimerRef.current) {
+        clearInterval(retryTimerRef.current);
       }
+    };
+  }, [retryQueue, processRetryQueue]);
+
+  // Migrate localStorage conversations to database
+  const migrateLocalStorageConversations = useCallback(async () => {
+    const migrationKey = 'chatMigrationComplete';
+    const migrationComplete = localStorage.getItem(migrationKey);
+    
+    if (migrationComplete === 'true') {
+      setHasMigrated(true);
+      return;
     }
+
+    const saved = localStorage.getItem('chatHistory');
+    if (!saved) {
+      localStorage.setItem(migrationKey, 'true');
+      setHasMigrated(true);
+      return;
+    }
+
+    try {
+      const conversations = JSON.parse(saved);
+      if (!conversations || conversations.length === 0) {
+        localStorage.setItem(migrationKey, 'true');
+        setHasMigrated(true);
+        return;
+      }
+
+      console.log(`Migrating ${conversations.length} conversations to database...`);
+      
+      // Show migration progress notification
+      const migrationToastId = showToast(
+        `Migrating ${conversations.length} conversations to database...`,
+        'info',
+        0 // Don't auto-dismiss
+      );
+      setIsSyncing(true);
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (let i = 0; i < conversations.length; i++) {
+        const conv = conversations[i];
+        try {
+          const response = await fetch('/api/chat/conversations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              conversationId: conv.id,
+              title: conv.title,
+              messages: conv.messages,
+            }),
+          });
+
+          if (response.ok) {
+            successCount++;
+            // Update progress
+            dismissToast(migrationToastId);
+            showToast(
+              `Migrating conversations... ${successCount + failCount}/${conversations.length}`,
+              'info',
+              0
+            );
+          } else {
+            failCount++;
+            console.error(`Failed to migrate conversation ${conv.id}`);
+          }
+        } catch (error) {
+          failCount++;
+          console.error(`Error migrating conversation ${conv.id}:`, error);
+        }
+      }
+
+      console.log(`Migration complete: ${successCount} succeeded, ${failCount} failed`);
+      
+      // Dismiss progress toast
+      dismissToast(migrationToastId);
+      
+      // Show completion message
+      if (successCount > 0 && failCount === 0) {
+        showToast(
+          `Migration complete! ${successCount} conversations synced successfully.`,
+          'success',
+          5000
+        );
+      } else if (successCount > 0 && failCount > 0) {
+        showToast(
+          `Migration complete: ${successCount} synced, ${failCount} failed. Failed conversations remain in local storage.`,
+          'warning',
+          7000
+        );
+      } else {
+        showToast(
+          'Migration failed. Conversations remain in local storage.',
+          'error',
+          7000
+        );
+      }
+
+      // Mark migration as complete even if some failed
+      localStorage.setItem(migrationKey, 'true');
+      setHasMigrated(true);
+    } catch (error) {
+      console.error('Error during migration:', error);
+      showToast('Migration failed. Conversations remain in local storage.', 'error', 7000);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [showToast, dismissToast]);
+
+  // Load conversation history and current conversation from database first, then localStorage
+  useEffect(() => {
+    const initializeConversations = async () => {
+      // Load from database first
+      await loadConversationsFromDB();
+      
+      // Load current conversation from localStorage
+      const currentChat = localStorage.getItem("currentChat");
+      if (currentChat) {
+        try {
+          const { messages: savedMessages, conversationId, title } = JSON.parse(currentChat);
+          setMessages(savedMessages);
+          setCurrentConversationId(conversationId);
+          if (title) setAutoTitle(title);
+        } catch (e) {
+          console.error("Failed to load current chat:", e);
+        }
+      }
+      
+      // Trigger migration if localStorage conversations exist
+      if (!hasMigrated) {
+        await migrateLocalStorageConversations();
+      }
+    };
+    
+    initializeConversations();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save current conversation to localStorage whenever it changes
@@ -100,11 +438,16 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     }
   }, [messages, currentConversationId, autoTitle]);
 
-  // Auto-save conversation when messages change
+  // Auto-save conversation when messages change (with debouncing)
   useEffect(() => {
     if (messages.length <= 1) return; // Don't save if only greeting exists
 
-    const timer = setTimeout(() => {
+    // Clear previous timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = setTimeout(() => {
       const conversationId = currentConversationId || Date.now();
       const fallback = heuristicTitle(messages);
       const title = autoTitle || fallback;
@@ -115,20 +458,27 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         lastUpdated: new Date().toISOString()
       };
 
+      // Update local state
       setConversationHistory(prev => {
         const filtered = prev.filter(c => c.id !== conversationData.id);
         const updated = [conversationData, ...filtered].slice(0, 20);
-        localStorage.setItem("chatHistory", JSON.stringify(updated));
         return updated;
       });
+
+      // Save to database
+      saveConversationToDB(conversationData);
 
       if (!currentConversationId) {
         setCurrentConversationId(conversationId);
       }
     }, 800);
 
-    return () => clearTimeout(timer);
-  }, [messages, currentConversationId, autoTitle]);
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [messages, currentConversationId, autoTitle, saveConversationToDB]);
 
   // Title generation & drift detection
   useEffect(() => {
@@ -236,15 +586,37 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     setDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (conversationToDelete) {
-      setConversationHistory(prev => {
-        const updated = prev.filter(c => c.id !== conversationToDelete.id);
-        localStorage.setItem("chatHistory", JSON.stringify(updated));
-        return updated;
-      });
-      if (currentConversationId === conversationToDelete.id) {
-        startNewConversation();
+      try {
+        // Call API to delete from database
+        await deleteConversationFromDB(conversationToDelete.id);
+        
+        // Only update UI state after successful API response
+        setConversationHistory(prev => {
+          const updated = prev.filter(c => c.id !== conversationToDelete.id);
+          localStorage.setItem("chatHistory", JSON.stringify(updated));
+          return updated;
+        });
+        
+        if (currentConversationId === conversationToDelete.id) {
+          startNewConversation();
+        }
+      } catch (error) {
+        // Show error notification but still allow local deletion
+        console.error('Failed to delete from database:', error);
+        setSyncError('Failed to delete from server, removed locally');
+        
+        // Still remove from local state
+        setConversationHistory(prev => {
+          const updated = prev.filter(c => c.id !== conversationToDelete.id);
+          localStorage.setItem("chatHistory", JSON.stringify(updated));
+          return updated;
+        });
+        
+        if (currentConversationId === conversationToDelete.id) {
+          startNewConversation();
+        }
       }
     }
     setDeleteModalOpen(false);
@@ -390,11 +762,14 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     }
   };
 
-  // Cleanup typing interval on unmount
+  // Cleanup typing interval and save timer on unmount
   useEffect(() => {
     return () => {
       if (typingIntervalRef.current) {
         clearInterval(typingIntervalRef.current);
+      }
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
       }
     };
   }, []);
@@ -772,6 +1147,86 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
             </div>
           </div>
         </>
+      )}
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-md">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`flex items-start gap-3 p-4 rounded-xl shadow-lg border animate-slide-in ${
+              toast.type === 'success'
+                ? 'bg-green-50 border-green-200 text-green-800'
+                : toast.type === 'error'
+                ? 'bg-red-50 border-red-200 text-red-800'
+                : toast.type === 'warning'
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                : 'bg-blue-50 border-blue-200 text-blue-800'
+            }`}
+          >
+            <div className="flex-1">
+              <div className="flex items-start gap-2">
+                {toast.type === 'success' && (
+                  <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {toast.type === 'error' && (
+                  <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {toast.type === 'warning' && (
+                  <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {toast.type === 'info' && (
+                  <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                )}
+                <p className="text-sm font-medium flex-1">{toast.message}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => dismissToast(toast.id)}
+              className="text-current opacity-60 hover:opacity-100 transition"
+              aria-label="Dismiss notification"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Sync Status Indicator */}
+      {isSyncing && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <div className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 rounded-xl shadow-lg">
+            <div className="flex gap-1">
+              <div className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: "0ms" }}></div>
+              <div className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: "150ms" }}></div>
+              <div className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+            </div>
+            <span className="text-sm text-zinc-600 font-medium">Syncing...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Retry Queue Indicator */}
+      {retryQueue.length > 0 && (
+        <div className="fixed bottom-16 left-4 z-50">
+          <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl shadow-lg">
+            <svg className="h-4 w-4 text-amber-600 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="text-sm text-amber-800 font-medium">
+              {retryQueue.length} operation{retryQueue.length > 1 ? 's' : ''} pending retry
+            </span>
+          </div>
+        </div>
       )}
     </>
   );

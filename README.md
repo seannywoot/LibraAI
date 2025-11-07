@@ -141,6 +141,40 @@ npm start
 
 For more details, see Next.js deployment docs.
 
+## Chat persistence database setup
+
+LibraAI stores chat conversations in MongoDB for cross-device access and data persistence. Before using the chat feature, you need to initialize the database indexes.
+
+### Initialize the conversations collection
+
+Run this script once to create the necessary indexes:
+
+```powershell
+npm run init-conversations
+```
+
+This script will:
+- Create an index on `userId` for efficient user-specific queries
+- Create an index on `conversationId` for unique identification
+- Create a compound index on `userId` and `lastUpdated` for efficient sorting
+- Verify all indexes were created successfully
+
+### What it does
+
+The script connects to your MongoDB database using the `MONGODB_URI` from `.env.local` and creates optimized indexes for the `conversations` collection. These indexes ensure fast query performance when:
+- Loading all conversations for a user
+- Finding a specific conversation
+- Sorting conversations by most recent activity
+
+### Troubleshooting
+
+If the script fails:
+- Verify your `MONGODB_URI` is set correctly in `.env.local`
+- Ensure your MongoDB user has write permissions
+- Check that you can connect to MongoDB (test at `/api/db/ping`)
+
+You can run the script multiple times safely - it will skip indexes that already exist.
+
 ## Email setup (password reset)
 
 This app uses EmailJS for sending emails. EmailJS is a simple, client-side email service that doesn't require a backend server.
