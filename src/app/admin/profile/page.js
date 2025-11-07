@@ -18,16 +18,20 @@ export default function AdminProfilePage() {
   const { setDarkModePreference } = useTheme();
   const { name: contextName, emailNotifications: contextEmailNotifications, updatePreferences } = useUserPreferences();
   const preferencesLoadedRef = useRef(false);
+  const isEditingRef = useRef(false);
 
   // Sync with context (real-time updates from other browsers/tabs)
+  // Only update if we're not currently editing
   useEffect(() => {
-    if (contextName) {
+    if (contextName && !isEditingRef.current) {
       setName(contextName);
     }
   }, [contextName]);
 
   useEffect(() => {
-    setEmailNotifications(contextEmailNotifications);
+    if (!isEditingRef.current) {
+      setEmailNotifications(contextEmailNotifications);
+    }
   }, [contextEmailNotifications]);
 
   useEffect(() => {
@@ -45,11 +49,7 @@ export default function AdminProfilePage() {
           if (typeof data.user.emailNotifications === "boolean") {
             setEmailNotifications(data.user.emailNotifications);
           }
-          const storedTheme = data.user.theme;
-          if (storedTheme === "dark" || storedTheme === "light") {
-            const isDark = storedTheme === "dark";
-            setDarkModePreference(isDark, { persist: true });
-          }
+          // Don't load theme here - SessionProvider handles it
           preferencesLoadedRef.current = true;
         }
       } catch (err) {
@@ -60,7 +60,7 @@ export default function AdminProfilePage() {
     if (session?.user?.email) {
       loadPreferences();
     }
-  }, [session?.user?.email, setDarkModePreference]);
+  }, [session?.user?.email]);
 
   const pushToast = (toast) => {
     const id = Date.now() + Math.random();
@@ -95,6 +95,8 @@ export default function AdminProfilePage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    isEditingRef.current = true;
+    
     try {
       const payload = { name, emailNotifications };
 
@@ -106,15 +108,6 @@ export default function AdminProfilePage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to save changes");
-      }
-      // Update session state locally to reflect saved preference values
-      if (update && name !== session?.user?.name) {
-        try {
-          await update({ name });
-        } catch (e) {
-          // Session update is non-critical; surfacing in console is sufficient for debugging
-          console.warn("Session update skipped:", e);
-        }
       }
 
       // Broadcast changes to other tabs/browsers via localStorage
@@ -129,6 +122,11 @@ export default function AdminProfilePage() {
       pushToast({ type: "success", title: "Changes saved", description: "Your profile and notification preferences were updated." });
     } catch (err) {
       pushToast({ type: "error", title: "Save failed", description: err?.message || "Unknown error" });
+    } finally {
+      // Allow context updates again after a short delay
+      setTimeout(() => {
+        isEditingRef.current = false;
+      }, 1000);
     }
   };
 

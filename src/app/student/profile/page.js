@@ -18,6 +18,7 @@ export default function StudentProfilePage() {
   const { setDarkModePreference } = useTheme();
   const { name: contextName, emailNotifications: contextEmailNotifications, updatePreferences } = useUserPreferences();
   const preferencesLoadedRef = useRef(false);
+  const isEditingRef = useRef(false);
 
   const pushToast = (toast) => {
     const id = Date.now() + Math.random();
@@ -32,14 +33,17 @@ export default function StudentProfilePage() {
   };
 
   // Sync with context (real-time updates from other browsers/tabs)
+  // Only update if we're not currently editing
   useEffect(() => {
-    if (contextName) {
+    if (contextName && !isEditingRef.current) {
       setName(contextName);
     }
   }, [contextName]);
 
   useEffect(() => {
-    setEmailNotifications(contextEmailNotifications);
+    if (!isEditingRef.current) {
+      setEmailNotifications(contextEmailNotifications);
+    }
   }, [contextEmailNotifications]);
 
   // Initialize name from session when available
@@ -61,11 +65,7 @@ export default function StudentProfilePage() {
           if (typeof data.user.emailNotifications === "boolean") {
             setEmailNotifications(data.user.emailNotifications);
           }
-          const storedTheme = data.user.theme;
-          if (storedTheme === "dark" || storedTheme === "light") {
-            const isDark = storedTheme === "dark";
-            setDarkModePreference(isDark, { persist: true });
-          }
+          // Don't load theme here - SessionProvider handles it
           preferencesLoadedRef.current = true;
         }
       } catch (err) {
@@ -75,7 +75,7 @@ export default function StudentProfilePage() {
     if (session?.user?.email) {
       loadPreferences();
     }
-  }, [session?.user?.email, setDarkModePreference]);
+  }, [session?.user?.email]);
 
   const navigationLinks = getStudentLinks();
 
@@ -99,6 +99,8 @@ export default function StudentProfilePage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    isEditingRef.current = true;
+    
     try {
       const payload = { name, emailNotifications };
 
@@ -110,13 +112,6 @@ export default function StudentProfilePage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to save changes");
-      }
-      
-      // Update client session for changed fields so other tabs stay in sync
-      if (update && name !== session?.user?.name) {
-        update({ name }).catch((e) => {
-          console.log("Session update skipped:", e);
-        });
       }
 
       // Broadcast changes to other tabs/browsers via localStorage
@@ -131,6 +126,11 @@ export default function StudentProfilePage() {
       pushToast({ type: "success", title: "Changes saved", description: "Your profile and notification preferences were updated." });
     } catch (err) {
       pushToast({ type: "error", title: "Save failed", description: err?.message || "Unknown error" });
+    } finally {
+      // Allow context updates again after a short delay
+      setTimeout(() => {
+        isEditingRef.current = false;
+      }, 1000);
     }
   };
 
