@@ -13,11 +13,13 @@ import {
 } from "@/lib/session-handler";
 import IdleTimeoutWarning from "./idle-timeout-warning";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useUserPreferences } from "@/contexts/UserPreferencesContext";
 
 function SessionValidator({ children }) {
   const { data: session, status } = useSession();
   const [showIdleWarning, setShowIdleWarning] = useState(false);
   const { setDarkModePreference } = useTheme();
+  const { updatePreferences } = useUserPreferences();
   const themeSyncStateRef = useRef(null);
 
   // Track user activity
@@ -147,6 +149,77 @@ function SessionValidator({ children }) {
       }
     };
   }, [status, session?.user?.theme, setDarkModePreference]);
+
+  // Periodic sync for all user preferences (cross-browser real-time updates)
+  useEffect(() => {
+    if (status !== "authenticated") {
+      return;
+    }
+
+    let cancelled = false;
+    let intervalId = null;
+
+    const syncPreferencesFromDB = async () => {
+      if (cancelled) return;
+      
+      // Only poll when tab is visible (saves ~50% of requests)
+      if (document.hidden) return;
+      
+      try {
+        const res = await fetch("/api/user/profile", { method: "GET" });
+        const data = await res.json().catch(() => ({}));
+        
+        if (!cancelled && data?.ok && data?.user) {
+          const user = data.user;
+          
+          // Sync theme
+          const fetchedTheme = user.theme;
+          if (fetchedTheme === "dark" || fetchedTheme === "light") {
+            const currentTheme = localStorage.getItem("theme");
+            if (currentTheme !== fetchedTheme) {
+              setDarkModePreference(fetchedTheme === "dark", { persist: true });
+            }
+          }
+          
+          // Sync name and email notifications
+          const prefs = {
+            name: user.name || "",
+            emailNotifications: user.emailNotifications ?? true,
+          };
+          
+          // Store in localStorage for cross-tab sync
+          try {
+            localStorage.setItem("userPreferences", JSON.stringify(prefs));
+          } catch (err) {
+            // Ignore storage errors
+          }
+          
+          // Update context
+          updatePreferences(prefs);
+        }
+      } catch (err) {
+        // Silently fail - this is a background sync
+      }
+    };
+
+    // Poll every 15 seconds for preference changes (balanced between responsiveness and server load)
+    intervalId = setInterval(syncPreferencesFromDB, 15 * 1000);
+
+    // Also sync immediately when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !cancelled) {
+        syncPreferencesFromDB();
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [status, setDarkModePreference, updatePreferences]);
 
   const handleExtendSession = () => {
     setShowIdleWarning(false);

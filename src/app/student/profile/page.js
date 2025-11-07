@@ -8,6 +8,7 @@ import SignOutButton from "@/components/sign-out-button";
 import Toast from "@/components/Toast";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useUserPreferences } from "@/contexts/UserPreferencesContext";
 
 export default function StudentProfilePage() {
   const { data: session, update } = useSession();
@@ -15,6 +16,7 @@ export default function StudentProfilePage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [toasts, setToasts] = useState([]);
   const { setDarkModePreference } = useTheme();
+  const { name: contextName, emailNotifications: contextEmailNotifications, updatePreferences } = useUserPreferences();
   const preferencesLoadedRef = useRef(false);
 
   const pushToast = (toast) => {
@@ -28,6 +30,17 @@ export default function StudentProfilePage() {
       }, t.duration + 100); // small buffer after auto-close inside Toast
     }
   };
+
+  // Sync with context (real-time updates from other browsers/tabs)
+  useEffect(() => {
+    if (contextName) {
+      setName(contextName);
+    }
+  }, [contextName]);
+
+  useEffect(() => {
+    setEmailNotifications(contextEmailNotifications);
+  }, [contextEmailNotifications]);
 
   // Initialize name from session when available
   useEffect(() => {
@@ -105,6 +118,15 @@ export default function StudentProfilePage() {
           console.log("Session update skipped:", e);
         });
       }
+
+      // Broadcast changes to other tabs/browsers via localStorage
+      const prefs = { name, emailNotifications };
+      try {
+        localStorage.setItem("userPreferences", JSON.stringify(prefs));
+      } catch (err) {
+        // Ignore storage errors
+      }
+      updatePreferences(prefs);
 
       pushToast({ type: "success", title: "Changes saved", description: "Your profile and notification preferences were updated." });
     } catch (err) {

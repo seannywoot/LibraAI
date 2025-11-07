@@ -25,7 +25,29 @@ As of the latest update, dark mode changes are applied **immediately** without r
 - Theme changes persist across logout/login cycles via the database
 - The `SessionProvider` syncs the theme from the session on login
 
-This provides a better user experience where theme changes feel responsive and natural.
+### Cross-tab and cross-browser sync
+
+All user preferences (theme, name, email notifications) now sync in real-time across tabs and browsers:
+
+**Same browser (instant sync):**
+- The `UserPreferencesContext` listens to `localStorage` storage events
+- When you change any preference in one tab, all other tabs in the same browser update instantly
+- Works for theme, profile name, and email notification settings
+
+**Different browsers (15-second sync):**
+- The `SessionProvider` polls the database every 15 seconds to check for preference changes
+- Only polls when the tab is visible (saves ~50% of server load)
+- Syncs immediately when you switch back to a background tab
+- Updates all preferences: theme, name, and email notifications
+- This allows changes to sync across different browsers (Chrome, Firefox, Safari, etc.) within 15 seconds
+
+**Optimizations:**
+- Polling only occurs when the tab is visible
+- Uses lightweight GET requests with indexed queries
+- Changes are broadcast via localStorage for instant same-browser sync
+- Database is only queried when necessary
+
+This provides a better user experience where all preference changes feel responsive and natural across all devices and browsers.
 
 ## Notes
 
