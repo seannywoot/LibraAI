@@ -46,10 +46,30 @@ export default function AdminProfilePage() {
         const res = await fetch("/api/user/profile");
         const data = await res.json().catch(() => ({}));
         if (data?.ok && data?.user) {
-          if (typeof data.user.emailNotifications === "boolean") {
-            setEmailNotifications(data.user.emailNotifications);
+          const user = data.user;
+          
+          // Update local state
+          if (user.name) {
+            setName(user.name);
           }
-          // Don't load theme here - SessionProvider handles it
+          if (typeof user.emailNotifications === "boolean") {
+            setEmailNotifications(user.emailNotifications);
+          }
+          
+          // Update context so other components get the data
+          const prefs = {
+            name: user.name || "",
+            emailNotifications: user.emailNotifications ?? true,
+          };
+          updatePreferences(prefs);
+          
+          // Store in localStorage for cross-tab sync
+          try {
+            localStorage.setItem("userPreferences", JSON.stringify(prefs));
+          } catch (err) {
+            // Ignore storage errors
+          }
+          
           preferencesLoadedRef.current = true;
         }
       } catch (err) {
@@ -60,7 +80,7 @@ export default function AdminProfilePage() {
     if (session?.user?.email) {
       loadPreferences();
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, updatePreferences]);
 
   const pushToast = (toast) => {
     const id = Date.now() + Math.random();

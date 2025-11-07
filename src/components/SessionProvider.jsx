@@ -114,7 +114,10 @@ function SessionValidator({ children }) {
       return;
     }
 
-    if (themeSyncStateRef.current === "fetching" || themeSyncStateRef.current === "synced") {
+    if (
+      themeSyncStateRef.current === "fetching" ||
+      themeSyncStateRef.current === "synced"
+    ) {
       return;
     }
 
@@ -126,7 +129,10 @@ function SessionValidator({ children }) {
         const res = await fetch("/api/user/profile", { method: "GET" });
         const data = await res.json().catch(() => ({}));
         const fetchedTheme = data?.user?.theme;
-        if (!cancelled && (fetchedTheme === "dark" || fetchedTheme === "light")) {
+        if (
+          !cancelled &&
+          (fetchedTheme === "dark" || fetchedTheme === "light")
+        ) {
           themeSyncStateRef.current = fetchedTheme;
           setDarkModePreference(fetchedTheme === "dark", { persist: true });
         } else if (!cancelled) {
@@ -161,17 +167,17 @@ function SessionValidator({ children }) {
 
     const syncPreferencesFromDB = async () => {
       if (cancelled) return;
-      
+
       // Only poll when tab is visible (saves ~50% of requests)
       if (document.hidden) return;
-      
+
       try {
         const res = await fetch("/api/user/profile", { method: "GET" });
         const data = await res.json().catch(() => ({}));
-        
+
         if (!cancelled && data?.ok && data?.user) {
           const user = data.user;
-          
+
           // Sync theme
           const fetchedTheme = user.theme;
           if (fetchedTheme === "dark" || fetchedTheme === "light") {
@@ -180,20 +186,20 @@ function SessionValidator({ children }) {
               setDarkModePreference(fetchedTheme === "dark", { persist: true });
             }
           }
-          
+
           // Sync name and email notifications
           const prefs = {
             name: user.name || "",
             emailNotifications: user.emailNotifications ?? true,
           };
-          
+
           // Store in localStorage for cross-tab sync
           try {
             localStorage.setItem("userPreferences", JSON.stringify(prefs));
           } catch (err) {
             // Ignore storage errors
           }
-          
+
           // Update context
           updatePreferences(prefs);
         }
@@ -201,6 +207,9 @@ function SessionValidator({ children }) {
         // Silently fail - this is a background sync
       }
     };
+
+    // Sync immediately on mount
+    syncPreferencesFromDB();
 
     // Poll every 15 seconds for preference changes (balanced between responsiveness and server load)
     intervalId = setInterval(syncPreferencesFromDB, 15 * 1000);
@@ -211,7 +220,7 @@ function SessionValidator({ children }) {
         syncPreferencesFromDB();
       }
     };
-    
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {

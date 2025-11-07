@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { User, Settings, LogOut, ChevronRight } from "@/components/icons";
+import { useUserPreferences } from "@/contexts/UserPreferencesContext";
 
 // Remove horizontal padding so items align with the header's left edge (aside has p-6 already)
 // Add w-full so each row is a full-width clickable target
@@ -67,8 +68,12 @@ export default function DashboardSidebar({
   const pathname = usePathname();
   const theme = VARIANTS[variant] ?? VARIANTS.student;
   const { data: session } = useSession();
+  const { name: contextName } = useUserPreferences();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+
+  // Use context name if available, otherwise fall back to session
+  const displayName = contextName || session?.user?.name || "Account";
 
   // Close dropdown on outside click or route change
   useEffect(() => {
@@ -159,10 +164,10 @@ export default function DashboardSidebar({
           <span className="flex items-center gap-3">
             {/* Simple avatar using initial */}
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-(--bg-2) text-(--text) font-semibold">
-              {(session?.user?.name || "?").slice(0, 1)}
+              {displayName.slice(0, 1)}
             </span>
             <span className="flex min-w-0 flex-col text-left">
-              <span className="truncate font-medium text-(--text)">{session?.user?.name || "Account"}</span>
+              <span className="truncate font-medium text-(--text)">{displayName}</span>
               <span className="truncate text-xs text-(--subtext)">{session?.user?.email || ""}</span>
             </span>
           </span>
