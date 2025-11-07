@@ -9,6 +9,7 @@ import Link from "next/link";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import { getBehaviorTracker } from "@/lib/behavior-tracker";
 import RecommendationsSidebar from "@/components/recommendations-sidebar";
+import BorrowConfirmButton from "@/components/borrow-confirm-button";
 
 function StatusChip({ status }) {
   const map = {
@@ -773,12 +774,15 @@ export default function StudentBooksPage() {
               </div>
             ) : viewMode === "list" ? (
               <div className="space-y-4">
-                {items.map((book) => (
-                  <Link
-                    key={book._id}
-                    href={`/student/books/${book._id}`}
-                    className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                  >
+                {items.map((book) => {
+                  const isBorrowingThis = borrowing === book._id;
+                  const lockedByOther = Boolean(borrowing) && !isBorrowingThis;
+                  return (
+                    <Link
+                      key={book._id}
+                      href={`/student/books/${book._id}`}
+                      className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    >
                     <div className="flex gap-6">
                       {/* Book Cover Placeholder */}
                       <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
@@ -816,16 +820,22 @@ export default function StudentBooksPage() {
                             )}
                           </div>
 
-                          <div onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}>
+                          <div
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                          >
                             {book.format === "eBook" && book.ebookUrl ? (
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  window.open(book.ebookUrl, '_blank', 'noopener,noreferrer');
+                                  window.open(
+                                    book.ebookUrl,
+                                    "_blank",
+                                    "noopener,noreferrer"
+                                  );
                                 }}
                                 className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
                               >
@@ -835,19 +845,18 @@ export default function StudentBooksPage() {
                               !["reference-only", "staff-only"].includes(
                                 book.loanPolicy || ""
                               ) ? (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleBorrow(book._id);
-                                }}
-                                disabled={borrowing === book._id}
+                              <BorrowConfirmButton
+                                onConfirm={() => handleBorrow(book._id)}
+                                disabled={lockedByOther}
+                                busy={isBorrowingThis}
                                 className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                              >
-                                {borrowing === book._id
-                                  ? "Borrowing..."
-                                  : "Borrow"}
-                              </button>
+                                borrowLabel="Borrow"
+                                confirmingLabel="Confirm?"
+                                confirmingTitle="Submit Borrow Request"
+                                confirmingMessage={`Send a borrow request for "${book.title}"?`}
+                                confirmButtonLabel="Submit Request"
+                                busyLabel="Borrowing..."
+                              />
                             ) : book.status === "reserved" &&
                               book.reservedForCurrentUser ? (
                               <span className="text-sm font-medium text-gray-500">
@@ -880,102 +889,116 @@ export default function StudentBooksPage() {
                         </div>
                       </div>
                     </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                {items.map((book) => (
-                  <Link
-                    key={book._id}
-                    href={`/student/books/${book._id}`}
-                    className="block rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    {/* Book Cover */}
-                    <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2">
-                      Book Cover
-                    </div>
-
-                    {/* Book Details */}
-                    <div className="flex-1 flex flex-col">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2">
-                        {book.title}
-                      </h3>
-                      <p className="text-[11px] text-gray-600 mb-1 line-clamp-1">
-                        {book.author}
-                      </p>
-                      <div className="text-[11px] text-gray-500 mb-2">
-                        {book.year && <span>{book.year}</span>}
+                {items.map((book) => {
+                  const isBorrowingThis = borrowing === book._id;
+                  const lockedByOther = Boolean(borrowing) && !isBorrowingThis;
+                  return (
+                    <Link
+                      key={book._id}
+                      href={`/student/books/${book._id}`}
+                      className="block rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    >
+                      {/* Book Cover */}
+                      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2">
+                        Book Cover
                       </div>
 
-                      {/* Status */}
-                      <div className="mb-2">
-                        <StatusChip status={book.status} />
-                      </div>
+                      {/* Book Details */}
+                      <div className="flex-1 flex flex-col">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2">
+                          {book.title}
+                        </h3>
+                        <p className="text-[11px] text-gray-600 mb-1 line-clamp-1">
+                          {book.author}
+                        </p>
+                        <div className="text-[11px] text-gray-500 mb-2">
+                          {book.year && <span>{book.year}</span>}
+                        </div>
 
-                      {/* Action Button */}
-                      <div className="mt-auto" onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}>
-                        {book.format === "eBook" && book.ebookUrl ? (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              window.open(book.ebookUrl, '_blank', 'noopener,noreferrer');
-                            }}
-                            className="block w-full text-center rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
-                          >
-                            Access
-                          </button>
-                        ) : book.status === "available" &&
-                          !["reference-only", "staff-only"].includes(
-                            book.loanPolicy || ""
-                          ) ? (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleBorrow(book._id);
-                            }}
-                            disabled={borrowing === book._id}
-                            className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                          >
-                            {borrowing === book._id ? "Borrowing..." : "Borrow"}
-                          </button>
-                        ) : book.status === "reserved" &&
-                          book.reservedForCurrentUser ? (
-                          <span className="block text-center text-xs font-medium text-gray-500">
-                            Awaiting approval
-                          </span>
-                        ) : book.status === "reserved" ? (
-                          <button
-                            disabled
-                            className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
-                          >
-                            Reserved
-                          </button>
-                        ) : book.status === "checked-out" ? (
-                          <button
-                            disabled
-                            className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
-                          >
-                            Unavailable
-                          </button>
-                        ) : book.loanPolicy === "reference-only" ? (
-                          <span className="block text-center text-xs text-gray-500">
-                            Reference only
-                          </span>
-                        ) : book.loanPolicy === "staff-only" ? (
-                          <span className="block text-center text-xs text-gray-500">
-                            Staff only
-                          </span>
-                        ) : null}
+                        {/* Status */}
+                        <div className="mb-2">
+                          <StatusChip status={book.status} />
+                        </div>
+
+                        {/* Action Button */}
+                        <div
+                          className="mt-auto"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                        >
+                          {book.format === "eBook" && book.ebookUrl ? (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.open(
+                                  book.ebookUrl,
+                                  "_blank",
+                                  "noopener,noreferrer"
+                                );
+                              }}
+                              className="block w-full text-center rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
+                            >
+                              Access
+                            </button>
+                          ) : book.status === "available" &&
+                            !["reference-only", "staff-only"].includes(
+                              book.loanPolicy || ""
+                            ) ? (
+                            <BorrowConfirmButton
+                              onConfirm={() => handleBorrow(book._id)}
+                              disabled={lockedByOther}
+                              busy={isBorrowingThis}
+                              className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                              wrapperClassName="w-full"
+                              borrowLabel="Borrow"
+                              confirmingLabel="Confirm?"
+                              confirmingTitle="Submit Borrow Request"
+                              confirmingMessage={`Send a borrow request for "${book.title}"?`}
+                              confirmButtonLabel="Submit Request"
+                              busyLabel="Borrowing..."
+                            />
+                          ) : book.status === "reserved" &&
+                            book.reservedForCurrentUser ? (
+                            <span className="block text-center text-xs font-medium text-gray-500">
+                              Awaiting approval
+                            </span>
+                          ) : book.status === "reserved" ? (
+                            <button
+                              disabled
+                              className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
+                            >
+                              Reserved
+                            </button>
+                          ) : book.status === "checked-out" ? (
+                            <button
+                              disabled
+                              className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
+                            >
+                              Unavailable
+                            </button>
+                          ) : book.loanPolicy === "reference-only" ? (
+                            <span className="block text-center text-xs text-gray-500">
+                              Reference only
+                            </span>
+                          ) : book.loanPolicy === "staff-only" ? (
+                            <span className="block text-center text-xs text-gray-500">
+                              Staff only
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             )}
 

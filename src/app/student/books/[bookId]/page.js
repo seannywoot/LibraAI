@@ -9,6 +9,7 @@ import SignOutButton from "@/components/sign-out-button";
 import Link from "next/link";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import RecommendationCard from "@/components/recommendation-card";
+import BorrowConfirmButton from "@/components/borrow-confirm-button";
 
 function StatusChip({ status }) {
   const map = {
@@ -307,14 +308,23 @@ export default function BookDetailPage({ params }) {
                   !["reference-only", "staff-only"].includes(
                     book.loanPolicy || ""
                   ) ? (
-                  <button
-                    onClick={handleBorrow}
+                  <BorrowConfirmButton
+                    onConfirm={handleBorrow}
                     disabled={borrowing}
+                    busy={borrowing}
                     className="inline-flex items-center gap-2 rounded-lg bg-black px-6 py-3 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                    borrowLabel="Borrow Book"
+                    confirmingLabel="Confirm?"
+                    confirmingTitle="Submit Borrow Request"
+                    confirmingMessage={`Send a borrow request for "${book.title}"?`}
+                    confirmButtonLabel="Submit Request"
+                    busyLabel="Borrowing..."
                   >
-                    <BookOpen className="h-4 w-4" />
-                    {borrowing ? "Borrowing..." : "Borrow Book"}
-                  </button>
+                    <span className="inline-flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" />
+                      {borrowing ? "Borrowing..." : "Borrow Book"}
+                    </span>
+                  </BorrowConfirmButton>
                 ) : book.status === "reserved" &&
                   book.reservedForCurrentUser ? (
                   <span className="text-sm font-medium text-gray-500">

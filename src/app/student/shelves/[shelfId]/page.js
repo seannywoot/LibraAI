@@ -7,6 +7,7 @@ import { Book as BookIcon, ArrowLeft } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
+import BorrowConfirmButton from "@/components/borrow-confirm-button";
 
 function StatusChip({ status }) {
   const map = {
@@ -172,41 +173,50 @@ export default function ShelfBooksPage() {
         ) : (
           <section className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {items.map((book) => (
-                <article key={book._id} className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3">
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-zinc-900 line-clamp-2">{book.title}</h3>
-                    <p className="text-sm text-zinc-600">{book.author}</p>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-zinc-500">
-                    {book.year && <span>{book.year}</span>}
-                    {book.year && book.publisher && <span>•</span>}
-                    {book.publisher && <span>{book.publisher}</span>}
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <StatusChip status={book.status} />
-                    {book.status === "available" && !["reference-only", "staff-only"].includes(book.loanPolicy || "") ? (
-                      <button
-                        onClick={() => handleBorrow(book._id)}
-                        disabled={borrowing === book._id}
-                        className="rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
-                      >
-                        {borrowing === book._id ? "Borrowing..." : "Borrow"}
-                      </button>
-                    ) : book.status === "reserved" && book.reservedForCurrentUser ? (
-                      <span className="text-xs font-medium text-zinc-500">Awaiting admin approval</span>
-                    ) : book.status === "reserved" ? (
-                      <span className="text-xs text-zinc-500">Reserved</span>
-                    ) : book.status === "checked-out" ? (
-                      <span className="text-xs text-zinc-500">Checked out</span>
-                    ) : book.loanPolicy === "reference-only" ? (
-                      <span className="text-xs text-zinc-500">Reference only</span>
-                    ) : book.loanPolicy === "staff-only" ? (
-                      <span className="text-xs text-zinc-500">Staff only</span>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
+              {items.map((book) => {
+                const isBorrowingThis = borrowing === book._id;
+                const lockedByOther = Boolean(borrowing) && !isBorrowingThis;
+                return (
+                  <article key={book._id} className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3">
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-zinc-900 line-clamp-2">{book.title}</h3>
+                      <p className="text-sm text-zinc-600">{book.author}</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      {book.year && <span>{book.year}</span>}
+                      {book.year && book.publisher && <span>•</span>}
+                      {book.publisher && <span>{book.publisher}</span>}
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <StatusChip status={book.status} />
+                      {book.status === "available" && !["reference-only", "staff-only"].includes(book.loanPolicy || "") ? (
+                        <BorrowConfirmButton
+                          onConfirm={() => handleBorrow(book._id)}
+                          disabled={lockedByOther}
+                          busy={isBorrowingThis}
+                          className="rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+                          borrowLabel="Borrow"
+                          confirmingLabel="Confirm?"
+                          confirmingTitle="Submit Borrow Request"
+                          confirmingMessage="This sends a borrow request to the librarian for approval."
+                          confirmButtonLabel="Submit Request"
+                          busyLabel="Borrowing..."
+                        />
+                      ) : book.status === "reserved" && book.reservedForCurrentUser ? (
+                        <span className="text-xs font-medium text-zinc-500">Awaiting admin approval</span>
+                      ) : book.status === "reserved" ? (
+                        <span className="text-xs text-zinc-500">Reserved</span>
+                      ) : book.status === "checked-out" ? (
+                        <span className="text-xs text-zinc-500">Checked out</span>
+                      ) : book.loanPolicy === "reference-only" ? (
+                        <span className="text-xs text-zinc-500">Reference only</span>
+                      ) : book.loanPolicy === "staff-only" ? (
+                        <span className="text-xs text-zinc-500">Staff only</span>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
 
             <div className="flex items-center justify-between pt-4">
