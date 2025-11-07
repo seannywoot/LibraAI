@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import RecommendationCard from "./recommendation-card";
 import { getBehaviorTracker } from "@/lib/behavior-tracker";
 import { getRecommendationService } from "@/lib/recommendation-service";
@@ -17,6 +18,7 @@ export default function RecommendationsSidebar({
   const [expanded, setExpanded] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const recommendationService = getRecommendationService();
+  const router = useRouter();
 
   async function loadRecommendations(showLoader = true, forceRefresh = false) {
     if (showLoader) {
@@ -67,9 +69,9 @@ export default function RecommendationsSidebar({
       tags: book.tags
     });
 
-    // Navigate to book details (you can customize this)
-    // For now, we'll just log it
-    console.log("Clicked recommendation:", book.title);
+    if (book?._id) {
+      router.push(`/student/books/${book._id}`);
+    }
     
     // Optionally trigger a refresh
     if (onRefresh) {

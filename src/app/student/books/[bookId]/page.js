@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { ArrowLeft, BookOpen } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
@@ -46,6 +46,7 @@ function StatusChip({ status }) {
 
 export default function BookDetailPage({ params }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [book, setBook] = useState(null);
@@ -55,6 +56,13 @@ export default function BookDetailPage({ params }) {
   const [bookId, setBookId] = useState(null);
 
   const navigationLinks = getStudentLinks();
+  const origin = searchParams?.get("from");
+  const originTab = searchParams?.get("tab");
+  const backToLibrary = origin === "library";
+  const backHref = backToLibrary
+    ? `/student/library${originTab ? `?tab=${originTab}` : ""}`
+    : "/student/books";
+  const backLabel = backToLibrary ? "Back to My Library" : "Back to Catalog";
 
   // Unwrap params Promise
   useEffect(() => {
@@ -182,11 +190,11 @@ export default function BookDetailPage({ params }) {
       <main className="space-y-6">
         {/* Back Button */}
         <Link
-          href="/student/books"
+          href={backHref}
           className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Catalog
+          {backLabel}
         </Link>
 
         {/* Book Details */}

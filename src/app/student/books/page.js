@@ -166,7 +166,19 @@ export default function StudentBooksPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Failed to load books");
-      setItems(data.items || []);
+      const availabilityPriority = ["available", "reserved", "checked-out"];
+      const itemsWithPriority = Array.isArray(data.items) ? [...data.items] : [];
+      itemsWithPriority.sort((a, b) => {
+        const aStatus = (a?.status || "").toLowerCase();
+        const bStatus = (b?.status || "").toLowerCase();
+        const aPriority = availabilityPriority.indexOf(aStatus);
+        const bPriority = availabilityPriority.indexOf(bStatus);
+        const normalizedAPriority = aPriority === -1 ? availabilityPriority.length : aPriority;
+        const normalizedBPriority = bPriority === -1 ? availabilityPriority.length : bPriority;
+        return normalizedAPriority - normalizedBPriority;
+      });
+
+      setItems(itemsWithPriority);
       setTotal(data.total || 0);
     } catch (e) {
       setError(e?.message || "Unknown error");
@@ -872,32 +884,32 @@ export default function StudentBooksPage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
                 {items.map((book) => (
                   <Link
                     key={book._id}
                     href={`/student/books/${book._id}`}
-                    className="block rounded-lg bg-white border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    className="block rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                   >
                     {/* Book Cover */}
-                    <div className="w-full aspect-[2/3] rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-3">
+                    <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2">
                       Book Cover
                     </div>
 
                     {/* Book Details */}
                     <div className="flex-1 flex flex-col">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2">
                         {book.title}
                       </h3>
-                      <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+                      <p className="text-[11px] text-gray-600 mb-1 line-clamp-1">
                         {book.author}
                       </p>
-                      <div className="text-xs text-gray-500 mb-2">
+                      <div className="text-[11px] text-gray-500 mb-2">
                         {book.year && <span>{book.year}</span>}
                       </div>
 
                       {/* Status */}
-                      <div className="mb-3">
+                      <div className="mb-2">
                         <StatusChip status={book.status} />
                       </div>
 

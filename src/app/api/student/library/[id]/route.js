@@ -7,6 +7,74 @@ import { unlink } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 
+export async function GET(request, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { ok: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    if (session.user.role !== "student") {
+      return NextResponse.json(
+        { ok: false, error: "Access denied" },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+
+    if (!ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid book ID" },
+        { status: 400 }
+      );
+    }
+
+    const client = await clientPromise;
+    const db = client.db();
+
+    const user = await db
+      .collection("users")
+      .findOne({ email: session.user.email });
+
+    if (!user) {
+      return NextResponse.json(
+        { ok: false, error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    const book = await db.collection("personal_libraries").findOne({
+      _id: new ObjectId(id),
+      userId: user._id,
+    });
+
+    if (!book) {
+      return NextResponse.json(
+        { ok: false, error: "Book not found in your library" },
+        { status: 404 }
+      );
+    }
+
+    const safeBook = {
+      ...book,
+      _id: book._id.toString(),
+      userId: book.userId?.toString?.() ?? book.userId,
+    };
+
+    return NextResponse.json({ ok: true, book: safeBook });
+  } catch (error) {
+    console.error("Error retrieving personal book:", error);
+    return NextResponse.json(
+      { ok: false, error: "Failed to load book" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request, { params }) {
   try {
     const session = await getServerSession(authOptions);

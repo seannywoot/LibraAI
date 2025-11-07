@@ -48,6 +48,7 @@ export default function RecommendationCard({ book, onClick, compact = false }) {
   if (compact) {
     return (
       <button
+        type="button"
         onClick={handleClick}
         className="w-full text-left rounded-lg bg-white border border-gray-200 p-3 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
       >
@@ -55,6 +56,7 @@ export default function RecommendationCard({ book, onClick, compact = false }) {
           {/* Book Cover */}
           <div className="w-12 h-16 shrink-0 rounded bg-gray-200 flex items-center justify-center overflow-hidden">
             {book.coverImageUrl && !imageError ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={book.coverImageUrl}
                 alt={book.title}
@@ -99,12 +101,14 @@ export default function RecommendationCard({ book, onClick, compact = false }) {
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       className="w-full text-left rounded-lg bg-white border border-gray-200 p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
     >
       {/* Book Cover */}
-      <div className="w-full aspect-[2/3] rounded bg-gray-200 flex items-center justify-center overflow-hidden mb-3">
+      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center overflow-hidden mb-3">
         {book.coverImageUrl && !imageError ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={book.coverImageUrl}
             alt={book.title}
@@ -130,7 +134,7 @@ export default function RecommendationCard({ book, onClick, compact = false }) {
 
       {/* Book Details */}
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
+        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-10">
           {book.title}
         </h3>
         

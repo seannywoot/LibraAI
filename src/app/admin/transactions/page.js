@@ -53,6 +53,11 @@ export default function AdminTransactionsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [actionLoading, setActionLoading] = useState("");
   const [dueDates, setDueDates] = useState({});
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectError, setRejectError] = useState("");
+
+  const rejectProcessing = rejectTarget ? actionLoading === `${rejectTarget._id}:reject` : false;
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
@@ -100,10 +105,18 @@ export default function AdminTransactionsPage() {
     });
   }, [items]);
 
+  function closeRejectDialog() {
+    if (rejectProcessing) return;
+    setRejectTarget(null);
+    setRejectReason("");
+    setRejectError("");
+  }
+
   async function handleAction(transactionId, action, extra = {}) {
     const actionKey = `${transactionId}:${action}`;
     setActionLoading(actionKey);
     setError("");
+    setFeedback("");
     try {
       const res = await fetch("/api/admin/transactions", {
         method: "POST",
@@ -116,10 +129,29 @@ export default function AdminTransactionsPage() {
       }
       setFeedback(data?.message || "Action completed");
       setRefreshKey((k) => k + 1);
+      return { ok: true, message: data?.message };
     } catch (e) {
       setError(e?.message || "Failed to update transaction");
+      return { ok: false, error: e?.message || "Failed to update transaction" };
     } finally {
       setActionLoading("");
+    }
+  }
+
+  async function submitRejection(event) {
+    event.preventDefault();
+    if (!rejectTarget) return;
+    const trimmed = rejectReason.trim();
+    if (trimmed.length < 3) {
+      setRejectError("Please provide a brief reason (at least 3 characters).");
+      return;
+    }
+    setRejectError("");
+    const result = await handleAction(rejectTarget._id, "reject", { reason: trimmed });
+    if (result?.ok) {
+      closeRejectDialog();
+    } else if (result?.error) {
+      setRejectError(result.error);
     }
   }
 
@@ -220,7 +252,22 @@ export default function AdminTransactionsPage() {
                           {durationLabel && <div className="text-xs text-zinc-500">{durationLabel}</div>}
                         </td>
                         <td className="px-4 py-3">{formatDate(t.returnedAt)}</td>
-                        <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
+                        <td className="px-4 py-3">
+                          <div className="space-y-2">
+                            <StatusBadge status={t.status} />
+                            {t.status === "rejected" && t.rejectionReason && (
+                              <p
+                                className="whitespace-pre-line rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
+                                style={{ wordBreak: "break-word" }}
+                              >
+                                {t.rejectionReason}
+                              </p>
+                            )}
+                            {t.status === "rejected" && !t.rejectionReason && (
+                              <p className="text-xs text-zinc-500">No reason recorded.</p>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-4 py-3">
                           {t.status === "pending-approval" && (
                             <div className="space-y-2">
@@ -253,7 +300,13 @@ export default function AdminTransactionsPage() {
                                 <button
                                   className="rounded-lg border border-rose-500 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50"
                                   disabled={actionLoading === `${t._id}:reject`}
-                                  onClick={() => handleAction(t._id, "reject")}
+                                  onClick={() => {
+                                    setError("");
+                                    setFeedback("");
+                                    setRejectTarget(t);
+                                    setRejectReason("");
+                                    setRejectError("");
+                                  }}
                                 >
                                   {actionLoading === `${t._id}:reject` ? "Rejecting…" : "Reject"}
                                 </button>
@@ -314,6 +367,58 @@ export default function AdminTransactionsPage() {
           </section>
         )}
       </main>
+      {rejectTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeRejectDialog}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-zinc-900">Reject Borrow Request</h2>
+            <p className="mt-2 text-sm text-zinc-600">
+              Provide a reason for rejecting {rejectTarget.userName ? `${rejectTarget.userName}'s` : "this"} request for &quot;{rejectTarget.bookTitle}&quot;.
+            </p>
+            <form className="mt-4 space-y-4" onSubmit={submitRejection}>
+              <label className="flex flex-col gap-2 text-sm text-zinc-700">
+                Reason
+                <textarea
+                  className="min-h-[120px] rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-zinc-500 focus:outline-none"
+                  value={rejectReason}
+                  onChange={(e) => {
+                    setRejectReason(e.target.value);
+                    if (rejectError) setRejectError("");
+                  }}
+                  maxLength={500}
+                  placeholder="Explain why this request is being rejected…"
+                  disabled={rejectProcessing}
+                />
+              </label>
+              {rejectError && <p className="text-xs text-rose-600">{rejectError}</p>}
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
+                  onClick={closeRejectDialog}
+                  disabled={rejectProcessing}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-rose-600 bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-500 disabled:opacity-50"
+                  disabled={rejectProcessing}
+                >
+                  {rejectProcessing ? "Rejecting…" : "Submit Reason"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

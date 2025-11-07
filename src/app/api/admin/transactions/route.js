@@ -59,8 +59,8 @@ export async function POST(request) {
       });
     }
 
-    const body = await request.json().catch(() => ({}));
-    const { transactionId, action, dueDate } = body;
+  const body = await request.json().catch(() => ({}));
+  const { transactionId, action, dueDate, reason } = body;
 
     if (!transactionId || !ObjectId.isValid(transactionId)) {
       return new Response(
@@ -124,10 +124,12 @@ export async function POST(request) {
               dueDate: parsedDueDate,
               approvedAt: now,
               approvedBy: session.user?.email,
+              updatedAt: now,
             },
             $unset: {
               requestedDueDate: "",
               returnRequestedAt: "",
+              rejectionReason: "",
             },
           }
         ),
@@ -198,6 +200,22 @@ export async function POST(request) {
         );
       }
 
+      const rejectionReason = typeof reason === "string" ? reason.trim() : "";
+
+      if (!rejectionReason) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Rejection reason is required" }),
+          { status: 400, headers: { "content-type": "application/json" } }
+        );
+      }
+
+      if (rejectionReason.length > 500) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Rejection reason must be 500 characters or fewer" }),
+          { status: 400, headers: { "content-type": "application/json" } }
+        );
+      }
+
       await Promise.all([
         transactions.updateOne(
           { _id: transaction._id },
@@ -206,6 +224,12 @@ export async function POST(request) {
               status: "rejected",
               rejectedAt: now,
               rejectedBy: session.user?.email,
+              rejectionReason,
+              updatedAt: now,
+            },
+            $unset: {
+              requestedDueDate: "",
+              returnRequestedAt: "",
             },
           }
         ),
@@ -233,7 +257,7 @@ export async function POST(request) {
               toEmail: transaction.userId,
               bookTitle: book.title,
               bookAuthor: book.author,
-              reason: body.reason || "", // Optional reason from admin
+              reason: rejectionReason, // Admin-provided reason
               browseUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/student/books`,
               libraryName: "LibraAI Library",
               supportEmail: process.env.EMAIL_FROM || "support@libra.ai",
@@ -276,6 +300,10 @@ export async function POST(request) {
               returnedAt: now,
               returnProcessedAt: now,
               returnProcessedBy: session.user?.email,
+              updatedAt: now,
+            },
+            $unset: {
+              rejectionReason: "",
             },
           }
         ),

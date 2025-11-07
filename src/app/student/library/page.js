@@ -540,109 +540,130 @@ function MyLibraryContent() {
                   {myBooks.map((book) => (
                     <div
                       key={book._id}
-                      className="relative rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+                      className="relative rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow"
                     >
                       <button
-                        onClick={() => handleRemoveBook(book._id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemoveBook(book._id);
+                        }}
                         className="absolute right-4 top-4 z-10 rounded-full p-1.5 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shadow-sm"
                       >
                         <X className="h-4 w-4" />
                       </button>
 
-                      <div className="flex gap-6">
-                        {/* Book Cover */}
-                        <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
-                          {book.fileType === "application/pdf" ? "PDF" : "Book"}
-                        </div>
+                      <Link
+                        href={`/student/library/${book._id}`}
+                        className="block rounded-lg p-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/40"
+                      >
+                        <div className="flex gap-5">
+                          {/* Book Cover */}
+                          <div className="w-20 h-28 md:w-24 md:h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
+                            {book.fileType === "application/pdf" ? "PDF" : "Book"}
+                          </div>
 
-                        {/* Book Details */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
-                            {book.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {book.author || "Unknown Author"}
-                          </p>
-                          <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
-                            {book.isbn && <span>ISBN: {book.isbn}</span>}
-                            {book.addedAt && (
-                              <>
-                                {book.isbn && <span>|</span>}
+                          {/* Book Details */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                              {book.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-2">
+                              {book.author || "Unknown Author"}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 mb-3">
+                              {book.isbn && <span>ISBN: {book.isbn}</span>}
+                              {book.addedAt && (
                                 <span>Added {new Date(book.addedAt).toLocaleDateString()}</span>
-                              </>
-                            )}
-                          </div>
+                              )}
+                            </div>
 
-                          {/* Action Button */}
-                          <div className="flex items-center justify-between">
-                            <div></div>
-                            {book.fileType === "application/pdf" && book.fileUrl ? (
-                              <a
-                                href={book.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
-                              >
-                                Open PDF
-                              </a>
-                            ) : null}
+                            {/* Action Button */}
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-400">View details</span>
+                              {book.fileType === "application/pdf" && book.fileUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    window.open(book.fileUrl, "_blank", "noopener,noreferrer");
+                                  }}
+                                  className="rounded-md bg-black px-5 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+                                >
+                                  Open PDF
+                                </button>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
                   {myBooks.map((book) => (
                     <div
                       key={book._id}
-                      className="relative rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow flex flex-col"
+                      className="relative rounded-lg border border-gray-200 bg-white hover:shadow-md transition-shadow"
                     >
                       <button
-                        onClick={() => handleRemoveBook(book._id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemoveBook(book._id);
+                        }}
                         className="absolute right-2 top-2 z-10 rounded-full p-1.5 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shadow-sm"
                       >
                         <X className="h-4 w-4" />
                       </button>
 
-                      {/* Book Cover */}
-                      <div className="w-full aspect-[2/3] rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-3">
-                        {book.fileType === "application/pdf" ? "PDF" : "Book"}
-                      </div>
-
-                      {/* Book Details */}
-                      <div className="flex-1 flex flex-col">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
-                          {book.title}
-                        </h3>
-                        <p className="text-xs text-gray-600 mb-2 line-clamp-1">
-                          {book.author || "Unknown Author"}
-                        </p>
-                        {book.isbn && (
-                          <p className="text-xs text-gray-500 mb-2">
-                            ISBN: {book.isbn}
-                          </p>
-                        )}
-
-                        {/* Action Button */}
-                        <div className="mt-auto">
-                          {book.fileType === "application/pdf" && book.fileUrl ? (
-                            <a
-                              href={book.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block w-full text-center rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
-                            >
-                              Open PDF
-                            </a>
-                          ) : (
-                            <div className="text-xs text-gray-400 text-center">
-                              Added {new Date(book.addedAt).toLocaleDateString()}
-                            </div>
-                          )}
+                      <Link
+                        href={`/student/library/${book._id}`}
+                        className="flex h-full flex-col gap-2 rounded-lg p-4 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/40"
+                      >
+                        {/* Book Cover */}
+                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
+                          {book.fileType === "application/pdf" ? "PDF" : "Book"}
                         </div>
-                      </div>
+
+                        {/* Book Details */}
+                        <div className="flex-1 flex flex-col">
+                          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">
+                            {book.title}
+                          </h3>
+                          <p className="text-xs text-gray-600 line-clamp-1">
+                            {book.author || "Unknown Author"}
+                          </p>
+                          {book.isbn && (
+                            <p className="text-xs text-gray-500">
+                              ISBN: {book.isbn}
+                            </p>
+                          )}
+
+                          {/* Action Button */}
+                          <div className="mt-auto pt-2">
+                            {book.fileType === "application/pdf" && book.fileUrl ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  window.open(book.fileUrl, "_blank", "noopener,noreferrer");
+                                }}
+                                className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
+                              >
+                                Open PDF
+                              </button>
+                            ) : (
+                              <div className="text-[11px] text-gray-400 text-center">
+                                Added {new Date(book.addedAt).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
                     </div>
                   ))}
                 </div>
@@ -724,7 +745,7 @@ function MyLibraryContent() {
                     return (
                       <Link
                         key={transaction._id}
-                        href={`/student/books/${transaction.bookId}`}
+                        href={`/student/books/${transaction.bookId}?from=library&tab=borrowed`}
                         className={`rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${
                           overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
                         }`}
@@ -795,7 +816,7 @@ function MyLibraryContent() {
                   })}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
                   {borrowedBooks.map((transaction) => {
                   const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
                   const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
@@ -804,22 +825,22 @@ function MyLibraryContent() {
                   return (
                     <Link
                       key={transaction._id}
-                      href={`/student/books/${transaction.bookId}`}
-                      className={`rounded-lg border p-4 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${
+                      href={`/student/books/${transaction.bookId}?from=library&tab=borrowed`}
+                      className={`rounded-lg border p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${
                         overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
                       }`}
                     >
                       {/* Book Cover */}
-                      <div className="w-full aspect-[2/3] rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-3">
+                      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2">
                         Book Cover
                       </div>
 
                       {/* Book Details */}
                       <div className="flex-1 flex flex-col">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2">
                           {transaction.bookTitle}
                         </h3>
-                        <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+                        <p className="text-xs text-gray-600 mb-1 line-clamp-1">
                           {transaction.bookAuthor}
                         </p>
 
@@ -829,7 +850,7 @@ function MyLibraryContent() {
                         </div>
 
                         {/* Dates */}
-                        <div className="text-xs text-gray-500 space-y-1 mb-3">
+                        <div className="text-[11px] text-gray-500 space-y-1 mb-3">
                           <p>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</p>
                           <p className={overdue ? "font-semibold text-rose-700" : ""}>
                             Due: {formatDate(dueDate)}
