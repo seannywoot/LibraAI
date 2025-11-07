@@ -14,26 +14,17 @@ export default function AdminProfilePage() {
   const [name, setName] = useState("Library Steward");
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [toasts, setToasts] = useState([]);
-  const { darkMode, setDarkModePreference } = useTheme();
-  const [pendingDarkMode, setPendingDarkMode] = useState(darkMode);
-  const initialDarkModeRef = useRef(darkMode);
-  const initializedDarkModeRef = useRef(false);
-  const [themeDirty, setThemeDirty] = useState(false);
+  const { setDarkModePreference } = useTheme();
+  const preferencesLoadedRef = useRef(false);
 
   useEffect(() => {
     if (session?.user?.name) setName(session.user.name);
   }, [session?.user?.name]);
 
   useEffect(() => {
-    if (!initializedDarkModeRef.current) {
-      setPendingDarkMode(darkMode);
-      initialDarkModeRef.current = darkMode;
-      initializedDarkModeRef.current = true;
-    }
-  }, [darkMode]);
-
-  useEffect(() => {
     const loadPreferences = async () => {
+      if (preferencesLoadedRef.current) return;
+      
       try {
         const res = await fetch("/api/user/profile");
         const data = await res.json().catch(() => ({}));
@@ -44,10 +35,9 @@ export default function AdminProfilePage() {
           const storedTheme = data.user.theme;
           if (storedTheme === "dark" || storedTheme === "light") {
             const isDark = storedTheme === "dark";
-            setPendingDarkMode(isDark);
-            initialDarkModeRef.current = isDark;
-            setDarkModePreference(isDark, { persist: false });
+            setDarkModePreference(isDark, { persist: true });
           }
+          preferencesLoadedRef.current = true;
         }
       } catch (err) {
         console.warn("Failed to load admin preferences:", err);
@@ -72,27 +62,28 @@ export default function AdminProfilePage() {
 
   const navigationLinks = getAdminLinks();
 
-  useEffect(() => {
-    return () => {
-      if (themeDirty && pendingDarkMode !== initialDarkModeRef.current) {
-        setDarkModePreference(initialDarkModeRef.current, { persist: false });
-      }
-    };
-  }, [themeDirty, pendingDarkMode, setDarkModePreference]);
-
-  const handleDarkModeChange = (nextValue) => {
-    setPendingDarkMode(nextValue);
-    setThemeDirty(nextValue !== initialDarkModeRef.current);
-    setDarkModePreference(nextValue, { persist: false });
+  const handleDarkModeChange = async (nextValue) => {
+    const newTheme = nextValue ? "dark" : "light";
+    
+    // Update theme immediately in UI and localStorage
+    setDarkModePreference(nextValue, { persist: true });
+    
+    // Save to database in background (session will sync automatically)
+    try {
+      await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ theme: newTheme }),
+      });
+    } catch (err) {
+      console.error("Failed to save theme preference:", err);
+    }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
       const payload = { name, emailNotifications };
-      if (themeDirty) {
-        payload.theme = pendingDarkMode ? "dark" : "light";
-      }
 
       const res = await fetch("/api/user/profile", {
         method: "PUT",
@@ -104,27 +95,13 @@ export default function AdminProfilePage() {
         throw new Error(data?.error || "Failed to save changes");
       }
       // Update session state locally to reflect saved preference values
-      if (update) {
-        const updatePayload = {};
-        if (name !== session?.user?.name) {
-          updatePayload.name = name;
+      if (update && name !== session?.user?.name) {
+        try {
+          await update({ name });
+        } catch (e) {
+          // Session update is non-critical; surfacing in console is sufficient for debugging
+          console.warn("Session update skipped:", e);
         }
-        if (themeDirty) {
-          updatePayload.theme = pendingDarkMode ? "dark" : "light";
-        }
-        if (Object.keys(updatePayload).length > 0) {
-          try {
-            await update(updatePayload);
-          } catch (e) {
-            // Session update is non-critical; surfacing in console is sufficient for debugging
-            console.warn("Session update skipped:", e);
-          }
-        }
-      }
-      if (themeDirty && pendingDarkMode !== initialDarkModeRef.current) {
-        setDarkModePreference(pendingDarkMode, { persist: true });
-        initialDarkModeRef.current = pendingDarkMode;
-        setThemeDirty(false);
       }
 
       pushToast({ type: "success", title: "Changes saved", description: "Your profile and notification preferences were updated." });
@@ -200,7 +177,7 @@ export default function AdminProfilePage() {
                   <span>Dark mode</span>
                   <span className="text-xs text-zinc-500">Toggle the app theme</span>
                 </div>
-                <DarkModeToggle className="ml-2" value={pendingDarkMode} onChange={handleDarkModeChange} persist={false} />
+                <DarkModeToggle className="ml-2" onChange={handleDarkModeChange} />
               </div>
             </div>
           </section>

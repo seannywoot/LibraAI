@@ -14,11 +14,8 @@ export default function StudentProfilePage() {
   const [name, setName] = useState("Study Explorer");
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [toasts, setToasts] = useState([]);
-  const { darkMode, setDarkModePreference } = useTheme();
-  const [pendingDarkMode, setPendingDarkMode] = useState(darkMode);
-  const initialDarkModeRef = useRef(darkMode);
-  const initializedDarkModeRef = useRef(false);
-  const [themeDirty, setThemeDirty] = useState(false);
+  const { setDarkModePreference } = useTheme();
+  const preferencesLoadedRef = useRef(false);
 
   const pushToast = (toast) => {
     const id = Date.now() + Math.random();
@@ -39,17 +36,11 @@ export default function StudentProfilePage() {
     }
   }, [session?.user?.name]);
 
-  useEffect(() => {
-    if (!initializedDarkModeRef.current) {
-      setPendingDarkMode(darkMode);
-      initialDarkModeRef.current = darkMode;
-      initializedDarkModeRef.current = true;
-    }
-  }, [darkMode]);
-
-  // Load user preferences from database
+  // Load user preferences from database (only once on mount)
   useEffect(() => {
     const loadPreferences = async () => {
+      if (preferencesLoadedRef.current) return;
+      
       try {
         const res = await fetch("/api/user/profile");
         const data = await res.json();
@@ -60,10 +51,9 @@ export default function StudentProfilePage() {
           const storedTheme = data.user.theme;
           if (storedTheme === "dark" || storedTheme === "light") {
             const isDark = storedTheme === "dark";
-            setPendingDarkMode(isDark);
-            initialDarkModeRef.current = isDark;
-            setDarkModePreference(isDark, { persist: false });
+            setDarkModePreference(isDark, { persist: true });
           }
+          preferencesLoadedRef.current = true;
         }
       } catch (err) {
         console.error("Failed to load preferences:", err);
@@ -76,27 +66,28 @@ export default function StudentProfilePage() {
 
   const navigationLinks = getStudentLinks();
 
-  useEffect(() => {
-    return () => {
-      if (themeDirty && pendingDarkMode !== initialDarkModeRef.current) {
-        setDarkModePreference(initialDarkModeRef.current, { persist: false });
-      }
-    };
-  }, [themeDirty, pendingDarkMode, setDarkModePreference]);
-
-  const handleDarkModeChange = (nextValue) => {
-    setPendingDarkMode(nextValue);
-    setThemeDirty(nextValue !== initialDarkModeRef.current);
-    setDarkModePreference(nextValue, { persist: false });
+  const handleDarkModeChange = async (nextValue) => {
+    const newTheme = nextValue ? "dark" : "light";
+    
+    // Update theme immediately in UI and localStorage
+    setDarkModePreference(nextValue, { persist: true });
+    
+    // Save to database in background (session will sync automatically)
+    try {
+      await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ theme: newTheme }),
+      });
+    } catch (err) {
+      console.error("Failed to save theme preference:", err);
+    }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
       const payload = { name, emailNotifications };
-      if (themeDirty) {
-        payload.theme = pendingDarkMode ? "dark" : "light";
-      }
 
       const res = await fetch("/api/user/profile", {
         method: "PUT",
@@ -109,25 +100,10 @@ export default function StudentProfilePage() {
       }
       
       // Update client session for changed fields so other tabs stay in sync
-      if (update) {
-        const updatePayload = {};
-        if (name !== session?.user?.name) {
-          updatePayload.name = name;
-        }
-        if (themeDirty) {
-          updatePayload.theme = pendingDarkMode ? "dark" : "light";
-        }
-        if (Object.keys(updatePayload).length > 0) {
-          update(updatePayload).catch((e) => {
-            console.log("Session update skipped:", e);
-          });
-        }
-      }
-
-      if (themeDirty && pendingDarkMode !== initialDarkModeRef.current) {
-        setDarkModePreference(pendingDarkMode, { persist: true });
-        initialDarkModeRef.current = pendingDarkMode;
-        setThemeDirty(false);
+      if (update && name !== session?.user?.name) {
+        update({ name }).catch((e) => {
+          console.log("Session update skipped:", e);
+        });
       }
 
       pushToast({ type: "success", title: "Changes saved", description: "Your profile and notification preferences were updated." });
@@ -203,7 +179,7 @@ export default function StudentProfilePage() {
                     <span>Dark mode</span>
                     <span className="text-xs text-zinc-500">Toggle the app theme</span>
                   </div>
-                  <DarkModeToggle className="ml-2" value={pendingDarkMode} onChange={handleDarkModeChange} persist={false} />
+                  <DarkModeToggle className="ml-2" onChange={handleDarkModeChange} />
                 </div>
               </div>
             </section>

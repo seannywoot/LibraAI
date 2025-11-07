@@ -2,10 +2,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../[...nextauth]/route";
 import { NextResponse } from "next/server";
 
-// Custom lightweight session probe endpoint. We include theme so the client
-// can react to real-time preference updates (NextAuth's built-in /api/auth/session
-// already includes this, but if the app calls this custom route we must not
-// omit it or the UI will appear stale until full re-login).
+// Use this endpoint for lightweight auth checks without overriding NextAuth's
+// built-in /api/auth/session route. Includes theme preference for convenience.
 export async function GET() {
   const session = await getServerSession(authOptions);
 
@@ -20,8 +18,6 @@ export async function GET() {
         email: session.user.email,
         name: session.user.name,
         role: session.user.role,
-        // Include theme so client components consuming this endpoint
-        // can update immediately after a preference change.
         theme: session.user.theme ?? null,
       },
     },

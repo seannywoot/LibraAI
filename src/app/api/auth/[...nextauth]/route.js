@@ -271,19 +271,22 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
+      // Never return null here — doing so can lead to an empty HTTP body
+      // from /api/auth/session, which causes CLIENT_FETCH_ERROR (JSON.parse error)
+      // on the client. Instead, return a valid JSON object even when unauthenticated.
       if (!token) {
-        return null; // Invalid session
+        return { ...session, user: null };
       }
-      
-      session.user = session.user || {};
-      session.user.role = token.role;
-      if (token.name) session.user.name = token.name;
+
+      const nextSession = { ...session, user: { ...(session.user || {}) } };
+      nextSession.user.role = token.role;
+      if (token.name) nextSession.user.name = token.name;
       if (token.theme === "dark" || token.theme === "light") {
-        session.user.theme = token.theme;
+        nextSession.user.theme = token.theme;
       } else {
-        session.user.theme = null;
+        nextSession.user.theme = null;
       }
-      return session;
+      return nextSession;
     },
   },
   pages: {

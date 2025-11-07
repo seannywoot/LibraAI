@@ -117,15 +117,7 @@ export async function PUT(request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const rawName = (body?.name ?? "").toString();
-    const name = rawName.trim();
-    if (!name) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Name is required" }),
-        { status: 400, headers: { "content-type": "application/json" } }
-      );
-    }
-
+    
     const theme = (body?.theme ?? "").toString().toLowerCase();
     const themeValue = theme === "dark" ? "dark" : theme === "light" ? "light" : undefined;
 
@@ -134,7 +126,20 @@ export async function PUT(request) {
     const users = db.collection("users");
 
     const now = new Date();
-    const updateFields = { name, updatedAt: now };
+    const updateFields = { updatedAt: now };
+
+    // Include name if provided
+    if (body?.name !== undefined) {
+      const rawName = (body.name ?? "").toString();
+      const name = rawName.trim();
+      if (!name) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Name cannot be empty" }),
+          { status: 400, headers: { "content-type": "application/json" } }
+        );
+      }
+      updateFields.name = name;
+    }
 
     // Include emailNotifications if provided
     if (typeof body.emailNotifications === "boolean") {
@@ -161,7 +166,7 @@ export async function PUT(request) {
     return new Response(
       JSON.stringify({
         ok: true,
-        name,
+        name: updateFields.name,
         emailNotifications: updateFields.emailNotifications,
         theme: themeValue,
       }),
