@@ -92,15 +92,57 @@ export function heuristicTitle(messages) {
   // Extract meaningful keywords (non-stopwords, length > 2)
   const keywords = tokens.filter(t => !STOPWORDS.has(t) && t.length > 2);
   
-  // Take first 3-6 keywords in order of appearance (preserves natural flow)
-  const titleWords = keywords.slice(0, 6);
+  if (!keywords.length) return 'Conversation';
   
-  if (!titleWords.length) return 'Conversation';
+  // Detect common patterns and add necessary grammar words
+  const text = firstMessage.toLowerCase();
+  let titleWords = [];
   
-  // Ensure we have at least 3 words for a good title
-  const finalWords = titleWords.slice(0, Math.max(3, Math.min(6, titleWords.length)));
+  // Pattern: "what/which books..." → "Available Books To Borrow"
+  if (text.includes('available') && text.includes('borrow')) {
+    titleWords = ['available', 'books', 'to', 'borrow'];
+  }
+  // Pattern: "how to..." → "Guide To [Topic]"
+  else if (text.match(/how\s+to\s+(\w+)/)) {
+    const verb = text.match(/how\s+to\s+(\w+)/)[1];
+    titleWords = ['guide', 'to', verb, ...keywords.filter(k => k !== verb).slice(0, 2)];
+  }
+  // Pattern: "find/search..." → "Finding [Topic]"
+  else if (text.match(/\b(find|search|look|get)\b/)) {
+    const filteredKeywords = keywords.filter(k => !['find', 'search', 'look', 'get'].includes(k));
+    titleWords = ['finding', ...filteredKeywords.slice(0, 3)];
+  }
+  // Default: Take first 4-6 keywords and add grammar if needed
+  else {
+    titleWords = keywords.slice(0, 6);
+    
+    // If we have "available" + noun, add "to" or "for"
+    const availableIndex = titleWords.findIndex(w => w === 'available');
+    if (availableIndex >= 0 && availableIndex < titleWords.length - 1) {
+      // Check if next word is a verb (common verbs)
+      const nextWord = titleWords[availableIndex + 1];
+      if (['borrow', 'rent', 'use', 'read', 'check'].includes(nextWord)) {
+        titleWords.splice(availableIndex + 1, 0, 'to');
+      }
+    }
+  }
   
-  return toTitleCase(finalWords.join(' '));
+  // Ensure we have 3-6 words
+  titleWords = titleWords.slice(0, 6);
+  if (titleWords.length < 3) {
+    titleWords = keywords.slice(0, 3);
+  }
+  
+  // Clean up common incomplete patterns
+  let title = titleWords.join(' ');
+  
+  // Remove trailing prepositions that make titles incomplete
+  title = title.replace(/\s+(to|for|with|about|from|in|on|at|by)$/i, '');
+  
+  // Remove leading question words
+  title = title.replace(/^(what|which|how|when|where|why)\s+/i, '');
+  
+  return toTitleCase(title);
 }
 
 export function toTitleCase(str='') {

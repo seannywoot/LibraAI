@@ -25,11 +25,19 @@ This document explains the improved automatic chat title logic.
 
 The API uses an improved prompt that:
 
+- **Enforces grammatical correctness and proper spelling**
 - Emphasizes specific nouns and verbs over generic words
 - Excludes generic terms like "help", "question", "chat"
 - Removes articles (the, a, an) from the start
-- Provides clear examples of good vs bad titles
+- Provides clear examples of good vs bad titles (including typo examples)
 - Uses lower temperature (0.3) for more consistent results
+
+**Quality Validation**:
+
+- Automatically detects common typos (e.g., "aer" instead of "are")
+- Checks for incomplete phrases (trailing prepositions)
+- Retries generation if quality issues are detected
+- Ensures titles are natural, complete phrases
 
 ### Fallback Heuristic (Improved)
 
@@ -38,11 +46,16 @@ When API is unavailable:
 1. Extract first user message content
 2. Tokenize and remove stopwords
 3. Take first 3-6 meaningful keywords **in order of appearance** (preserves natural flow)
-4. Apply Title Case formatting
+4. Remove trailing prepositions to avoid incomplete phrases
+5. Apply Title Case formatting
 
 **Example**: "How do I bake sourdough bread at home?" → "Bake Sourdough Bread Home"
 
-This is much better than the old frequency-based approach which produced unnatural titles like "Any Bake Bread Feeding Home Sourdough".
+**Quality improvements**:
+
+- Removes trailing prepositions (to, for, with, about, from, in, on, at, by)
+- Ensures titles are complete phrases, not fragments
+- Much better than the old frequency-based approach which produced unnatural titles like "Any Bake Bread Feeding Home Sourdough"
 
 ### Drift Detection (Enhanced)
 
