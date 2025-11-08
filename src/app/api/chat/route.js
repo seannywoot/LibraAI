@@ -254,19 +254,19 @@ export async function POST(request) {
           {
             name: "searchBooks",
             description:
-              "Search for books in the library catalog by title, author, ISBN, publisher, description, or category. Returns books with comprehensive details including description, language, pages, format, and category. Use this to find books matching specific topics, genres, or content.",
+              "Search for books in the library catalog by title, author, ISBN, publisher, description, or category. Returns books with comprehensive details including description, language, pages, format, and category. Use this to find books matching specific topics, genres, or content. ALWAYS call this function when users ask about books by topic, theme, or subject - don't assume books don't exist without searching first!",
             parameters: {
               type: "object",
               properties: {
                 query: {
                   type: "string",
                   description:
-                    "Search query (title, author, ISBN, publisher, description content, or category). Can search for topics, themes, or subjects within book descriptions.",
+                    "Search query (title, author, ISBN, publisher, description content, or category). Can search for topics, themes, or subjects within book descriptions. Examples: 'habits', 'productivity', 'artificial intelligence', 'Atomic Habits', 'James Clear'",
                 },
                 status: {
                   type: "string",
                   description:
-                    "Filter by book status: 'available', 'borrowed', or 'reserved'",
+                    "Optional filter by book status: 'available', 'borrowed', or 'reserved'. Omit to search all books regardless of status.",
                   enum: ["available", "borrowed", "reserved"],
                 },
               },
@@ -358,8 +358,21 @@ You help students with:
 - Helping with research and study resources
 - Offering literature recommendations based on interests
 
+CRITICAL SEARCH BEHAVIOR:
+When users ask about books by topic or theme (not exact title):
+1. ALWAYS use searchBooks with relevant keywords from their query
+2. Search for topic-related terms that might appear in titles, authors, or descriptions
+3. Try multiple search terms if the first doesn't yield results
+4. Examples:
+   - "books about habits" → searchBooks("habits")
+   - "productivity books" → searchBooks("productivity") or searchBooks("effective")
+   - "self-improvement" → searchBooks("self-help") or browse Self-Help category
+   - "building better routines" → searchBooks("habits") or searchBooks("routine")
+
+NEVER say a book doesn't exist without first calling searchBooks!
+
 ENHANCED SEARCH CAPABILITIES:
-The searchBooks function now searches across:
+The searchBooks function searches across:
 - Title and author (exact and partial matches)
 - ISBN and publisher information
 - Book descriptions and summaries (full-text search)
@@ -371,6 +384,7 @@ This means you can help users find books by:
 - Themes: "books about friendship", "stories about overcoming adversity"
 - Content type: "beginner programming books", "advanced mathematics"
 - Specific topics: "machine learning", "World War II history", "Shakespeare analysis"
+- Popular titles: "Atomic Habits", "Thinking Fast and Slow", "Clean Code"
 
 BOOK INFORMATION AWARENESS:
 Every book result includes:
