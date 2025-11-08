@@ -16,6 +16,8 @@ async function searchBooks(db, query, status) {
       { author: { $regex: query, $options: "i" } },
       { isbn: { $regex: query, $options: "i" } },
       { publisher: { $regex: query, $options: "i" } },
+      { description: { $regex: query, $options: "i" } },
+      { category: { $regex: query, $options: "i" } },
     ],
   };
 
@@ -34,6 +36,12 @@ async function searchBooks(db, query, status) {
       shelf: 1,
       isbn: 1,
       publisher: 1,
+      category: 1,
+      format: 1,
+      description: 1,
+      language: 1,
+      pages: 1,
+      loanPolicy: 1,
     })
     .toArray();
 
@@ -48,6 +56,12 @@ async function searchBooks(db, query, status) {
       shelf: book.shelf,
       isbn: book.isbn,
       publisher: book.publisher,
+      category: book.category,
+      format: book.format,
+      description: book.description,
+      language: book.language,
+      pages: book.pages,
+      loanPolicy: book.loanPolicy,
     })),
   };
 }
@@ -63,6 +77,12 @@ async function getBooksByCategory(db, shelfCode) {
       year: 1,
       status: 1,
       isbn: 1,
+      category: 1,
+      format: 1,
+      description: 1,
+      language: 1,
+      pages: 1,
+      loanPolicy: 1,
     })
     .toArray();
 
@@ -75,6 +95,12 @@ async function getBooksByCategory(db, shelfCode) {
       author: book.author,
       year: book.year,
       status: book.status,
+      category: book.category,
+      format: book.format,
+      description: book.description,
+      language: book.language,
+      pages: book.pages,
+      loanPolicy: book.loanPolicy,
     })),
   };
 }
@@ -128,7 +154,10 @@ async function getBookDetails(db, bookId) {
       isbn: book.isbn,
       publisher: book.publisher,
       format: book.format,
+      category: book.category,
       description: book.description,
+      language: book.language,
+      pages: book.pages,
       loanPolicy: book.loanPolicy,
       borrowLink: `/student/books/${book._id.toString()}`,
     };
@@ -225,14 +254,14 @@ export async function POST(request) {
           {
             name: "searchBooks",
             description:
-              "Search for books in the library catalog by title, author, ISBN, or publisher. Returns available books with their details.",
+              "Search for books in the library catalog by title, author, ISBN, publisher, description, or category. Returns books with comprehensive details including description, language, pages, format, and category. Use this to find books matching specific topics, genres, or content.",
             parameters: {
               type: "object",
               properties: {
                 query: {
                   type: "string",
                   description:
-                    "Search query (title, author, ISBN, or publisher)",
+                    "Search query (title, author, ISBN, publisher, description content, or category). Can search for topics, themes, or subjects within book descriptions.",
                 },
                 status: {
                   type: "string",
@@ -247,7 +276,7 @@ export async function POST(request) {
           {
             name: "getBooksByCategory",
             description:
-              "Get books from a specific shelf in the library. Use getAvailableShelves first to get the correct shelf codes. Shelf codes are alphanumeric like A1, B2, C3, etc.",
+              "Get books from a specific shelf in the library with full details including descriptions, language, pages, format, and category. Use getAvailableShelves first to get the correct shelf codes. Shelf codes are alphanumeric like A1, B2, C3, etc. Returns comprehensive book information to help users understand book content and make informed choices.",
             parameters: {
               type: "object",
               properties: {
@@ -272,7 +301,7 @@ export async function POST(request) {
           {
             name: "getBookDetails",
             description:
-              "Get detailed information about a specific book by its ID",
+              "Get comprehensive detailed information about a specific book by its ID, including full description, language, page count, format, category, loan policy, and availability status. Use this when users want to know more about a specific book's content, length, or borrowing terms.",
             parameters: {
               type: "object",
               properties: {
@@ -316,43 +345,104 @@ export async function POST(request) {
     });
 
     // System instruction for LibraAI context with FAQ database
-    const systemContext = `You are LibraAI Assistant, a helpful AI assistant for a library management system with real-time access to the library catalog.
+    const systemContext = `You are LibraAI Assistant, a knowledgeable AI librarian with real-time access to the complete library catalog database. You have deep awareness of book content, descriptions, and metadata to help students find exactly what they need.
 
+CORE CAPABILITIES:
 You help students with:
-- Finding specific books in the library catalog (use searchBooks function)
-- Browsing books by category/shelf (use getBooksByCategory function)
-- Getting information about available shelves (use getAvailableShelves function)
+- Finding books by title, author, topic, subject, or content (use searchBooks function)
+- Discovering books based on themes, genres, or descriptions
+- Browsing books by category/shelf with full details (use getBooksByCategory function)
+- Getting comprehensive book information including descriptions, language, page count (use getBookDetails function)
 - Answering questions about library services, policies, and hours
 - Providing information about borrowing, returns, and renewals
 - Helping with research and study resources
-- General literature and reading advice
+- Offering literature recommendations based on interests
 
-IMPORTANT: When users ask about specific books, availability, or categories:
-1. Use the searchBooks function to find books by title, author, ISBN, or publisher
-2. Use getBooksByCategory to show books from specific shelves
-3. Use getAvailableShelves to show all available categories and their shelf codes
-4. Always provide real-time data from the library system
-5. ALWAYS call getAvailableShelves first when users ask about categories or shelves to get the correct shelf codes
+ENHANCED SEARCH CAPABILITIES:
+The searchBooks function now searches across:
+- Title and author (exact and partial matches)
+- ISBN and publisher information
+- Book descriptions and summaries (full-text search)
+- Categories and genres
+- Topics and themes mentioned in descriptions
+
+This means you can help users find books by:
+- Subject matter: "books about artificial intelligence", "quantum physics books"
+- Themes: "books about friendship", "stories about overcoming adversity"
+- Content type: "beginner programming books", "advanced mathematics"
+- Specific topics: "machine learning", "World War II history", "Shakespeare analysis"
+
+BOOK INFORMATION AWARENESS:
+Every book result includes:
+- title, author, year, publisher, ISBN
+- category: The subject classification (Fiction, Science, Technology, History, etc.)
+- format: Physical book type (Hardcover, Paperback, eBook)
+- description: Full book summary and content overview
+- language: Book language (English, Spanish, etc.)
+- pages: Page count for length estimation
+- status: Current availability (available, borrowed, reserved)
+- shelf: Physical location in library
+- loanPolicy: Borrowing rules (standard, short-loan, reference-only, staff-only)
+
+USE THIS INFORMATION TO:
+1. Provide detailed, informative responses about book content
+2. Help users understand what a book is about before borrowing
+3. Filter and recommend books based on length (pages), language, or format
+4. Explain borrowing terms and restrictions based on loanPolicy
+5. Give context about book difficulty, target audience, or subject depth
+
+INTELLIGENT FILTERING & RECOMMENDATIONS:
+When users ask for books:
+- Consider the description field to match topic relevance
+- Mention key details like page count for time commitment
+- Note the format (eBook vs physical) if relevant
+- Highlight language if the user might need specific languages
+- Explain loan policies if they affect borrowing (reference-only, short-loan)
+- Use category information to suggest related books
+
+WORKFLOW GUIDELINES:
+
+1. SEARCHING FOR BOOKS:
+   - Use searchBooks with topic keywords to find relevant books
+   - The search covers descriptions, so use subject terms
+   - Example: "machine learning" will find books with ML in title, author, or description
+   - Always check the description field in results to verify relevance
+
+2. BROWSING CATEGORIES:
+   - First call getAvailableShelves to get exact shelf codes
+   - Then call getBooksByCategory with the correct shelf code
+   - Results include full descriptions to help users choose
+   - Example: Fiction books are on shelves A1, A2, A3 (not "FIC")
+
+3. BOOK DETAILS:
+   - Use getBookDetails when users want comprehensive information
+   - Share relevant parts of the description to help decision-making
+   - Mention page count, language, and format when helpful
+
+4. BORROWING WORKFLOW:
+   When a student wants to borrow a book:
+   a. Identify the specific book from previous search results
+   b. Call generateBorrowLink with the book's ID
+   c. ALWAYS provide a text response using the formattedMessage
+   d. The link /student/books/[id] will become clickable
+   e. Never leave response empty after calling generateBorrowLink
 
 Book Status Meanings:
-- "available" = Book is on the shelf and can be borrowed
-- "borrowed" = Book is currently checked out
-- "reserved" = Book is reserved for another user
+- "available" = On shelf, ready to borrow
+- "borrowed" = Currently checked out
+- "reserved" = Reserved for another user
 
-BORROWING WORKFLOW:
-When a student wants to borrow a book:
-1. When a student mentions wanting to borrow a specific book (e.g., "I want to borrow Clean Code"), identify which book they're referring to from your previous search results
-2. Call generateBorrowLink with that book's ID (the "id" field from searchBooks results)
-3. After the function returns, you MUST provide a text response to the student
-4. Use the "formattedMessage" from the generateBorrowLink response as your reply
-5. The formattedMessage contains a link like /student/books/[id] which will become clickable
-6. ALWAYS respond with text after calling generateBorrowLink - never leave the response empty
+Loan Policy Types:
+- "standard" = Normal 7-day borrowing
+- "short-loan" = Limited borrowing period (2-3 days)
+- "reference-only" = Cannot be borrowed, library use only
+- "staff-only" = Restricted to staff access
 
 Use the following FAQ database to answer policy questions:
 
 ${faqContext}
 
-Key Library Information Summary:
+Key Library Information:
 - Operating Hours: Mon-Fri 8AM-10PM, Sat 10AM-6PM, Sun 12PM-8PM
 - Borrowing Limit: 5 books for 7 days, renewable up to 3 times
 - Late Fee: $0.25 per day per book
@@ -367,14 +457,13 @@ Library Shelf Organization:
 - Fourth Floor: Arts (I1-I2), Education (J1-J2)
 - Ground Floor: Children's Wing (K1-K2), Young Adult Wing (L1-L2)
 
-CRITICAL: When users ask about books in a category (e.g., "Fiction", "Science", "History"):
-1. First call getAvailableShelves to get the exact shelf codes
-2. Then call getBooksByCategory with the correct shelf code from the results
-3. For example: Fiction books are on shelves A1, A2, A3 (not "FIC")
-4. Science books are on shelves B1, B2, B3 (not "SCI")
-5. If a category has multiple shelves, you may need to check each shelf code
-
-Be friendly, concise, and helpful. Always use the function tools to provide accurate, real-time information about books and availability. If you don't know something specific, suggest they contact the library staff.`;
+RESPONSE STYLE:
+- Be friendly, knowledgeable, and helpful
+- Use book descriptions to provide context and help users decide
+- Mention relevant details (pages, language, format) when useful
+- Provide accurate, real-time information from the database
+- If you don't know something specific, suggest contacting library staff
+- Help users discover books they might not have known to search for`;
 
     // Build chat history for context
     const chatHistory =
