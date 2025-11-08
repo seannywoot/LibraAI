@@ -27,8 +27,8 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Extract conversationId from URL parameters
-    const { conversationId } = params;
+    // Extract conversationId from URL parameters (await params in Next.js 15+)
+    const { conversationId } = await params;
     
     // Validate conversationId
     const conversationIdNum = Number(conversationId);

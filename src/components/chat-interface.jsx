@@ -120,9 +120,13 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       const data = await response.json();
       
       if (data.success && data.conversations) {
-        setConversationHistory(data.conversations);
+        // Sort conversations by lastUpdated (most recent first)
+        const sortedConversations = data.conversations.sort((a, b) => 
+          new Date(b.lastUpdated) - new Date(a.lastUpdated)
+        );
+        setConversationHistory(sortedConversations);
         // Update localStorage cache
-        localStorage.setItem('chatHistory', JSON.stringify(data.conversations));
+        localStorage.setItem('chatHistory', JSON.stringify(sortedConversations));
       }
     } catch (error) {
       console.error('Error loading conversations from DB:', error);
@@ -132,7 +136,12 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       const saved = localStorage.getItem('chatHistory');
       if (saved) {
         try {
-          setConversationHistory(JSON.parse(saved));
+          const conversations = JSON.parse(saved);
+          // Sort conversations by lastUpdated (most recent first)
+          const sortedConversations = conversations.sort((a, b) => 
+            new Date(b.lastUpdated) - new Date(a.lastUpdated)
+          );
+          setConversationHistory(sortedConversations);
         } catch (e) {
           console.error('Failed to load from localStorage:', e);
           showToast('Failed to load conversations from local storage.', 'error', 5000);
@@ -462,7 +471,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       setConversationHistory(prev => {
         const filtered = prev.filter(c => c.id !== conversationData.id);
         const updated = [conversationData, ...filtered].slice(0, 20);
-        return updated;
+        // Sort by lastUpdated (most recent first)
+        return updated.sort((a, b) => 
+          new Date(b.lastUpdated) - new Date(a.lastUpdated)
+        );
       });
 
       // Save to database
@@ -489,23 +501,49 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     const lastMessage = messages[messages.length-1];
     const lastIsUser = lastMessage?.role === 'user';
     const drift = autoTitle && lastIsUser && shouldRegenerateTitle(messages, autoTitle);
+    
     if ((!shouldGenerateInitial && !drift) || generatingTitleRef.current) return;
 
     (async () => {
       try {
         generatingTitleRef.current = true;
         const payload = buildTitleRequestPayload(messages);
+        
+        console.log('Generating title...', { 
+          shouldGenerateInitial, 
+          drift, 
+          currentTitle: autoTitle,
+          messageCount: messages.length 
+        });
+        
         const res = await fetch('/api/chat/title', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: payload })
         });
-        if (!res.ok) throw new Error('Title request failed');
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('Title API error:', res.status, errorText);
+          throw new Error(`Title request failed: ${res.status}`);
+        }
+        
         const data = await res.json();
-        if (data.title) setAutoTitle(data.title);
+        console.log('Generated title from API:', data.title);
+        
+        if (data.title && data.title !== 'Conversation') {
+          setAutoTitle(data.title);
+        } else {
+          // Fallback if API returns generic title
+          const fallback = heuristicTitle(messages);
+          console.log('Using heuristic fallback:', fallback);
+          setAutoTitle(fallback);
+        }
       } catch (e) {
-        console.warn('Falling back to heuristic title:', e.message);
-        if (!autoTitle) setAutoTitle(heuristicTitle(messages));
+        console.warn('Title generation failed, using heuristic:', e.message);
+        const fallback = heuristicTitle(messages);
+        console.log('Heuristic title:', fallback);
+        if (!autoTitle) setAutoTitle(fallback);
       } finally {
         generatingTitleRef.current = false;
       }

@@ -3,43 +3,115 @@
 This document explains the improved automatic chat title logic.
 
 ### Goals
-- Provide distinctive, scannable titles for each conversation.
-- 3–6 word noun phrase; Title Case; no trailing punctuation.
-- Update automatically when the conversation topic shifts (drift).
+
+- Provide distinctive, scannable titles for each conversation
+- 3–6 word noun phrase in Title Case with no trailing punctuation
+- Update automatically when the conversation topic shifts (drift detection)
+- Use natural word order that reflects the actual conversation
 
 ### When Titles Are Generated
-1. Initial title after at least two user messages (>= 4 total messages including assistant replies).
-2. Drift detection on subsequent user messages. If the newest user message differs strongly from the baseline topic (low keyword similarity & no overlap), a new title is requested.
+
+1. **Initial title**: After at least 2 user messages (≥ 4 total messages including assistant replies)
+2. **Drift detection**: On subsequent user messages when topic significantly changes
 
 ### How It Works
-1. Client gathers a focused subset of messages (early + recent context) and calls the `/api/chat/title` endpoint.
-2. The endpoint prompts Gemini (`gemini-2.5-flash`) with strict formatting rules to return only a short noun phrase.
-3. The result is normalized (Title Case, 3–6 words, remove quotes/punctuation).
-4. If the API fails or no key is set, a deterministic heuristic fallback extracts keywords from the first two user messages.
 
-### Drift Detection Heuristic
-- Collect keywords from the first two user messages (baseline) and the latest user message.
-- Compute Jaccard similarity. If `< 0.2` and the new message has > 6 tokens, trigger regeneration.
-- Also trigger if none of the current title words appear in the new message and similarity `< 0.35`.
+1. Client gathers focused message context and calls `/api/chat/title` endpoint
+2. Endpoint prompts Gemini (`gemini-2.0-flash-exp`) with strict formatting rules
+3. Result is normalized (Title Case, 3–6 words, remove quotes/punctuation/prefixes)
+4. If API fails, falls back to deterministic heuristic using first user message keywords
+
+### API Title Generation
+
+The API uses an improved prompt that:
+
+- Emphasizes specific nouns and verbs over generic words
+- Excludes generic terms like "help", "question", "chat"
+- Removes articles (the, a, an) from the start
+- Provides clear examples of good vs bad titles
+- Uses lower temperature (0.3) for more consistent results
+
+### Fallback Heuristic (Improved)
+
+When API is unavailable:
+
+1. Extract first user message content
+2. Tokenize and remove stopwords
+3. Take first 3-6 meaningful keywords **in order of appearance** (preserves natural flow)
+4. Apply Title Case formatting
+
+**Example**: "How do I bake sourdough bread at home?" → "Bake Sourdough Bread Home"
+
+This is much better than the old frequency-based approach which produced unnatural titles like "Any Bake Bread Feeding Home Sourdough".
+
+### Drift Detection (Enhanced)
+
+Triggers title regeneration when:
+
+1. **Explicit topic shift**: User says "switching topic", "change topic", etc. AND similarity < 0.4
+2. **Very low similarity**: Jaccard similarity < 0.15 AND message > 10 tokens
+3. **Complete topic change**: No title words in recent message AND similarity < 0.25 AND message > 10 tokens
+
+**Key improvements**:
+
+- Baseline uses only first 2 user messages (not including the recent one being tested)
+- Requires at least 3 user messages before detecting drift
+- More conservative thresholds to avoid false positives
+- Checks for explicit topic shift phrases
+
+### Normalization Improvements
+
+The `normalizeModelTitle` function now:
+
+- Removes common prefixes: "Title:", "Topic:", "Chat:", "Conversation:"
+- Strips quotes and trailing punctuation
+- Handles too-short titles by extracting meaningful tokens
+- Returns "Conversation" fallback only when truly empty
 
 ### Local Storage Persistence
-The current title is stored alongside messages in `currentChat` and within each saved conversation object in `chatHistory`.
 
-### Fallback Heuristic Details
-1. Tokenize & remove stopwords.
-2. Rank by frequency (ties alphabetical), take up to 6 tokens.
-3. Title Case the phrase.
+Title is stored in:
+
+- `currentChat` localStorage key (current conversation)
+- Each conversation object in `chatHistory` array
+- Synced to database via `/api/chat/conversations` endpoint
+
+### Debugging
+
+The chat interface now logs:
+
+- When title generation is triggered
+- Whether it's initial generation or drift detection
+- API responses and errors
+- Fallback heuristic results
+
+Check browser console for: `"Generating title..."`, `"Generated title from API:"`, `"Heuristic title:"`
+
+### Testing
+
+Run test scripts:
+
+```bash
+node scripts/test-title-improvements.mjs  # Test all functions
+node scripts/debug-drift.mjs              # Debug drift detection
+```
 
 ### Customization
-Adjust thresholds or behavior in `src/utils/chatTitle.js`:
-- `shouldRegenerateTitle` for drift criteria.
-- `heuristicTitle` for fallback construction.
-- Stopword list for keyword extraction.
+
+Adjust behavior in `src/utils/chatTitle.js`:
+
+- `shouldRegenerateTitle`: Drift detection thresholds and phrases
+- `heuristicTitle`: Fallback title construction
+- `STOPWORDS`: Words to exclude from titles
+- `normalizeModelTitle`: Post-processing rules
 
 ### Privacy
-Only current conversation messages are used. No cross‑conversation data is referenced.
 
-### Future Enhancements (Ideas)
-- Embedding-based semantic similarity for more robust drift detection.
-- User-initiated manual rename UI.
-- Caching model titles to reduce token usage across reloads.
+Only current conversation messages are used. No cross-conversation data is referenced.
+
+### Future Enhancements
+
+- Embedding-based semantic similarity for more robust drift detection
+- User-initiated manual rename UI
+- Caching model titles to reduce API calls
+- Multi-language support for non-English conversations

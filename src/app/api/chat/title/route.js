@@ -14,16 +14,33 @@ export async function POST(request) {
     // Concatenate for prompt
     const convo = messages.map(m=> `${m.role.toUpperCase()}: ${m.content}` ).join('\n');
 
-    const systemInstruction = `Generate a concise (3-6 words) noun-phrase title for the following chat between a user and an AI assistant. Requirements:
-- Reflect the dominant topic or task.
-- Prefer concrete subject nouns over generic words.
-- No leading articles (The, A, An) unless part of a proper noun.
-- Title Case.
-- No punctuation except internal hyphens.
-- If multiple unrelated topics, pick the most recent substantial shift.
-Return ONLY the title text.`;
+    const systemInstruction = `Generate a concise, descriptive title (3-6 words) for this conversation.
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { temperature: 0.4, maxOutputTokens: 16 } });
+RULES:
+- Use specific nouns and verbs that capture the main topic
+- NO generic words like "help", "question", "chat", "conversation"
+- NO articles (the, a, an) at the start
+- Title Case format
+- NO quotes, punctuation, or extra formatting
+- Focus on what the user is asking about or discussing
+
+EXAMPLES:
+Good: "Sourdough Bread Baking Tips"
+Good: "Python List Comprehension Guide"
+Good: "Tokyo Travel Itinerary Planning"
+Bad: "Help With Baking"
+Bad: "Question About Python"
+Bad: "Chat About Travel"
+
+Return ONLY the title, nothing else.`;
+
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash-exp', 
+      generationConfig: { 
+        temperature: 0.3, 
+        maxOutputTokens: 20 
+      } 
+    });
 
     const result = await model.generateContent(`${systemInstruction}\n\nCHAT HISTORY:\n${convo}`);
     const raw = result.response.text();

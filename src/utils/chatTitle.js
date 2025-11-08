@@ -2,7 +2,7 @@
 // The goal: short (3-6 words) distinctive noun-phrase titles.
 
 const STOPWORDS = new Set([
-  'the','a','an','and','or','but','about','of','on','in','for','to','with','is','are','was','were','be','being','been','at','by','from','how','do','does','can','i','me','my','you','your','we','our','us','it','this','that','these','those','please','help','need','want','like'
+  'the','a','an','and','or','but','about','of','on','in','for','to','with','is','are','was','were','be','being','been','at','by','from','how','do','does','can','i','me','my','you','your','we','our','us','it','this','that','these','those','please','help','need','want','like','some','any','have','has','had','will','would','could','should','may','might','must','tell','show','give','get'
 ]);
 
 // Basic tokenizer
@@ -36,20 +36,47 @@ function jaccard(aArr, bArr) {
 
 // Decide if topic drift likely occurred.
 export function shouldRegenerateTitle(messages, currentTitle) {
-  if (!currentTitle) return false; // no title yet -> handled elsewhere
+  if (!currentTitle || currentTitle === 'Conversation') return false; // no title yet -> handled elsewhere
   const userMessages = messages.filter(m=>m.role==='user');
-  if (userMessages.length < 3) return false; // need some history to detect drift
+  if (userMessages.length < 3) return false; // need at least 3 messages to detect drift
+  
   const recent = userMessages.slice(-1)[0];
-  const firstTwo = userMessages.slice(0,2).map(m=>extractKeywords(m.content));
+  const recentContent = recent.content.toLowerCase();
+  
+  // Get baseline from first 2 messages only (not including the recent one)
+  const firstTwo = userMessages.slice(0, 2).map(m=>extractKeywords(m.content));
   const baselineKeywords = [...new Set(firstTwo.flat())];
   const recentKeywords = extractKeywords(recent.content);
+  
+  // Calculate similarity
   const similarity = jaccard(baselineKeywords, recentKeywords);
-  // Low similarity + sufficiently long recent message indicates drift
-  if (similarity < 0.2 && tokenize(recent.content).length > 6) return true;
-  // Also: if current title words absent from recent keywords
+  
+  // Check if recent message is substantial enough to warrant drift detection
+  const recentTokens = tokenize(recent.content);
+  if (recentTokens.length < 8) return false; // too short to be a topic shift
+  
+  // Strong indicators of topic shift
+  const topicShiftPhrases = [
+    'switching topic', 'change topic', 'different question', 
+    'new question', 'moving on', 'instead', 'actually',
+    'change of topic', 'different topic', 'new topic'
+  ];
+  const hasExplicitShift = topicShiftPhrases.some(phrase => 
+    recentContent.includes(phrase.toLowerCase())
+  );
+  
+  if (hasExplicitShift && similarity < 0.4) return true;
+  
+  // Very low similarity + long message indicates drift
+  if (similarity < 0.15 && recentTokens.length > 10) return true;
+  
+  // Check if current title words are completely absent from recent message
   const titleTokens = tokenize(currentTitle).filter(t=>!STOPWORDS.has(t));
   const overlap = titleTokens.some(t => recentKeywords.includes(t));
-  if (!overlap && similarity < 0.35) return true;
+  
+  // Only regenerate if NO overlap AND very low similarity
+  if (!overlap && similarity < 0.25 && recentTokens.length > 10) return true;
+  
   return false;
 }
 
@@ -57,12 +84,23 @@ export function shouldRegenerateTitle(messages, currentTitle) {
 export function heuristicTitle(messages) {
   const userMessages = messages.filter(m=>m.role==='user');
   if (!userMessages.length) return 'Conversation';
-  const joined = userMessages.slice(0,2).map(m=>m.content).join(' ');
-  const keywords = extractKeywords(joined, 8).slice(0,6);
-  if (!keywords.length) return 'Conversation';
-  const words = keywords.map(w=> w.length > 20 ? w.slice(0,20) : w);
-  const final = words.slice(0,6).join(' ');
-  return toTitleCase(final);
+  
+  // Get first user message for context
+  const firstMessage = userMessages[0].content;
+  const tokens = tokenize(firstMessage);
+  
+  // Extract meaningful keywords (non-stopwords, length > 2)
+  const keywords = tokens.filter(t => !STOPWORDS.has(t) && t.length > 2);
+  
+  // Take first 3-6 keywords in order of appearance (preserves natural flow)
+  const titleWords = keywords.slice(0, 6);
+  
+  if (!titleWords.length) return 'Conversation';
+  
+  // Ensure we have at least 3 words for a good title
+  const finalWords = titleWords.slice(0, Math.max(3, Math.min(6, titleWords.length)));
+  
+  return toTitleCase(finalWords.join(' '));
 }
 
 export function toTitleCase(str='') {
@@ -76,17 +114,36 @@ export function toTitleCase(str='') {
 export function normalizeModelTitle(raw='', fallback='Conversation') {
   if (!raw) return fallback;
   let t = raw.trim();
-  // Remove quotes or trailing punctuation
+  
+  // Remove quotes, trailing punctuation, and common prefixes
   t = t.replace(/^['"`]|['"`]+$/g,'');
-  // Keep 3-6 words
+  t = t.replace(/^(Title:|Topic:|Chat:|Conversation:)\s*/i, '');
+  t = t.replace(/[.!?;,]+$/g, '');
+  
+  // Split into words
   let words = t.split(/\s+/).filter(Boolean);
-  if (words.length > 6) words = words.slice(0,6);
-  if (words.length < 3) {
-    // attempt to pad with keywords from itself
-    const extra = extractKeywords(t, 6);
-    words = [...new Set([...words, ...extra])].slice(0,3);
+  
+  // If empty after cleaning, return fallback
+  if (words.length === 0) return fallback;
+  
+  // Keep 3-6 words
+  if (words.length > 6) {
+    words = words.slice(0, 6);
+  } else if (words.length < 3) {
+    // If too short, try to extract more meaningful words
+    const tokens = tokenize(t).filter(tok => !STOPWORDS.has(tok) && tok.length > 2);
+    if (tokens.length >= 3) {
+      words = tokens.slice(0, 3);
+    } else if (words.length > 0) {
+      // Keep what we have if it's at least 1 word
+      // Don't force padding with generic words
+    } else {
+      return fallback;
+    }
   }
-  return toTitleCase(words.join(' ')) || fallback;
+  
+  const result = toTitleCase(words.join(' '));
+  return result || fallback;
 }
 
 // Prepare payload for title generation API
