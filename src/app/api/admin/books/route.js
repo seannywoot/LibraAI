@@ -30,6 +30,7 @@ export async function GET(request) {
       status: 1,
       isbn: 1,
       barcode: 1,
+      slug: 1,
       createdAt: 1,
     };
 

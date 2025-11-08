@@ -69,7 +69,8 @@ export default function AdminBooksListPage() {
 
     setDeleting(book._id);
     try {
-      const res = await fetch(`/api/admin/books/${book._id}`, {
+      const identifier = book.slug || book._id;
+      const res = await fetch(`/api/admin/books/${identifier}`, {
         method: "DELETE",
       });
       const data = await res.json().catch(() => ({}));
@@ -170,7 +171,7 @@ export default function AdminBooksListPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <Link
-                            href={`/admin/books/${b._id}/edit`}
+                            href={`/admin/books/${b.slug || b._id}/edit`}
                             className="rounded-lg border border-blue-500 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 transition-colors"
                           >
                             Edit

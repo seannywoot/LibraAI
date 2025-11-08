@@ -12,7 +12,7 @@ export default function AdminEditBookPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
-  const bookId = params?.id;
+  const identifier = params?.id;
 
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -40,9 +40,9 @@ export default function AdminEditBookPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        console.log("Loading book with ID:", bookId);
+        console.log("Loading book with identifier:", identifier);
         const [bookRes, shelvesRes, authorsRes] = await Promise.all([
-          fetch(`/api/admin/books/${bookId}`, { cache: "no-store" }),
+          fetch(`/api/admin/books/${identifier}`, { cache: "no-store" }),
           fetch("/api/admin/shelves?pageSize=100", { cache: "no-store" }),
           fetch("/api/admin/authors?pageSize=100", { cache: "no-store" })
         ]);
@@ -89,10 +89,10 @@ export default function AdminEditBookPage() {
         setLoadingAuthors(false);
       }
     }
-    if (bookId) {
+    if (identifier) {
       loadData();
     }
-  }, [bookId]);
+  }, [identifier]);
 
   function validateForm() {
     const e = {};
@@ -179,7 +179,7 @@ export default function AdminEditBookPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/admin/books/${bookId}`, {
+      const res = await fetch(`/api/admin/books/${identifier}`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({

@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { generateBookSlug } from "@/lib/slug";
 
 function normalizeString(v) {
   return (v ?? "").toString().trim();
@@ -121,6 +122,7 @@ export async function POST(request) {
         books.createIndex({ year: -1 }),
         books.createIndex({ isbn: 1 }),
         books.createIndex({ barcode: 1 }),
+        books.createIndex({ slug: 1 }, { unique: true }),
       ]);
     } catch (_) {}
 
@@ -170,6 +172,18 @@ export async function POST(request) {
     }
 
     const now = new Date();
+    
+    // Generate unique slug
+    const baseSlug = generateBookSlug(title, author);
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Ensure slug is unique
+    while (await books.findOne({ slug })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    
     const doc = {
       title,
       author,
@@ -183,6 +197,7 @@ export async function POST(request) {
       category: category || null,
       status,
       loanPolicy: format === "eBook" ? null : loanPolicy,
+      slug,
       createdAt: now,
       updatedAt: now,
       createdBy: session.user?.email || null,

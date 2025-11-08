@@ -25,10 +25,10 @@ export async function GET(request, context) {
     }
 
     const params = await context.params;
-    const bookId = params?.id;
-    if (!bookId || !ObjectId.isValid(bookId)) {
+    const identifier = params?.id;
+    if (!identifier) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Invalid book ID" }),
+        JSON.stringify({ ok: false, error: "Book identifier is required" }),
         { status: 400, headers: { "content-type": "application/json" } }
       );
     }
@@ -37,7 +37,14 @@ export async function GET(request, context) {
     const db = client.db();
     const books = db.collection("books");
 
-    const book = await books.findOne({ _id: new ObjectId(bookId) });
+    // Try to find by slug first, then by ObjectId for backward compatibility
+    let book;
+    if (ObjectId.isValid(identifier)) {
+      book = await books.findOne({ _id: new ObjectId(identifier) });
+    }
+    if (!book) {
+      book = await books.findOne({ slug: identifier });
+    }
 
     if (!book) {
       return new Response(
@@ -77,10 +84,10 @@ export async function PUT(request, context) {
     }
 
     const params = await context.params;
-    const bookId = params?.id;
-    if (!bookId || !ObjectId.isValid(bookId)) {
+    const identifier = params?.id;
+    if (!identifier) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Invalid book ID" }),
+        JSON.stringify({ ok: false, error: "Book identifier is required" }),
         { status: 400, headers: { "content-type": "application/json" } }
       );
     }
@@ -170,8 +177,14 @@ export async function PUT(request, context) {
     const db = client.db();
     const books = db.collection("books");
 
-    // Check if book exists
-    const existingBook = await books.findOne({ _id: new ObjectId(bookId) });
+    // Find book by slug or ID
+    let existingBook;
+    if (ObjectId.isValid(identifier)) {
+      existingBook = await books.findOne({ _id: new ObjectId(identifier) });
+    }
+    if (!existingBook) {
+      existingBook = await books.findOne({ slug: identifier });
+    }
     if (!existingBook) {
       return new Response(
         JSON.stringify({ ok: false, error: "Book not found" }),
@@ -181,7 +194,7 @@ export async function PUT(request, context) {
 
     // Check for duplicate ISBN if changed
     if (isbn && isbn !== existingBook.isbn) {
-      const isbnCheck = await books.findOne({ isbn, _id: { $ne: new ObjectId(bookId) } });
+      const isbnCheck = await books.findOne({ isbn, _id: { $ne: existingBook._id } });
       if (isbnCheck) {
         return new Response(
           JSON.stringify({ 
@@ -195,7 +208,7 @@ export async function PUT(request, context) {
 
     // Check for duplicate barcode if changed
     if (barcode && barcode !== existingBook.barcode) {
-      const barcodeCheck = await books.findOne({ barcode, _id: { $ne: new ObjectId(bookId) } });
+      const barcodeCheck = await books.findOne({ barcode, _id: { $ne: existingBook._id } });
       if (barcodeCheck) {
         return new Response(
           JSON.stringify({ 
@@ -226,7 +239,7 @@ export async function PUT(request, context) {
     };
 
     const result = await books.updateOne(
-      { _id: new ObjectId(bookId) },
+      { _id: existingBook._id },
       { $set: updateDoc }
     );
 
@@ -237,7 +250,7 @@ export async function PUT(request, context) {
       );
     }
 
-    const updatedBook = await books.findOne({ _id: new ObjectId(bookId) });
+    const updatedBook = await books.findOne({ _id: existingBook._id });
 
     return new Response(
       JSON.stringify({ ok: true, book: updatedBook }),
@@ -270,10 +283,10 @@ export async function DELETE(request, context) {
     }
 
     const params = await context.params;
-    const bookId = params?.id;
-    if (!bookId || !ObjectId.isValid(bookId)) {
+    const identifier = params?.id;
+    if (!identifier) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Invalid book ID" }),
+        JSON.stringify({ ok: false, error: "Book identifier is required" }),
         { status: 400, headers: { "content-type": "application/json" } }
       );
     }
@@ -282,7 +295,23 @@ export async function DELETE(request, context) {
     const db = client.db();
     const books = db.collection("books");
 
-    const result = await books.deleteOne({ _id: new ObjectId(bookId) });
+    // Find book by slug or ID
+    let book;
+    if (ObjectId.isValid(identifier)) {
+      book = await books.findOne({ _id: new ObjectId(identifier) });
+    }
+    if (!book) {
+      book = await books.findOne({ slug: identifier });
+    }
+    
+    if (!book) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Book not found" }),
+        { status: 404, headers: { "content-type": "application/json" } }
+      );
+    }
+
+    const result = await books.deleteOne({ _id: book._id });
 
     if (result.deletedCount === 0) {
       return new Response(
