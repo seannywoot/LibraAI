@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Book as BookIcon, BookOpen } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
@@ -67,6 +67,8 @@ export default function StudentBooksPage() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const shouldCloseOnBlur = useRef(true);
   const [recommendationsKey, setRecommendationsKey] = useState(0);
 
   const navigationLinks = getStudentLinks();
@@ -210,7 +212,47 @@ export default function StudentBooksPage() {
   function handleSuggestionClick(suggestion) {
     setSearchInput(suggestion.text);
     setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
     setPage(1);
+  }
+
+  function handleKeyDown(e) {
+    if (showSuggestions && suggestions.length > 0) {
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setSelectedSuggestionIndex((prev) =>
+            prev < suggestions.length - 1 ? prev + 1 : prev
+          );
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : -1));
+          break;
+        case "Enter":
+          e.preventDefault();
+          shouldCloseOnBlur.current = false;
+          if (selectedSuggestionIndex >= 0) {
+            handleSuggestionClick(suggestions[selectedSuggestionIndex]);
+          } else {
+            setShowSuggestions(false);
+            setSelectedSuggestionIndex(-1);
+            setSuggestions([]);
+            loadBooks();
+          }
+          setTimeout(() => {
+            shouldCloseOnBlur.current = true;
+          }, 100);
+          break;
+        case "Escape":
+          setShowSuggestions(false);
+          setSelectedSuggestionIndex(-1);
+          setSuggestions([]);
+          break;
+      }
+    } else if (e.key === "Enter") {
+      loadBooks();
+    }
   }
 
   function toggleResourceType(type) {
@@ -561,14 +603,15 @@ export default function StudentBooksPage() {
                     onFocus={() =>
                       suggestions.length > 0 && setShowSuggestions(true)
                     }
-                    onBlur={() =>
-                      setTimeout(() => setShowSuggestions(false), 200)
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        loadBooks();
-                      }
+                    onBlur={() => {
+                      setTimeout(() => {
+                        if (shouldCloseOnBlur.current) {
+                          setShowSuggestions(false);
+                          setSelectedSuggestionIndex(-1);
+                        }
+                      }, 200);
                     }}
+                    onKeyDown={handleKeyDown}
                     placeholder="Search books, authors..."
                     className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                   />
@@ -628,7 +671,11 @@ export default function StudentBooksPage() {
                       <button
                         key={idx}
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0"
+                        className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${
+                          idx === selectedSuggestionIndex
+                            ? "bg-gray-100"
+                            : "hover:bg-gray-50"
+                        }`}
                       >
                         <svg
                           className="h-4 w-4 text-gray-400 shrink-0"

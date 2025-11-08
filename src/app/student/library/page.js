@@ -55,6 +55,11 @@ function MyLibraryContent() {
   const [myBooks, setMyBooks] = useState([]);
   const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [searchInput, setSearchInput] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const shouldCloseOnBlur = useRef(true);
   const [showScanner, setShowScanner] = useState(false);
   const [scannerMode, setScannerMode] = useState("barcode"); // 'barcode' or 'ocr'
   const [uploading, setUploading] = useState(false);
@@ -72,39 +77,111 @@ function MyLibraryContent() {
 
   const navigationLinks = getStudentLinks();
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadMyLibrary();
+      loadBorrowedBooks();
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
+  // Auto-suggestions effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput.length >= 2) {
+        loadSuggestions();
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput, activeTab]);
+
   useEffect(() => {
     loadMyLibrary();
     loadBorrowedBooks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Filter books based on search
-  const filteredMyBooks = myBooks.filter((book) => {
-    if (!searchInput) return true;
-    const search = searchInput.toLowerCase();
-    return (
-      book.title?.toLowerCase().includes(search) ||
-      book.author?.toLowerCase().includes(search) ||
-      book.isbn?.toLowerCase().includes(search)
-    );
-  });
-
-  const filteredBorrowedBooks = borrowedBooks.filter((transaction) => {
-    if (!searchInput) return true;
-    const search = searchInput.toLowerCase();
-    return (
-      transaction.bookTitle?.toLowerCase().includes(search) ||
-      transaction.bookAuthor?.toLowerCase().includes(search)
-    );
-  });
 
   function handleClearSearch() {
     setSearchInput("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+  }
+
+  async function loadSuggestions() {
+    setLoadingSuggestions(true);
+    try {
+      const res = await fetch(
+        `/api/student/library/suggestions?q=${encodeURIComponent(searchInput)}&tab=${activeTab}`,
+        { cache: "no-store" }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        setSuggestions(data.suggestions || []);
+        setShowSuggestions(true);
+      }
+    } catch (e) {
+      console.error("Failed to load suggestions:", e);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }
+
+  function handleSuggestionClick(suggestion) {
+    setSearchInput(suggestion.text);
+    setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+  }
+
+  function handleKeyDown(e) {
+    if (showSuggestions && suggestions.length > 0) {
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setSelectedSuggestionIndex((prev) =>
+            prev < suggestions.length - 1 ? prev + 1 : prev
+          );
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : -1));
+          break;
+        case "Enter":
+          e.preventDefault();
+          shouldCloseOnBlur.current = false;
+          if (selectedSuggestionIndex >= 0) {
+            handleSuggestionClick(suggestions[selectedSuggestionIndex]);
+          } else {
+            setShowSuggestions(false);
+            setSelectedSuggestionIndex(-1);
+            setSuggestions([]);
+          }
+          setTimeout(() => {
+            shouldCloseOnBlur.current = true;
+          }, 100);
+          break;
+        case "Escape":
+          setShowSuggestions(false);
+          setSelectedSuggestionIndex(-1);
+          setSuggestions([]);
+          break;
+      }
+    }
   }
 
   async function loadMyLibrary() {
     setLoading(true);
     try {
-      const res = await fetch("/api/student/library", { cache: "no-store" });
+      const params = new URLSearchParams();
+      if (searchInput) params.append("search", searchInput);
+      
+      const res = await fetch(`/api/student/library?${params}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Failed to load library");
@@ -118,7 +195,10 @@ function MyLibraryContent() {
 
   async function loadBorrowedBooks() {
     try {
-      const res = await fetch("/api/student/books/borrowed", { cache: "no-store" });
+      const params = new URLSearchParams();
+      if (searchInput) params.append("search", searchInput);
+      
+      const res = await fetch(`/api/student/books/borrowed?${params}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load borrowed books");
       setBorrowedBooks(data.items || []);
@@ -338,6 +418,16 @@ function MyLibraryContent() {
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
+            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+            onBlur={() => {
+              setTimeout(() => {
+                if (shouldCloseOnBlur.current) {
+                  setShowSuggestions(false);
+                  setSelectedSuggestionIndex(-1);
+                }
+              }, 200);
+            }}
+            onKeyDown={handleKeyDown}
             placeholder="Search books..."
             className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
           />
@@ -351,6 +441,33 @@ function MyLibraryContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+          )}
+
+          {/* Auto-suggestions dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+              {suggestions.map((suggestion, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${
+                    idx === selectedSuggestionIndex
+                      ? "bg-gray-100"
+                      : "hover:bg-gray-50"
+                  }`}
+                >
+                  <svg className="h-4 w-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {suggestion.type === "title" ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    )}
+                  </svg>
+                  <span className="text-sm text-gray-900 truncate">{suggestion.text}</span>
+                  <span className="ml-auto text-xs text-gray-400 capitalize">{suggestion.type}</span>
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
@@ -530,7 +647,7 @@ function MyLibraryContent() {
             {/* View Controls */}
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">
-                Personal Collection ({filteredMyBooks.length}{searchInput && ` of ${myBooks.length}`})
+                Personal Collection ({myBooks.length})
               </h2>
               <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
                 <button
@@ -578,18 +695,6 @@ function MyLibraryContent() {
                 <div className="text-center py-12 text-gray-600">
                   Loading your library...
                 </div>
-              ) : filteredMyBooks.length === 0 && searchInput ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                  <div className="rounded-full bg-gray-100 p-4 text-gray-400">
-                    <BookIcon className="h-8 w-8" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    No books found
-                  </h3>
-                  <p className="text-sm text-gray-600 max-w-md">
-                    Try adjusting your search terms.
-                  </p>
-                </div>
               ) : myBooks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                   <div className="rounded-full bg-gray-100 p-4 text-gray-400">
@@ -604,7 +709,7 @@ function MyLibraryContent() {
                 </div>
               ) : viewMode === "list" ? (
                 <div className="space-y-4">
-                  {filteredMyBooks.map((book) => (
+                  {myBooks.map((book) => (
                     <div
                       key={book._id}
                       className="relative rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow"
@@ -670,7 +775,7 @@ function MyLibraryContent() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {filteredMyBooks.map((book) => (
+                  {myBooks.map((book) => (
                     <div
                       key={book._id}
                       className="relative rounded-lg border border-gray-200 bg-white hover:shadow-md transition-shadow"
@@ -743,7 +848,7 @@ function MyLibraryContent() {
             {/* View Controls */}
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">
-                Borrowed Books ({filteredBorrowedBooks.length}{searchInput && ` of ${borrowedBooks.length}`})
+                Borrowed Books ({borrowedBooks.length})
               </h2>
               <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
                 <button
@@ -790,18 +895,6 @@ function MyLibraryContent() {
                 <div className="text-center py-12 text-gray-600">
                   Loading borrowed books...
                 </div>
-              ) : filteredBorrowedBooks.length === 0 && searchInput ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                  <div className="rounded-full bg-gray-100 p-4 text-gray-400">
-                    <BookOpen className="h-8 w-8" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    No books found
-                  </h3>
-                  <p className="text-sm text-gray-600 max-w-md">
-                    Try adjusting your search terms.
-                  </p>
-                </div>
               ) : borrowedBooks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                   <div className="rounded-full bg-gray-100 p-4 text-gray-400">
@@ -816,7 +909,7 @@ function MyLibraryContent() {
                 </div>
               ) : viewMode === "list" ? (
                 <div className="space-y-4">
-                  {filteredBorrowedBooks.map((transaction) => {
+                  {borrowedBooks.map((transaction) => {
                     const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
                     const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
                     const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
@@ -896,7 +989,7 @@ function MyLibraryContent() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {filteredBorrowedBooks.map((transaction) => {
+                  {borrowedBooks.map((transaction) => {
                   const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
                   const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
                   const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;

@@ -21,6 +21,9 @@ export async function GET(request) {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search")?.trim() || "";
+
     const client = await clientPromise;
     const db = client.db();
 
@@ -40,10 +43,22 @@ export async function GET(request) {
       user = { _id: result.insertedId, email: session.user.email, role: "student" };
     }
 
+    // Build query for user's personal library
+    const query = { userId: user._id };
+    
+    // Add search filter if provided
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { author: { $regex: search, $options: "i" } },
+        { isbn: { $regex: search, $options: "i" } },
+      ];
+    }
+
     // Get user's personal library
     const library = await db
       .collection("personal_libraries")
-      .find({ userId: user._id })
+      .find(query)
       .sort({ addedAt: -1 })
       .toArray();
 

@@ -12,15 +12,29 @@ export async function GET(request) {
       });
     }
 
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search")?.trim() || "";
+
     const client = await clientPromise;
     const db = client.db();
     const transactions = db.collection("transactions");
 
+    // Build query
+    const query = {
+      userId: session.user?.email,
+      status: { $in: ["pending-approval", "borrowed", "return-requested", "rejected"] },
+    };
+
+    // Add search filter if provided
+    if (search) {
+      query.$or = [
+        { bookTitle: { $regex: search, $options: "i" } },
+        { bookAuthor: { $regex: search, $options: "i" } },
+      ];
+    }
+
     const borrowed = await transactions
-      .find({
-        userId: session.user?.email,
-        status: { $in: ["pending-approval", "borrowed", "return-requested", "rejected"] },
-      })
+      .find(query)
       .sort({ requestedAt: -1, borrowedAt: -1 })
       .toArray();
 
