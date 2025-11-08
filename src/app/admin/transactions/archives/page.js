@@ -3,11 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { History } from "@/components/icons";
+import { Archive } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
-import CalendarDatePicker from "@/components/admin/calendar-date-picker";
-import { ToastContainer, showToast } from "@/components/ToastContainer";
+import { ToastContainer } from "@/components/ToastContainer";
 
 function formatDate(dateStr) {
   if (!dateStr) return "—";
@@ -22,9 +21,6 @@ function formatDate(dateStr) {
 
 function StatusBadge({ status }) {
   const map = {
-    "pending-approval": { bg: "bg-sky-100", text: "text-sky-800", label: "Pending Approval" },
-    borrowed: { bg: "bg-amber-100", text: "text-amber-800", label: "Borrowed" },
-    "return-requested": { bg: "bg-rose-100", text: "text-rose-800", label: "Return Requested" },
     returned: { bg: "bg-emerald-100", text: "text-emerald-800", label: "Returned" },
     rejected: { bg: "bg-zinc-200", text: "text-zinc-700", label: "Rejected" },
   };
@@ -37,21 +33,7 @@ function StatusBadge({ status }) {
   );
 }
 
-function toInputDate(value) {
-  const date = value ? new Date(value) : new Date();
-  if (Number.isNaN(date.getTime())) return "";
-  const iso = date.toISOString();
-  return iso.slice(0, 10);
-}
-
-function getTodayInputDate() {
-  const now = new Date();
-  const offsetMs = now.getTimezoneOffset() * 60 * 1000;
-  const localMidnight = new Date(now.getTime() - offsetMs);
-  return localMidnight.toISOString().slice(0, 10);
-}
-
-export default function AdminTransactionsPage() {
+export default function AdminTransactionArchivesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -63,20 +45,8 @@ export default function AdminTransactionsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const shouldCloseOnBlur = useRef(true);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [actionLoading, setActionLoading] = useState("");
-  const [dueDates, setDueDates] = useState({});
-  const [rejectTarget, setRejectTarget] = useState(null);
-  const [rejectReason, setRejectReason] = useState("");
-  const [rejectError, setRejectError] = useState("");
-
-  const todayInputDateRef = useRef(getTodayInputDate());
-  const todayInputDate = todayInputDateRef.current;
-
-  const rejectProcessing = rejectTarget ? actionLoading === `${rejectTarget._id}:reject` : false;
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
@@ -108,17 +78,23 @@ export default function AdminTransactionsPage() {
       setLoading(true);
       setError("");
       try {
-        const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
+        const params = new URLSearchParams({ 
+          page: page.toString(), 
+          pageSize: pageSize.toString(),
+          showArchived: "true"
+        });
         if (statusFilter) params.append("status", statusFilter);
         if (searchInput) params.append("search", searchInput);
         
         const url = `/api/admin/transactions?${params}`;
         const res = await fetch(url, { cache: "no-store" });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load transactions");
+        if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load archived transactions");
         if (!cancelled) {
-          setItems(data.items || []);
-          setTotal(data.total || 0);
+          // Filter to only show archived items
+          const archivedItems = (data.items || []).filter(item => item.archived === true);
+          setItems(archivedItems);
+          setTotal(archivedItems.length);
         }
       } catch (e) {
         if (!cancelled) setError(e?.message || "Unknown error");
@@ -128,7 +104,7 @@ export default function AdminTransactionsPage() {
     }
     load();
     return () => { cancelled = true; };
-  }, [page, pageSize, statusFilter, searchInput, refreshKey]);
+  }, [page, pageSize, statusFilter, searchInput]);
 
   function handleClearSearch() {
     setSearchInput("");
@@ -138,7 +114,6 @@ export default function AdminTransactionsPage() {
   }
 
   async function loadSuggestions() {
-    setLoadingSuggestions(true);
     try {
       const res = await fetch(
         `/api/admin/transactions/suggestions?q=${encodeURIComponent(searchInput)}`,
@@ -151,8 +126,6 @@ export default function AdminTransactionsPage() {
       }
     } catch (e) {
       console.error("Failed to load suggestions:", e);
-    } finally {
-      setLoadingSuggestions(false);
     }
   }
 
@@ -199,89 +172,6 @@ export default function AdminTransactionsPage() {
     }
   }
 
-  useEffect(() => {
-    const today = todayInputDateRef.current;
-    setDueDates((prev) => {
-      const next = { ...prev };
-      const seen = new Set();
-      items.forEach((t) => {
-        if (t.status === "pending-approval") {
-          const key = t._id;
-          seen.add(key);
-          const initial = toInputDate(t.requestedDueDate || t.requestedAt) || today;
-          const safeInitial = initial < today ? today : initial;
-          if (!next[key]) {
-            next[key] = safeInitial;
-          } else if (next[key] < today) {
-            next[key] = today;
-          }
-        }
-      });
-      Object.keys(next).forEach((key) => {
-        if (!seen.has(key)) delete next[key];
-      });
-      return next;
-    });
-  }, [items]);
-
-  function closeRejectDialog() {
-    if (rejectProcessing) return;
-    setRejectTarget(null);
-    setRejectReason("");
-    setRejectError("");
-  }
-
-  async function handleAction(transactionId, action, extra = {}) {
-    const actionKey = `${transactionId}:${action}`;
-    setActionLoading(actionKey);
-    setError("");
-    try {
-      const res = await fetch("/api/admin/transactions", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ transactionId, action, ...extra }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || "Failed to update transaction");
-      }
-      showToast(data?.message || "Action completed", "success");
-      
-      // For archive action, remove the item from the list dynamically
-      if (action === "archive") {
-        setItems((prevItems) => prevItems.filter((item) => item._id !== transactionId));
-        setTotal((prevTotal) => Math.max(0, prevTotal - 1));
-      } else {
-        // For other actions, refresh the list
-        setRefreshKey((k) => k + 1);
-      }
-      
-      return { ok: true, message: data?.message };
-    } catch (e) {
-      showToast(e?.message || "Failed to update transaction", "error");
-      return { ok: false, error: e?.message || "Failed to update transaction" };
-    } finally {
-      setActionLoading("");
-    }
-  }
-
-  async function submitRejection(event) {
-    event.preventDefault();
-    if (!rejectTarget) return;
-    const trimmed = rejectReason.trim();
-    if (trimmed.length < 3) {
-      setRejectError("Please provide a brief reason (at least 3 characters).");
-      return;
-    }
-    setRejectError("");
-    const result = await handleAction(rejectTarget._id, "reject", { reason: trimmed });
-    if (result?.ok) {
-      closeRejectDialog();
-    } else if (result?.error) {
-      setRejectError(result.error);
-    }
-  }
-
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
@@ -294,15 +184,15 @@ export default function AdminTransactionsPage() {
           <div className="flex items-end justify-between gap-4">
             <div className="space-y-2">
               <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
-              <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Borrow Transactions</h1>
-              <p className="text-sm text-zinc-600">View all borrowing and return activity.</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Transaction Archives</h1>
+              <p className="text-sm text-zinc-600">View archived transactions that have been completed or rejected.</p>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => router.push("/admin/transactions/archives")}
+                onClick={() => router.push("/admin/transactions")}
                 className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100"
               >
-                View Archives
+                ← Back to Transactions
               </button>
               <select
                 value={statusFilter}
@@ -313,10 +203,7 @@ export default function AdminTransactionsPage() {
                 className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700"
               >
                 <option value="">All Status</option>
-                <option value="borrowed">Borrowed</option>
                 <option value="returned">Returned</option>
-                <option value="pending-approval">Pending Approval</option>
-                <option value="return-requested">Return Requested</option>
                 <option value="rejected">Rejected</option>
               </select>
             </div>
@@ -346,7 +233,7 @@ export default function AdminTransactionsPage() {
                 }, 200);
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Search transactions..."
+              placeholder="Search archived transactions..."
               className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
             />
             {searchInput && (
@@ -393,16 +280,16 @@ export default function AdminTransactionsPage() {
         </header>
 
         {loading ? (
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">Loading transactions…</div>
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">Loading archived transactions…</div>
         ) : error ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">{error}</div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
             <div className="rounded-full bg-white p-3 shadow text-zinc-500">
-              <History className="h-6 w-6" />
+              <Archive className="h-6 w-6" />
             </div>
-            <h2 className="text-lg font-semibold text-zinc-900">No transactions yet</h2>
-            <p className="text-sm text-zinc-600">Borrowing activity will appear here.</p>
+            <h2 className="text-lg font-semibold text-zinc-900">No archived transactions</h2>
+            <p className="text-sm text-zinc-600">Archived transactions will appear here.</p>
           </div>
         ) : (
           <section className="space-y-4">
@@ -416,8 +303,8 @@ export default function AdminTransactionsPage() {
                     <th className="px-6 py-2">Borrowed</th>
                     <th className="px-6 py-2">Due Date</th>
                     <th className="px-6 py-2">Returned</th>
-                    <th className="px-6 py-2 pr-2">Status</th>
-                    <th className="pl-2 py-2">Actions</th>
+                    <th className="px-6 py-2">Status</th>
+                    <th className="px-6 py-2">Archived</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -453,7 +340,7 @@ export default function AdminTransactionsPage() {
                           {durationLabel && <div className="text-xs text-zinc-500">{durationLabel}</div>}
                         </td>
                         <td className="px-6 py-3">{formatDate(t.returnedAt)}</td>
-                        <td className="px-6 py-3 pr-2">
+                        <td className="px-6 py-3">
                           <div className="space-y-2">
                             <StatusBadge status={t.status} />
                             {t.status === "rejected" && t.rejectionReason && (
@@ -464,86 +351,11 @@ export default function AdminTransactionsPage() {
                                 {t.rejectionReason}
                               </p>
                             )}
-                            {t.status === "rejected" && !t.rejectionReason && (
-                              <p className="text-xs text-zinc-500">No reason recorded.</p>
-                            )}
                           </div>
                         </td>
-                        <td className="pl-2 py-3">
-                          {t.status === "pending-approval" && (
-                            <div className="space-y-2">
-                              <div className="flex flex-col gap-1">
-                                <span className="text-xs text-zinc-600">Due Date</span>
-                                <CalendarDatePicker
-                                  value={dueDates[t._id] || ""}
-                                  min={todayInputDate}
-                                  onChange={(nextValue) =>
-                                    setDueDates((prev) => ({
-                                      ...prev,
-                                      [t._id]: nextValue && nextValue < todayInputDate ? todayInputDate : nextValue,
-                                    }))
-                                  }
-                                />
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-                                  disabled={actionLoading === `${t._id}:approve`}
-                                  onClick={() =>
-                                    handleAction(t._id, "approve", {
-                                      dueDate: dueDates[t._id] ? new Date(dueDates[t._id]).toISOString() : undefined,
-                                    })
-                                  }
-                                >
-                                  {actionLoading === `${t._id}:approve` ? "Approving…" : "Approve"}
-                                </button>
-                                <button
-                                  className="rounded-lg border border-rose-500 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50"
-                                  disabled={actionLoading === `${t._id}:reject`}
-                                  onClick={() => {
-                                    setError("");
-                                    setRejectTarget(t);
-                                    setRejectReason("");
-                                    setRejectError("");
-                                  }}
-                                >
-                                  {actionLoading === `${t._id}:reject` ? "Rejecting…" : "Reject"}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                          {t.status === "return-requested" && (
-                            <button
-                              className="rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
-                              disabled={actionLoading === `${t._id}:return`}
-                              onClick={() => handleAction(t._id, "return")}
-                            >
-                              {actionLoading === `${t._id}:return` ? "Processing…" : "Confirm Return"}
-                            </button>
-                          )}
-                          {t.status === "borrowed" && (
-                            <button
-                              className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-50"
-                              disabled={actionLoading === `${t._id}:return`}
-                              onClick={() => handleAction(t._id, "return")}
-                            >
-                              {actionLoading === `${t._id}:return` ? "Processing…" : "Mark Returned"}
-                            </button>
-                          )}
-                          {(t.status === "rejected" || t.status === "returned") && !t.archived && (
-                            <button
-                              className="rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 disabled:opacity-50"
-                              disabled={actionLoading === `${t._id}:archive`}
-                              onClick={() => handleAction(t._id, "archive")}
-                            >
-                              {actionLoading === `${t._id}:archive` ? "Archiving…" : "Archive"}
-                            </button>
-                          )}
-                          {t.archived && (
-                            <span className="inline-flex items-center rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-600">
-                              Archived
-                            </span>
-                          )}
+                        <td className="px-6 py-3">
+                          <div className="text-xs text-zinc-600">{formatDate(t.archivedAt)}</div>
+                          {t.archivedBy && <div className="text-xs text-zinc-500">{t.archivedBy}</div>}
                         </td>
                       </tr>
                     );
@@ -578,58 +390,6 @@ export default function AdminTransactionsPage() {
           </section>
         )}
       </main>
-      {rejectTarget && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          role="dialog"
-          aria-modal="true"
-          onClick={closeRejectDialog}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-semibold text-zinc-900">Reject Borrow Request</h2>
-            <p className="mt-2 text-sm text-zinc-600">
-              Provide a reason for rejecting {rejectTarget.userName ? `${rejectTarget.userName}'s` : "this"} request for &quot;{rejectTarget.bookTitle}&quot;.
-            </p>
-            <form className="mt-4 space-y-4" onSubmit={submitRejection}>
-              <label className="flex flex-col gap-2 text-sm text-zinc-700">
-                Reason
-                <textarea
-                  className="min-h-[120px] rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-zinc-500 focus:outline-none"
-                  value={rejectReason}
-                  onChange={(e) => {
-                    setRejectReason(e.target.value);
-                    if (rejectError) setRejectError("");
-                  }}
-                  maxLength={100}
-                  placeholder="Explain why this request is being rejected…"
-                  disabled={rejectProcessing}
-                />
-              </label>
-              {rejectError && <p className="text-xs text-rose-600">{rejectError}</p>}
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
-                  onClick={closeRejectDialog}
-                  disabled={rejectProcessing}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-lg border border-rose-600 bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-500 disabled:opacity-50"
-                  disabled={rejectProcessing}
-                >
-                  {rejectProcessing ? "Rejecting…" : "Submit Reason"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

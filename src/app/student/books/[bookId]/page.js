@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { ArrowLeft, BookOpen } from "@/components/icons";
+import { ArrowLeft, BookOpen, Bookmark } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import Link from "next/link";
@@ -55,6 +55,9 @@ export default function BookDetailPage({ params }) {
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [borrowing, setBorrowing] = useState(false);
   const [bookId, setBookId] = useState(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarking, setBookmarking] = useState(false);
+  const [bookmarkedRecommendations, setBookmarkedRecommendations] = useState(new Set());
 
   const navigationLinks = getStudentLinks();
   const origin = searchParams?.get("from");
@@ -82,6 +85,7 @@ export default function BookDetailPage({ params }) {
   useEffect(() => {
     if (book) {
       loadRecommendations();
+      checkBookmarkStatus();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book]);
@@ -116,12 +120,64 @@ export default function BookDetailPage({ params }) {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.ok) {
-        setRecommendations(data.recommendations || []);
+        const recs = data.recommendations || [];
+        setRecommendations(recs);
+        // Load bookmark status for recommendations
+        if (recs.length > 0) {
+          loadRecommendationBookmarks(recs.map(r => r._id));
+        }
       }
     } catch (e) {
       console.error("Failed to load recommendations:", e);
     } finally {
       setLoadingRecommendations(false);
+    }
+  }
+
+  async function loadRecommendationBookmarks(bookIds) {
+    try {
+      const bookmarkChecks = await Promise.all(
+        bookIds.map(async (id) => {
+          const res = await fetch(`/api/student/books/bookmark?bookId=${id}`, {
+            cache: "no-store",
+          });
+          const data = await res.json().catch(() => ({}));
+          return { bookId: id, bookmarked: data?.bookmarked || false };
+        })
+      );
+      
+      const newBookmarked = new Set();
+      bookmarkChecks.forEach(({ bookId, bookmarked }) => {
+        if (bookmarked) newBookmarked.add(bookId);
+      });
+      setBookmarkedRecommendations(newBookmarked);
+    } catch (e) {
+      console.error("Failed to load recommendation bookmarks:", e);
+    }
+  }
+
+  async function handleRecommendationBookmarkToggle(bookId) {
+    try {
+      const res = await fetch("/api/student/books/bookmark", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ bookId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        const newBookmarked = new Set(bookmarkedRecommendations);
+        if (data.bookmarked) {
+          newBookmarked.add(bookId);
+        } else {
+          newBookmarked.delete(bookId);
+        }
+        setBookmarkedRecommendations(newBookmarked);
+        showToast(data.message, "success");
+      } else {
+        showToast(data?.error || "Failed to toggle bookmark", "error");
+      }
+    } catch (e) {
+      showToast("Failed to toggle bookmark", "error");
     }
   }
 
@@ -143,6 +199,41 @@ export default function BookDetailPage({ params }) {
       showToast(e?.message || "Failed to borrow book", "error");
     } finally {
       setBorrowing(false);
+    }
+  }
+
+  async function checkBookmarkStatus() {
+    try {
+      const res = await fetch(`/api/student/books/bookmark?bookId=${book._id}`, {
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        setIsBookmarked(data.bookmarked);
+      }
+    } catch (e) {
+      console.error("Failed to check bookmark status:", e);
+    }
+  }
+
+  async function handleToggleBookmark() {
+    setBookmarking(true);
+    try {
+      const res = await fetch("/api/student/books/bookmark", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ bookId: book._id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok)
+        throw new Error(data?.error || "Failed to toggle bookmark");
+
+      setIsBookmarked(data.bookmarked);
+      showToast(data.message, "success");
+    } catch (e) {
+      showToast(e?.message || "Failed to toggle bookmark", "error");
+    } finally {
+      setBookmarking(false);
     }
   }
 
@@ -306,6 +397,20 @@ export default function BookDetailPage({ params }) {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-4">
+                <button
+                  onClick={handleToggleBookmark}
+                  disabled={bookmarking}
+                  className={`inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors ${
+                    isBookmarked
+                      ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  } disabled:opacity-50`}
+                  title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+                >
+                  <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} />
+                  {bookmarking ? "..." : isBookmarked ? "Bookmarked" : "Bookmark"}
+                </button>
+
                 {book.format === "eBook" && book.ebookUrl ? (
                   <a
                     href={book.ebookUrl}

@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Book as BookIcon, BookOpen, Camera, Upload, X, Scan } from "@/components/icons";
+import { Book as BookIcon, BookOpen, Camera, Upload, X, Scan, Bookmark } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
@@ -48,12 +48,14 @@ function StatusBadge({ status }) {
 
 function MyLibraryContent() {
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "borrowed" ? "borrowed" : "personal";
+  const tabParam = searchParams.get("tab");
+  const initialTab = tabParam === "borrowed" ? "borrowed" : tabParam === "bookmarked" ? "bookmarked" : "personal";
   
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
   const [myBooks, setMyBooks] = useState([]);
   const [borrowedBooks, setBorrowedBooks] = useState([]);
+  const [bookmarkedBooks, setBookmarkedBooks] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -82,6 +84,7 @@ function MyLibraryContent() {
     const timer = setTimeout(() => {
       loadMyLibrary();
       loadBorrowedBooks();
+      loadBookmarkedBooks();
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,6 +107,7 @@ function MyLibraryContent() {
   useEffect(() => {
     loadMyLibrary();
     loadBorrowedBooks();
+    loadBookmarkedBooks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -204,6 +208,20 @@ function MyLibraryContent() {
       setBorrowedBooks(data.items || []);
     } catch (e) {
       console.error("Failed to load borrowed books:", e);
+    }
+  }
+
+  async function loadBookmarkedBooks() {
+    try {
+      const params = new URLSearchParams();
+      if (searchInput) params.append("search", searchInput);
+      
+      const res = await fetch(`/api/student/books/bookmarked?${params}`, { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load bookmarked books");
+      setBookmarkedBooks(data.books || []);
+    } catch (e) {
+      console.error("Failed to load bookmarked books:", e);
     }
   }
 
@@ -401,6 +419,16 @@ function MyLibraryContent() {
             }`}
           >
             Borrowed Books ({borrowedBooks.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("bookmarked")}
+            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === "bookmarked"
+                ? "border-black text-black"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Bookmarked ({bookmarkedBooks.length})
           </button>
         </div>
 
@@ -641,7 +669,152 @@ function MyLibraryContent() {
         )}
 
         {/* Tab Content */}
-        {activeTab === "personal" ? (
+        {activeTab === "bookmarked" ? (
+          /* Bookmarked Books */
+          <div className="space-y-4">
+            {/* View Controls */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Bookmarked Books ({bookmarkedBooks.length})
+              </h2>
+              <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-1.5 rounded ${
+                    viewMode === "grid"
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-1.5 rounded ${
+                    viewMode === "list"
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
+              {loading ? (
+                <div className="text-center py-12 text-gray-600">
+                  Loading bookmarked books...
+                </div>
+              ) : bookmarkedBooks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                  <div className="rounded-full bg-gray-100 p-4 text-gray-400">
+                    <Bookmark className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    No bookmarked books
+                  </h3>
+                  <p className="text-sm text-gray-600 max-w-md">
+                    Bookmark books from the catalog to save them for later.
+                  </p>
+                </div>
+              ) : viewMode === "list" ? (
+                <div className="space-y-4">
+                  {bookmarkedBooks.map((book) => (
+                    <Link
+                      key={book._id}
+                      href={`/student/books/${book._id}?from=library&tab=bookmarked`}
+                      className="rounded-lg border border-gray-200 bg-white p-6 hover:shadow-md transition-shadow cursor-pointer block"
+                    >
+                      <div className="flex gap-6">
+                        {/* Book Cover */}
+                        <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
+                          Book Cover
+                        </div>
+
+                        {/* Book Details */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                            {book.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {book.author}
+                          </p>
+
+                          <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                            {book.isbn && <span>ISBN: {book.isbn}</span>}
+                            {book.bookmarkedAt && (
+                              <span>Bookmarked {new Date(book.bookmarkedAt).toLocaleDateString()}</span>
+                            )}
+                          </div>
+
+                          {book.description && (
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {book.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                  {bookmarkedBooks.map((book) => (
+                    <Link
+                      key={book._id}
+                      href={`/student/books/${book._id}?from=library&tab=bookmarked`}
+                      className="rounded-lg border border-gray-200 bg-white p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col"
+                    >
+                      {/* Book Cover */}
+                      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2">
+                        Book Cover
+                      </div>
+
+                      {/* Book Details */}
+                      <div className="flex-1 flex flex-col">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2">
+                          {book.title}
+                        </h3>
+                        <p className="text-xs text-gray-600 mb-1 line-clamp-1">
+                          {book.author}
+                        </p>
+                        {book.isbn && (
+                          <p className="text-xs text-gray-500">
+                            ISBN: {book.isbn}
+                          </p>
+                        )}
+
+                        {/* Bookmark Date */}
+                        <div className="mt-auto pt-2">
+                          <div className="text-[11px] text-gray-400 text-center">
+                            Bookmarked {new Date(book.bookmarkedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : activeTab === "personal" ? (
           /* Personal Collection */
           <div className="space-y-4">
             {/* View Controls */}

@@ -59,7 +59,7 @@ export default function AdminAddBookPage() {
     loadData();
   }, []);
 
-  const ALLOWED_STATUS = ["available", "checked-out", "reserved", "maintenance"];
+  const ALLOWED_STATUS = ["available", "reserved"];
   const ALLOWED_POLICIES = ["standard", "short-loan", "reference-only", "staff-only"];
 
   function validateForm() {
@@ -356,12 +356,13 @@ export default function AdminAddBookPage() {
                   inputMode="numeric"
                   value={isbn}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "");
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 13);
                     setIsbn(value);
                   }}
                   placeholder="e.g., 9781492032649 (13 digits)"
                   aria-invalid={!!errors.isbn}
                   data-field="isbn"
+                  maxLength={13}
                 />
                 {fieldError("isbn")}
               </label>
@@ -402,15 +403,19 @@ export default function AdminAddBookPage() {
               </label>
               {format === "eBook" && (
                 <label className="grid gap-2 text-sm sm:col-span-2">
-                  <span className="text-zinc-700">eBook URL</span>
+                  <span className="text-zinc-700">eBook File (PDF only)</span>
                   <input
-                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
-                    type="url"
-                    value={ebookUrl}
-                    onChange={(e) => setEbookUrl(e.target.value)}
-                    placeholder="e.g., https://example.com/ebook.pdf"
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-700 hover:file:bg-zinc-200"
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setEbookUrl(file.name);
+                      }
+                    }}
                   />
-                  <p className="text-xs text-zinc-500">Enter the URL where students can access this eBook</p>
+                  <p className="text-xs text-zinc-500">Upload a PDF file for students to access this eBook</p>
                 </label>
               )}
               <label className="grid gap-2 text-sm">
@@ -482,9 +487,7 @@ export default function AdminAddBookPage() {
                   data-field="status"
                 >
                   <option value="available">Available</option>
-                  <option value="checked-out">Checked out</option>
                   <option value="reserved">Reserved</option>
-                  <option value="maintenance">Maintenance</option>
                 </select>
                 {fieldError("status")}
               </label>

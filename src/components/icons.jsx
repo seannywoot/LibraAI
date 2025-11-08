@@ -19,6 +19,7 @@ export {
   ChevronRight,
   ArrowLeft,
   History,
+  Archive,
   MessageCircle,
   Send,
   Paperclip,
@@ -28,6 +29,19 @@ export {
   ScanLine as Scan,
   Clock,
   AlertCircle,
+  FileText,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Code,
+  Quote,
+  Heading1,
+  Heading2,
+  Heading3,
+  Bookmark,
+  Heart,
 } from "lucide-react";
 
 // Optional wrapper for consistent sizing in nav/buttons

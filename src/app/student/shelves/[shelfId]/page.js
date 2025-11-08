@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Book as BookIcon, ArrowLeft } from "@/components/icons";
+import { Book as BookIcon, ArrowLeft, Bookmark } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
@@ -41,6 +41,8 @@ export default function ShelfBooksPage() {
   const [total, setTotal] = useState(0);
   const [borrowing, setBorrowing] = useState(null);
   const [searchInput, setSearchInput] = useState("");
+  const [bookmarkedBooks, setBookmarkedBooks] = useState(new Set());
+  const [bookmarking, setBookmarking] = useState(null);
 
   const navigationLinks = getStudentLinks();
 
@@ -74,10 +76,70 @@ export default function ShelfBooksPage() {
       setShelf(data.shelf);
       setItems(data.items || []);
       setTotal(data.total || 0);
+      
+      // Load bookmark status for books
+      if (data.items && data.items.length > 0) {
+        loadBookmarkStatus(data.items.map(b => b._id));
+      }
     } catch (e) {
       setError(e?.message || "Unknown error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadBookmarkStatus(bookIds) {
+    if (!bookIds || bookIds.length === 0) return;
+    
+    try {
+      const bookmarkChecks = await Promise.all(
+        bookIds.map(async (bookId) => {
+          const res = await fetch(`/api/student/books/bookmark?bookId=${bookId}`, {
+            cache: "no-store",
+          });
+          const data = await res.json().catch(() => ({}));
+          return { bookId, bookmarked: data?.bookmarked || false };
+        })
+      );
+      
+      const newBookmarked = new Set();
+      bookmarkChecks.forEach(({ bookId, bookmarked }) => {
+        if (bookmarked) newBookmarked.add(bookId);
+      });
+      setBookmarkedBooks(newBookmarked);
+    } catch (e) {
+      console.error("Failed to load bookmark status:", e);
+    }
+  }
+
+  async function handleToggleBookmark(bookId, e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setBookmarking(bookId);
+    try {
+      const res = await fetch("/api/student/books/bookmark", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ bookId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok)
+        throw new Error(data?.error || "Failed to toggle bookmark");
+
+      const newBookmarked = new Set(bookmarkedBooks);
+      if (data.bookmarked) {
+        newBookmarked.add(bookId);
+      } else {
+        newBookmarked.delete(bookId);
+      }
+      setBookmarkedBooks(newBookmarked);
+      
+      showToast(data.message, "success");
+    } catch (e) {
+      showToast(e?.message || "Failed to toggle bookmark", "error");
+    } finally {
+      setBookmarking(null);
     }
   }
 
@@ -176,6 +238,8 @@ export default function ShelfBooksPage() {
               {items.map((book) => {
                 const isBorrowingThis = borrowing === book._id;
                 const lockedByOther = Boolean(borrowing) && !isBorrowingThis;
+                const isBookmarked = bookmarkedBooks.has(book._id);
+                const isBookmarkingThis = bookmarking === book._id;
                 return (
                   <article key={book._id} className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3">
                     <div className="space-y-1">
@@ -189,30 +253,46 @@ export default function ShelfBooksPage() {
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <StatusChip status={book.status} />
-                      {book.status === "available" && !["reference-only", "staff-only"].includes(book.loanPolicy || "") ? (
-                        <BorrowConfirmButton
-                          onConfirm={() => handleBorrow(book._id)}
-                          disabled={lockedByOther}
-                          busy={isBorrowingThis}
-                          className="rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
-                          borrowLabel="Borrow"
-                          confirmingLabel="Confirm?"
-                          confirmingTitle="Submit Borrow Request"
-                          confirmingMessage="This sends a borrow request to the librarian for approval."
-                          confirmButtonLabel="Submit Request"
-                          busyLabel="Borrowing..."
-                        />
-                      ) : book.status === "reserved" && book.reservedForCurrentUser ? (
-                        <span className="text-xs font-medium text-zinc-500">Awaiting admin approval</span>
-                      ) : book.status === "reserved" ? (
-                        <span className="text-xs text-zinc-500">Reserved</span>
-                      ) : book.status === "checked-out" ? (
-                        <span className="text-xs text-zinc-500">Checked out</span>
-                      ) : book.loanPolicy === "reference-only" ? (
-                        <span className="text-xs text-zinc-500">Reference only</span>
-                      ) : book.loanPolicy === "staff-only" ? (
-                        <span className="text-xs text-zinc-500">Staff only</span>
-                      ) : null}
+                      <div className="flex items-center gap-2">
+                        {book.status === "available" && !["reference-only", "staff-only"].includes(book.loanPolicy || "") ? (
+                          <BorrowConfirmButton
+                            onConfirm={() => handleBorrow(book._id)}
+                            disabled={lockedByOther}
+                            busy={isBorrowingThis}
+                            className="rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+                            borrowLabel="Borrow"
+                            confirmingLabel="Confirm?"
+                            confirmingTitle="Submit Borrow Request"
+                            confirmingMessage="This sends a borrow request to the librarian for approval."
+                            confirmButtonLabel="Submit Request"
+                            busyLabel="Borrowing..."
+                          />
+                        ) : book.status === "reserved" && book.reservedForCurrentUser ? (
+                          <span className="text-xs font-medium text-zinc-500">Awaiting admin approval</span>
+                        ) : book.status === "reserved" ? (
+                          <span className="text-xs text-zinc-500">Reserved</span>
+                        ) : book.status === "checked-out" ? (
+                          <span className="text-xs text-zinc-500">Checked out</span>
+                        ) : book.loanPolicy === "reference-only" ? (
+                          <span className="text-xs text-zinc-500">Reference only</span>
+                        ) : book.loanPolicy === "staff-only" ? (
+                          <span className="text-xs text-zinc-500">Staff only</span>
+                        ) : null}
+                        
+                        {/* Bookmark Button */}
+                        <button
+                          onClick={(e) => handleToggleBookmark(book._id, e)}
+                          disabled={isBookmarkingThis}
+                          className={`p-1.5 rounded-full transition-colors ${
+                            isBookmarked
+                              ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                              : "bg-white text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                          } disabled:opacity-50`}
+                          title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+                        >
+                          <Bookmark className={`h-3.5 w-3.5 ${isBookmarked ? "fill-current" : ""}`} />
+                        </button>
+                      </div>
                     </div>
                   </article>
                 );

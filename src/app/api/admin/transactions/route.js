@@ -32,6 +32,13 @@ export async function GET(request) {
 
     // Build query
     const query = {};
+    
+    // By default, exclude archived transactions unless explicitly requested
+    const showArchived = searchParams.get("showArchived") === "true";
+    if (!showArchived) {
+      query.archived = { $ne: true };
+    }
+    
     if (statusFilter) {
       query.status = statusFilter;
     }
@@ -378,6 +385,32 @@ export async function POST(request) {
 
       return new Response(
         JSON.stringify({ ok: true, message: "Return completed" }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+
+    if (normalizedAction === "archive") {
+      if (!["rejected", "returned"].includes(transaction.status)) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Only rejected or returned transactions can be archived" }),
+          { status: 400, headers: { "content-type": "application/json" } }
+        );
+      }
+
+      await transactions.updateOne(
+        { _id: transaction._id },
+        {
+          $set: {
+            archived: true,
+            archivedAt: now,
+            archivedBy: session.user?.email,
+            updatedAt: now,
+          },
+        }
+      );
+
+      return new Response(
+        JSON.stringify({ ok: true, message: "Transaction archived" }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
     }

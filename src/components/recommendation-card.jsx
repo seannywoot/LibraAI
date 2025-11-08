@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Bookmark } from "./icons";
+import { showToast } from "./ToastContainer";
 
 function StatusChip({ status }) {
   const map = {
@@ -36,8 +38,15 @@ function StatusChip({ status }) {
   );
 }
 
-export default function RecommendationCard({ book, onClick, compact = false }) {
+export default function RecommendationCard({ 
+  book, 
+  onClick, 
+  compact = false,
+  isBookmarked = false,
+  onBookmarkToggle 
+}) {
   const [imageError, setImageError] = useState(false);
+  const [bookmarking, setBookmarking] = useState(false);
 
   const handleClick = () => {
     if (onClick) {
@@ -45,16 +54,63 @@ export default function RecommendationCard({ book, onClick, compact = false }) {
     }
   };
 
+  const handleBookmarkClick = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    if (onBookmarkToggle) {
+      onBookmarkToggle(book._id);
+      return;
+    }
+    
+    // Default bookmark handling if no callback provided
+    setBookmarking(true);
+    try {
+      const res = await fetch("/api/student/books/bookmark", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ bookId: book._id }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.ok) {
+        showToast(data.message, "success");
+        // Force a re-render by updating a dummy state
+        setImageError(prev => prev);
+      } else {
+        showToast(data?.error || "Failed to toggle bookmark", "error");
+      }
+    } catch (error) {
+      showToast("Failed to toggle bookmark", "error");
+    } finally {
+      setBookmarking(false);
+    }
+  };
+
   if (compact) {
     return (
-      <button
-        type="button"
-        onClick={handleClick}
-        className="w-full text-left rounded-lg bg-white border border-gray-200 p-3 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
-      >
-        <div className="flex gap-3">
-          {/* Book Cover */}
-          <div className="w-12 h-16 shrink-0 rounded bg-gray-200 flex items-center justify-center overflow-hidden">
+      <div className="relative">
+        {/* Bookmark Button */}
+        <button
+          onClick={handleBookmarkClick}
+          disabled={bookmarking}
+          className={`absolute right-2 top-2 z-10 p-1 rounded-full transition-colors ${
+            isBookmarked
+              ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+              : "bg-white/90 text-gray-400 hover:bg-white hover:text-gray-600 shadow-sm"
+          } disabled:opacity-50`}
+          title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+        >
+          <Bookmark className={`h-3 w-3 ${isBookmarked ? "fill-current" : ""}`} />
+        </button>
+
+        <button
+          type="button"
+          onClick={handleClick}
+          className="w-full text-left rounded-lg bg-white border border-gray-200 p-3 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+        >
+          <div className="flex gap-3">
+            {/* Book Cover */}
+            <div className="w-12 h-16 shrink-0 rounded bg-gray-200 flex items-center justify-center overflow-hidden">
             {book.coverImageUrl && !imageError ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -95,16 +151,32 @@ export default function RecommendationCard({ book, onClick, compact = false }) {
             )}
           </div>
         </div>
-      </button>
+        </button>
+      </div>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="w-full text-left rounded-lg bg-white border border-gray-200 p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
-    >
+    <div className="relative">
+      {/* Bookmark Button */}
+      <button
+        onClick={handleBookmarkClick}
+        disabled={bookmarking}
+        className={`absolute right-2 top-2 z-10 p-1.5 rounded-full transition-colors ${
+          isBookmarked
+            ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+            : "bg-white/90 text-gray-400 hover:bg-white hover:text-gray-600 shadow-sm"
+        } disabled:opacity-50`}
+        title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+      >
+        <Bookmark className={`h-3.5 w-3.5 ${isBookmarked ? "fill-current" : ""}`} />
+      </button>
+
+      <button
+        type="button"
+        onClick={handleClick}
+        className="w-full text-left rounded-lg bg-white border border-gray-200 p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+      >
       {/* Book Cover */}
       <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center overflow-hidden mb-3">
         {book.coverImageUrl && !imageError ? (
@@ -180,6 +252,7 @@ export default function RecommendationCard({ book, onClick, compact = false }) {
           </div>
         )}
       </div>
-    </button>
+      </button>
+    </div>
   );
 }

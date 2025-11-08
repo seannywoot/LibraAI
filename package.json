@@ -29,6 +29,7 @@
     "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "bcryptjs": "^2.4.3",
+    "dotenv": "^17.2.3",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.552.0",
     "mongodb": "^6.9.0",

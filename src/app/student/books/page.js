@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Book as BookIcon, BookOpen } from "@/components/icons";
+import { Book as BookIcon, BookOpen, Bookmark } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import Link from "next/link";
@@ -70,6 +70,8 @@ export default function StudentBooksPage() {
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const shouldCloseOnBlur = useRef(true);
   const [recommendationsKey, setRecommendationsKey] = useState(0);
+  const [bookmarkedBooks, setBookmarkedBooks] = useState(new Set());
+  const [bookmarking, setBookmarking] = useState(null);
 
   const navigationLinks = getStudentLinks();
   const tracker = getBehaviorTracker();
@@ -183,10 +185,71 @@ export default function StudentBooksPage() {
 
       setItems(itemsWithPriority);
       setTotal(data.total || 0);
+      
+      // Load bookmark status for all books
+      loadBookmarkStatus(itemsWithPriority.map(b => b._id));
     } catch (e) {
       setError(e?.message || "Unknown error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadBookmarkStatus(bookIds) {
+    if (!bookIds || bookIds.length === 0) return;
+    
+    try {
+      // Check each book's bookmark status
+      const bookmarkChecks = await Promise.all(
+        bookIds.map(async (bookId) => {
+          const res = await fetch(`/api/student/books/bookmark?bookId=${bookId}`, {
+            cache: "no-store",
+          });
+          const data = await res.json().catch(() => ({}));
+          return { bookId, bookmarked: data?.bookmarked || false };
+        })
+      );
+      
+      // Update bookmarked set
+      const newBookmarked = new Set();
+      bookmarkChecks.forEach(({ bookId, bookmarked }) => {
+        if (bookmarked) newBookmarked.add(bookId);
+      });
+      setBookmarkedBooks(newBookmarked);
+    } catch (e) {
+      console.error("Failed to load bookmark status:", e);
+    }
+  }
+
+  async function handleToggleBookmark(bookId, e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setBookmarking(bookId);
+    try {
+      const res = await fetch("/api/student/books/bookmark", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ bookId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok)
+        throw new Error(data?.error || "Failed to toggle bookmark");
+
+      // Update local state
+      const newBookmarked = new Set(bookmarkedBooks);
+      if (data.bookmarked) {
+        newBookmarked.add(bookId);
+      } else {
+        newBookmarked.delete(bookId);
+      }
+      setBookmarkedBooks(newBookmarked);
+      
+      showToast(data.message, "success");
+    } catch (e) {
+      showToast(e?.message || "Failed to toggle bookmark", "error");
+    } finally {
+      setBookmarking(null);
     }
   }
 
@@ -824,20 +887,22 @@ export default function StudentBooksPage() {
                 {items.map((book) => {
                   const isBorrowingThis = borrowing === book._id;
                   const lockedByOther = Boolean(borrowing) && !isBorrowingThis;
+                  const isBookmarked = bookmarkedBooks.has(book._id);
+                  const isBookmarkingThis = bookmarking === book._id;
                   return (
                     <Link
                       key={book._id}
                       href={`/student/books/${book._id}`}
                       className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                     >
-                    <div className="flex gap-6">
-                      {/* Book Cover Placeholder */}
-                      <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
-                        Book Cover
-                      </div>
+                      <div className="flex gap-6">
+                        {/* Book Cover Placeholder */}
+                        <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
+                          Book Cover
+                        </div>
 
-                      {/* Book Details */}
-                      <div className="flex-1 min-w-0">
+                        {/* Book Details */}
+                        <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
                           {book.title}
                         </h3>
@@ -875,6 +940,7 @@ export default function StudentBooksPage() {
                           </div>
 
                           <div
+                            className="flex items-center gap-3"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -939,6 +1005,20 @@ export default function StudentBooksPage() {
                                 Staff only
                               </span>
                             ) : null}
+                            
+                            {/* Bookmark Button */}
+                            <button
+                              onClick={(e) => handleToggleBookmark(book._id, e)}
+                              disabled={isBookmarkingThis}
+                              className={`p-2 rounded-full transition-colors ${
+                                isBookmarked
+                                  ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                                  : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                              } disabled:opacity-50`}
+                              title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+                            >
+                              <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} />
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -952,19 +1032,38 @@ export default function StudentBooksPage() {
                 {items.map((book) => {
                   const isBorrowingThis = borrowing === book._id;
                   const lockedByOther = Boolean(borrowing) && !isBorrowingThis;
+                  const isBookmarked = bookmarkedBooks.has(book._id);
+                  const isBookmarkingThis = bookmarking === book._id;
                   return (
-                    <Link
+                    <div
                       key={book._id}
-                      href={`/student/books/${book._id}`}
-                      className="block rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      className="relative rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow"
                     >
-                      {/* Book Cover */}
-                      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2">
-                        Book Cover
-                      </div>
+                      {/* Bookmark Button */}
+                      <button
+                        onClick={(e) => handleToggleBookmark(book._id, e)}
+                        disabled={isBookmarkingThis}
+                        className={`absolute right-2 top-2 z-10 p-1.5 rounded-full transition-colors ${
+                          isBookmarked
+                            ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                            : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                        } disabled:opacity-50`}
+                        title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+                      >
+                        <Bookmark className={`h-3.5 w-3.5 ${isBookmarked ? "fill-current" : ""}`} />
+                      </button>
 
-                      {/* Book Details */}
-                      <div className="flex-1 flex flex-col">
+                      <Link
+                        href={`/student/books/${book._id}`}
+                        className="block cursor-pointer"
+                      >
+                        {/* Book Cover */}
+                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2">
+                          Book Cover
+                        </div>
+
+                        {/* Book Details */}
+                        <div className="flex-1 flex flex-col">
                         <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2">
                           {book.title}
                         </h3>
@@ -987,9 +1086,9 @@ export default function StudentBooksPage() {
                           <StatusChip status={book.status} />
                         </div>
 
-                        {/* Action Button */}
+                        {/* Action Buttons */}
                         <div
-                          className="mt-auto"
+                          className="mt-auto space-y-2"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -1055,9 +1154,25 @@ export default function StudentBooksPage() {
                               Staff only
                             </span>
                           ) : null}
+                          
+                          {/* Bookmark Button */}
+                          <button
+                            onClick={(e) => handleToggleBookmark(book._id, e)}
+                            disabled={isBookmarkingThis}
+                            className={`w-full flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium transition-colors border ${
+                              isBookmarked
+                                ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+                            } disabled:opacity-50`}
+                            title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+                          >
+                            <Bookmark className={`h-3 w-3 ${isBookmarked ? "fill-current" : ""}`} />
+                            {isBookmarked ? "Bookmarked" : "Bookmark"}
+                          </button>
                         </div>
                       </div>
-                    </Link>
+                      </Link>
+                    </div>
                   );
                 })}
               </div>
