@@ -54,6 +54,7 @@ function MyLibraryContent() {
   const [loading, setLoading] = useState(true);
   const [myBooks, setMyBooks] = useState([]);
   const [borrowedBooks, setBorrowedBooks] = useState([]);
+  const [searchInput, setSearchInput] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [scannerMode, setScannerMode] = useState("barcode"); // 'barcode' or 'ocr'
   const [uploading, setUploading] = useState(false);
@@ -75,6 +76,30 @@ function MyLibraryContent() {
     loadMyLibrary();
     loadBorrowedBooks();
   }, []);
+
+  // Filter books based on search
+  const filteredMyBooks = myBooks.filter((book) => {
+    if (!searchInput) return true;
+    const search = searchInput.toLowerCase();
+    return (
+      book.title?.toLowerCase().includes(search) ||
+      book.author?.toLowerCase().includes(search) ||
+      book.isbn?.toLowerCase().includes(search)
+    );
+  });
+
+  const filteredBorrowedBooks = borrowedBooks.filter((transaction) => {
+    if (!searchInput) return true;
+    const search = searchInput.toLowerCase();
+    return (
+      transaction.bookTitle?.toLowerCase().includes(search) ||
+      transaction.bookAuthor?.toLowerCase().includes(search)
+    );
+  });
+
+  function handleClearSearch() {
+    setSearchInput("");
+  }
 
   async function loadMyLibrary() {
     setLoading(true);
@@ -299,6 +324,36 @@ function MyLibraryContent() {
           </button>
         </div>
 
+        {/* Search Bar */}
+        <div className="relative">
+          <svg
+            className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search books..."
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+          />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
         <input
           ref={fileInputRef}
           type="file"
@@ -475,7 +530,7 @@ function MyLibraryContent() {
             {/* View Controls */}
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">
-                Personal Collection ({myBooks.length})
+                Personal Collection ({filteredMyBooks.length}{searchInput && ` of ${myBooks.length}`})
               </h2>
               <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
                 <button
@@ -523,6 +578,18 @@ function MyLibraryContent() {
                 <div className="text-center py-12 text-gray-600">
                   Loading your library...
                 </div>
+              ) : filteredMyBooks.length === 0 && searchInput ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                  <div className="rounded-full bg-gray-100 p-4 text-gray-400">
+                    <BookIcon className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    No books found
+                  </h3>
+                  <p className="text-sm text-gray-600 max-w-md">
+                    Try adjusting your search terms.
+                  </p>
+                </div>
               ) : myBooks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                   <div className="rounded-full bg-gray-100 p-4 text-gray-400">
@@ -537,7 +604,7 @@ function MyLibraryContent() {
                 </div>
               ) : viewMode === "list" ? (
                 <div className="space-y-4">
-                  {myBooks.map((book) => (
+                  {filteredMyBooks.map((book) => (
                     <div
                       key={book._id}
                       className="relative rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow"
@@ -603,7 +670,7 @@ function MyLibraryContent() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {myBooks.map((book) => (
+                  {filteredMyBooks.map((book) => (
                     <div
                       key={book._id}
                       className="relative rounded-lg border border-gray-200 bg-white hover:shadow-md transition-shadow"
@@ -676,7 +743,7 @@ function MyLibraryContent() {
             {/* View Controls */}
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">
-                Borrowed Books ({borrowedBooks.length})
+                Borrowed Books ({filteredBorrowedBooks.length}{searchInput && ` of ${borrowedBooks.length}`})
               </h2>
               <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
                 <button
@@ -723,6 +790,18 @@ function MyLibraryContent() {
                 <div className="text-center py-12 text-gray-600">
                   Loading borrowed books...
                 </div>
+              ) : filteredBorrowedBooks.length === 0 && searchInput ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                  <div className="rounded-full bg-gray-100 p-4 text-gray-400">
+                    <BookOpen className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    No books found
+                  </h3>
+                  <p className="text-sm text-gray-600 max-w-md">
+                    Try adjusting your search terms.
+                  </p>
+                </div>
               ) : borrowedBooks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                   <div className="rounded-full bg-gray-100 p-4 text-gray-400">
@@ -737,7 +816,7 @@ function MyLibraryContent() {
                 </div>
               ) : viewMode === "list" ? (
                 <div className="space-y-4">
-                  {borrowedBooks.map((transaction) => {
+                  {filteredBorrowedBooks.map((transaction) => {
                     const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
                     const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
                     const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
@@ -817,7 +896,7 @@ function MyLibraryContent() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {borrowedBooks.map((transaction) => {
+                  {filteredBorrowedBooks.map((transaction) => {
                   const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
                   const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
                   const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;

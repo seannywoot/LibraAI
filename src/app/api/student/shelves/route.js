@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { parseSearchQuery } from "@/utils/searchParser";
 
 export async function GET(request) {
   try {
@@ -24,16 +25,39 @@ export async function GET(request) {
 
     const projection = { code: 1, name: 1, location: 1 };
 
-    // Build search query
-    const query = search
-      ? {
-          $or: [
-            { code: { $regex: search, $options: "i" } },
-            { name: { $regex: search, $options: "i" } },
-            { location: { $regex: search, $options: "i" } },
-          ],
-        }
-      : {};
+    // Build search query with advanced syntax support
+    let query = {};
+    if (search) {
+      const { filters, freeText } = parseSearchQuery(search);
+      const orConditions = [];
+
+      // Handle shelf-specific filter
+      if (filters.shelf) {
+        orConditions.push({ code: { $regex: filters.shelf, $options: "i" } });
+      }
+
+      // Add free text search
+      if (freeText) {
+        orConditions.push(
+          { code: { $regex: freeText, $options: "i" } },
+          { name: { $regex: freeText, $options: "i" } },
+          { location: { $regex: freeText, $options: "i" } }
+        );
+      }
+
+      // If no specific filters, search all fields
+      if (orConditions.length === 0 && !freeText && !filters.shelf) {
+        orConditions.push(
+          { code: { $regex: search, $options: "i" } },
+          { name: { $regex: search, $options: "i" } },
+          { location: { $regex: search, $options: "i" } }
+        );
+      }
+
+      if (orConditions.length > 0) {
+        query.$or = orConditions;
+      }
+    }
 
     const [rawItems, total] = await Promise.all([
       shelves.find(query, { projection }).sort({ code: 1 }).skip(skip).limit(pageSize).toArray(),

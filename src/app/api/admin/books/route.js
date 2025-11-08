@@ -16,6 +16,7 @@ export async function GET(request) {
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
     const pageSize = Math.max(Math.min(parseInt(searchParams.get("pageSize") || "20", 10), 100), 1);
     const skip = (page - 1) * pageSize;
+    const search = searchParams.get("search")?.trim() || "";
 
     const client = await clientPromise;
     const db = client.db();
@@ -34,9 +35,21 @@ export async function GET(request) {
       createdAt: 1,
     };
 
+    // Build search query
+    const query = search
+      ? {
+          $or: [
+            { title: { $regex: search, $options: "i" } },
+            { author: { $regex: search, $options: "i" } },
+            { isbn: { $regex: search, $options: "i" } },
+            { barcode: { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
     const [rawItems, total] = await Promise.all([
-      books.find({}, { projection }).sort({ createdAt: -1 }).skip(skip).limit(pageSize).toArray(),
-      books.estimatedDocumentCount(),
+      books.find(query, { projection }).sort({ createdAt: -1 }).skip(skip).limit(pageSize).toArray(),
+      books.countDocuments(query),
     ]);
 
     // Enrich books with shelf IDs

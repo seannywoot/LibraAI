@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { buildSearchQuery } from "@/utils/searchParser";
 
 export async function GET(request) {
   try {
@@ -31,21 +32,14 @@ export async function GET(request) {
     const db = client.db();
     const books = db.collection("books");
 
-    // Build query
-    const query = {};
+    // Build base query with status filter
+    const baseQuery = {};
     if (statusFilter) {
-      query.status = statusFilter;
+      baseQuery.status = statusFilter;
     }
 
-    // Add search filter if provided
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { author: { $regex: search, $options: "i" } },
-        { isbn: { $regex: search, $options: "i" } },
-        { publisher: { $regex: search, $options: "i" } },
-      ];
-    }
+    // Use advanced search parser for search query
+    const query = search ? buildSearchQuery(search, baseQuery) : baseQuery;
 
     // Apply format filter
     if (formats.length > 0) {

@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { buildSearchQuery } from "@/utils/searchParser";
 
 export async function GET(request, { params }) {
   try {
@@ -52,18 +53,9 @@ export async function GET(request, { params }) {
       });
     }
 
-    // Get books on this shelf
-    const query = { shelf: shelf.code };
-    
-    // Add search filter if provided
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { author: { $regex: search, $options: "i" } },
-        { isbn: { $regex: search, $options: "i" } },
-        { publisher: { $regex: search, $options: "i" } },
-      ];
-    }
+    // Get books on this shelf with advanced search
+    const baseQuery = { shelf: shelf.code };
+    const query = search ? buildSearchQuery(search, baseQuery) : baseQuery;
 
     const projection = {
       title: 1,

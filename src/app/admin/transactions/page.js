@@ -58,6 +58,7 @@ export default function AdminTransactionsPage() {
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [actionLoading, setActionLoading] = useState("");
   const [dueDates, setDueDates] = useState({});
@@ -72,13 +73,25 @@ export default function AdminTransactionsPage() {
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
       setError("");
       try {
-        const url = `/api/admin/transactions?page=${page}&pageSize=${pageSize}${statusFilter ? `&status=${statusFilter}` : ""}`;
+        const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
+        if (statusFilter) params.append("status", statusFilter);
+        if (searchInput) params.append("search", searchInput);
+        
+        const url = `/api/admin/transactions?${params}`;
         const res = await fetch(url, { cache: "no-store" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load transactions");
@@ -94,7 +107,11 @@ export default function AdminTransactionsPage() {
     }
     load();
     return () => { cancelled = true; };
-  }, [page, pageSize, statusFilter, refreshKey]);
+  }, [page, pageSize, statusFilter, searchInput, refreshKey]);
+
+  function handleClearSearch() {
+    setSearchInput("");
+  }
 
   useEffect(() => {
     const today = todayInputDateRef.current;
@@ -178,28 +195,60 @@ export default function AdminTransactionsPage() {
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
-        <header className="flex items-end justify-between gap-4 border-b border-(--stroke) pb-6">
-          <div className="space-y-2">
-            <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Borrow Transactions</h1>
-            <p className="text-sm text-zinc-600">View all borrowing and return activity.</p>
+        <header className="space-y-6 border-b border-(--stroke) pb-6">
+          <div className="flex items-end justify-between gap-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Borrow Transactions</h1>
+              <p className="text-sm text-zinc-600">View all borrowing and return activity.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700"
+              >
+                <option value="">All Status</option>
+                <option value="borrowed">Borrowed</option>
+                <option value="returned">Returned</option>
+                <option value="pending-approval">Pending Approval</option>
+                <option value="return-requested">Return Requested</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700"
+
+          {/* Search Bar */}
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <option value="">All Status</option>
-              <option value="borrowed">Borrowed</option>
-              <option value="returned">Returned</option>
-              <option value="pending-approval">Pending Approval</option>
-              <option value="return-requested">Return Requested</option>
-              <option value="rejected">Rejected</option>
-            </select>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search transactions..."
+              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
         </header>
 

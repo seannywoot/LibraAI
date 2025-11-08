@@ -569,7 +569,7 @@ export default function StudentBooksPage() {
                         loadBooks();
                       }
                     }}
-                    placeholder="Search books by title, author, ISBN, or publisher..."
+                    placeholder="Search books, authors..."
                     className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                   />
                 </div>
@@ -809,6 +809,13 @@ export default function StudentBooksPage() {
                           )}
                         </div>
 
+                        {/* Description */}
+                        {book.description && (
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                            {book.description}
+                          </p>
+                        )}
+
                         {/* Status and Actions */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -920,6 +927,13 @@ export default function StudentBooksPage() {
                         <div className="text-[11px] text-gray-500 mb-2">
                           {book.year && <span>{book.year}</span>}
                         </div>
+
+                        {/* Description */}
+                        {book.description && (
+                          <p className="text-[10px] text-gray-600 mb-2 line-clamp-2 leading-relaxed">
+                            {book.description}
+                          </p>
+                        )}
 
                         {/* Status */}
                         <div className="mb-2">

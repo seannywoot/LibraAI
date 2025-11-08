@@ -25,6 +25,7 @@ export default function AdminEditBookPage() {
   const [ebookUrl, setEbookUrl] = useState("");
   const [barcode, setBarcode] = useState("");
   const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
   const [status, setStatus] = useState("available");
   const [loanPolicy, setLoanPolicy] = useState("standard");
   const [submitting, setSubmitting] = useState(false);
@@ -64,6 +65,7 @@ export default function AdminEditBookPage() {
           setEbookUrl(book.ebookUrl || "");
           setBarcode(book.barcode || "");
           setCategory(book.category || "");
+          setDescription(book.description || "");
           setStatus(book.status || "available");
           setLoanPolicy(book.loanPolicy || "standard");
         } else {
@@ -193,6 +195,7 @@ export default function AdminEditBookPage() {
           ebookUrl: format === "eBook" ? ebookUrl : undefined,
           barcode,
           category,
+          description,
           status,
           loanPolicy,
         }),
@@ -468,6 +471,21 @@ export default function AdminEditBookPage() {
                   <option value="Young Adult">Young Adult</option>
                 </select>
                 {fieldError("category")}
+              </label>
+              <label className="grid gap-2 text-sm sm:col-span-2">
+                <span className="text-zinc-700">
+                  Description <span className="text-zinc-500">(optional but recommended)</span>
+                </span>
+                <textarea
+                  className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 min-h-[120px] resize-y"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter a brief description of the book's content, themes, and key topics. This helps students discover books through the chatbot and improves search results."
+                  rows={4}
+                />
+                <p className="text-xs text-zinc-500">
+                  💡 Tip: Include main themes, key concepts, and target audience. This description is searchable and helps the AI chatbot recommend this book to students.
+                </p>
               </label>
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
