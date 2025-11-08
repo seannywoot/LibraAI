@@ -59,7 +59,7 @@ export default function AdminAddBookPage() {
     loadData();
   }, []);
 
-  const ALLOWED_STATUS = ["available", "checked-out", "reserved", "maintenance", "lost"];
+  const ALLOWED_STATUS = ["available", "checked-out", "reserved", "maintenance"];
   const ALLOWED_POLICIES = ["standard", "short-loan", "reference-only", "staff-only"];
 
   function validateForm() {
@@ -353,8 +353,12 @@ export default function AdminAddBookPage() {
                 <input
                   className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.isbn ? "border-rose-400" : "border-zinc-200"}`}
                   type="text"
+                  inputMode="numeric"
                   value={isbn}
-                  onChange={(e) => setIsbn(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    setIsbn(value);
+                  }}
                   placeholder="e.g., 9781492032649 (13 digits)"
                   aria-invalid={!!errors.isbn}
                   data-field="isbn"
@@ -481,7 +485,6 @@ export default function AdminAddBookPage() {
                   <option value="checked-out">Checked out</option>
                   <option value="reserved">Reserved</option>
                   <option value="maintenance">Maintenance</option>
-                  <option value="lost">Lost</option>
                 </select>
                 {fieldError("status")}
               </label>

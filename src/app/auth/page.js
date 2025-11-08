@@ -1,9 +1,9 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useTheme } from "@/contexts/ThemeContext";
 
 function useForceLightTheme() {
@@ -40,8 +40,9 @@ const ADMIN_DEMO_PASSWORD = "ManageStacks!";
 function AuthContent() {
   useForceLightTheme();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const [mode, setMode] = useState("student"); // 'student' | 'admin'
-
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get logout reason from URL
@@ -82,6 +83,45 @@ function AuthContent() {
   const [adminPassword, setAdminPassword] = useState("");
   const [adminError, setAdminError] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+
+  // Prevent authenticated users from accessing the auth page
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      const role = session.user.role;
+      const destination = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
+      console.log('[AUTH PAGE] User already authenticated, redirecting to:', destination);
+      router.replace(destination);
+    }
+  }, [status, session, router]);
+
+  // Handle browser back button - prevent staying on auth page when authenticated
+  useEffect(() => {
+    const handlePopState = () => {
+      if (status === "authenticated" && session?.user) {
+        const role = session.user.role;
+        const destination = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
+        console.log('[AUTH PAGE] Back button pressed while authenticated, redirecting to:', destination);
+        router.replace(destination);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [status, session, router]);
+
+  // Show loading state while checking authentication
+  if (status === "loading" || (status === "authenticated" && session?.user)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-100">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-zinc-900 border-r-transparent" role="status">
+            <span className="sr-only">Loading...</span>
+          </div>
+          <p className="mt-4 text-sm text-zinc-600">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   const attemptLogin = async ({ role, email, password, remember = false }) => {
     if (isSubmitting) {
@@ -220,9 +260,9 @@ function AuthContent() {
       // This ensures the middleware will see the authenticated session
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Now perform the redirect
+      // Now perform the redirect using replace to prevent back button to auth page
       console.log('[CLIENT] Redirecting to:', destination);
-      window.location.href = destination;
+      window.location.replace(destination);
     } catch (error) {
       console.error('[CLIENT] Login exception:', error);
       setError("Unable to sign in right now. Please try again.");

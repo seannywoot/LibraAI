@@ -39,23 +39,35 @@ export async function middleware(request) {
     if (pathname === "/auth") {
       const destination = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
       console.log('[MIDDLEWARE] Authenticated user on /auth, redirecting to:', destination);
-      return NextResponse.redirect(buildRedirect(request, destination));
+      const response = NextResponse.redirect(buildRedirect(request, destination));
+      // Prevent caching to ensure fresh redirects
+      response.headers.set('Cache-Control', 'no-store, must-revalidate');
+      return response;
     }
 
     // Prevent non-admins from accessing admin routes
     if (pathname.startsWith("/admin") && role !== "admin") {
-      return NextResponse.redirect(buildRedirect(request, "/student/dashboard"));
+      console.log('[MIDDLEWARE] Non-admin trying to access admin route, redirecting to student dashboard');
+      const response = NextResponse.redirect(buildRedirect(request, "/student/dashboard"));
+      response.headers.set('Cache-Control', 'no-store, must-revalidate');
+      return response;
     }
 
     // Redirect legacy /dashboard to role-specific dashboard
     if (pathname === "/dashboard") {
       const destination = role === "admin" ? "/admin/dashboard" : "/student/dashboard";
-      return NextResponse.redirect(buildRedirect(request, destination));
+      console.log('[MIDDLEWARE] Redirecting from legacy /dashboard to:', destination);
+      const response = NextResponse.redirect(buildRedirect(request, destination));
+      response.headers.set('Cache-Control', 'no-store, must-revalidate');
+      return response;
     }
 
     // Prevent admins from accessing student-specific routes
     if (pathname.startsWith("/student") && role === "admin") {
-      return NextResponse.redirect(buildRedirect(request, "/admin/dashboard"));
+      console.log('[MIDDLEWARE] Admin trying to access student route, redirecting to admin dashboard');
+      const response = NextResponse.redirect(buildRedirect(request, "/admin/dashboard"));
+      response.headers.set('Cache-Control', 'no-store, must-revalidate');
+      return response;
     }
   }
 
