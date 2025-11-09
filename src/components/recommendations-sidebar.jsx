@@ -222,7 +222,7 @@ export default function RecommendationsSidebar({
 
           {/* Recommendations List */}
           {expanded && (
-            <div className="space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto relative">
+            <div className="space-y-2 max-h-[calc(100vh-12rem)] overflow-y-auto relative scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
               {isRefreshing && (
                 <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>

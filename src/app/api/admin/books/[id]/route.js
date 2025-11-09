@@ -7,6 +7,74 @@ function normalizeString(v) {
   return (v ?? "").toString().trim();
 }
 
+/**
+ * Auto-categorize book for recommendations
+ */
+function autoCategorizeBook(book) {
+  const searchText = `${book.title} ${book.author} ${book.category || ""}`.toLowerCase();
+  
+  const categoryMappings = {
+    "Computer Science": ["programming", "code", "software", "algorithm", "data structure", "computer", "javascript", "python", "java", "web", "design patterns"],
+    "Business": ["business", "management", "leadership", "entrepreneur", "marketing", "finance", "economics", "startup"],
+    "Self-Help": ["habits", "atomic", "mindset", "success", "productivity", "motivation", "self-help", "personal development"],
+    "Fiction": ["novel", "story", "fiction", "tale", "mockingbird", "gatsby", "potter", "hunger games"],
+    "Science": ["science", "physics", "chemistry", "biology", "universe", "cosmos"],
+    "Mathematics": ["math", "calculus", "algebra", "geometry", "statistics"],
+    "History": ["history", "historical", "war", "ancient", "civilization"],
+    "Philosophy": ["philosophy", "ethics", "logic", "thinking", "mind"],
+    "Psychology": ["psychology", "mental", "behavior", "cognitive", "brain"],
+    "Education": ["education", "teaching", "learning", "pedagogy", "school"],
+  };
+
+  const tagMappings = {
+    "Programming": ["programming", "code", "coding", "software", "developer"],
+    "Algorithms": ["algorithm", "data structure", "complexity"],
+    "Web Development": ["web", "javascript", "html", "css", "react", "node"],
+    "Software Engineering": ["software engineering", "design patterns", "architecture", "refactoring"],
+    "Leadership": ["leadership", "management", "team", "leader"],
+    "Productivity": ["productivity", "habits", "efficiency", "time management"],
+    "Success": ["success", "achievement", "goals", "mindset"],
+    "Fiction": ["fiction", "novel", "story"],
+    "Non-Fiction": ["non-fiction", "biography", "memoir"],
+    "Science": ["science", "scientific", "research"],
+    "Business Strategy": ["strategy", "business", "competitive"],
+  };
+
+  const categories = [];
+  const tags = [];
+
+  // Find matching categories
+  for (const [category, keywords] of Object.entries(categoryMappings)) {
+    if (keywords.some(keyword => searchText.includes(keyword))) {
+      categories.push(category);
+    }
+  }
+
+  // Find matching tags
+  for (const [tag, keywords] of Object.entries(tagMappings)) {
+    if (keywords.some(keyword => searchText.includes(keyword))) {
+      tags.push(tag);
+    }
+  }
+
+  // Use provided category if no matches found
+  if (categories.length === 0 && book.category) {
+    categories.push(book.category);
+  }
+
+  // Default category if still none
+  if (categories.length === 0) {
+    categories.push("General");
+  }
+
+  // Default tags if none found
+  if (tags.length === 0) {
+    tags.push("General Interest");
+  }
+
+  return { categories, tags };
+}
+
 // GET single book
 export async function GET(request, context) {
   try {
@@ -246,6 +314,10 @@ export async function PUT(request, context) {
     }
 
     const now = new Date();
+    
+    // Auto-generate categories and tags for recommendations
+    const { categories, tags } = autoCategorizeBook({ title, author, category, publisher, format });
+    
     const updateDoc = {
       title,
       author,
@@ -257,6 +329,8 @@ export async function PUT(request, context) {
       ebookUrl: ebookUrl || null,
       barcode: barcode || null,
       category: category || null,
+      categories, // For recommendations
+      tags, // For recommendations
       status,
       loanPolicy: format === "eBook" ? null : loanPolicy,
       updatedAt: now,

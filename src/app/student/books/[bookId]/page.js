@@ -101,6 +101,13 @@ export default function BookDetailPage({ params }) {
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Failed to load book details");
       setBook(data.book);
+      
+      // Track book view for recommendations
+      fetch(`/api/student/books/${bookId}/track-view`, {
+        method: "POST",
+      }).catch(() => {
+        // Silently fail - tracking is not critical
+      });
     } catch (e) {
       setError(e?.message || "Unknown error");
     } finally {
@@ -481,12 +488,14 @@ export default function BookDetailPage({ params }) {
           </div>
 
           {recommendations.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
               {recommendations.map((rec) => (
                 <RecommendationCard
                   key={rec._id}
                   book={rec}
                   onClick={(book) => router.push(`/student/books/${book._id}`)}
+                  isBookmarked={bookmarkedRecommendations.has(rec._id)}
+                  onBookmarkToggle={handleRecommendationBookmarkToggle}
                 />
               ))}
             </div>

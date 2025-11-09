@@ -93,24 +93,24 @@ export default function RecommendationCard({
         <button
           onClick={handleBookmarkClick}
           disabled={bookmarking}
-          className={`absolute right-2 top-2 z-10 p-1 rounded-full transition-colors ${
+          className={`absolute right-1 top-1 z-10 p-0.5 rounded-full transition-colors ${
             isBookmarked
               ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
               : "bg-white/90 text-gray-400 hover:bg-white hover:text-gray-600 shadow-sm"
           } disabled:opacity-50`}
           title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
         >
-          <Bookmark className={`h-3 w-3 ${isBookmarked ? "fill-current" : ""}`} />
+          <Bookmark className={`h-2.5 w-2.5 ${isBookmarked ? "fill-current" : ""}`} />
         </button>
 
         <button
           type="button"
           onClick={handleClick}
-          className="w-full text-left rounded-lg bg-white border border-gray-200 p-3 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+          className="w-full text-left rounded-lg bg-white border border-gray-200 p-2 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
         >
-          <div className="flex gap-3">
-            {/* Book Cover */}
-            <div className="w-12 h-16 shrink-0 rounded bg-gray-200 flex items-center justify-center overflow-hidden">
+          <div className="flex gap-2">
+            {/* Book Cover - Smaller */}
+            <div className="w-10 h-14 shrink-0 rounded bg-gray-200 flex items-center justify-center overflow-hidden">
             {book.coverImageUrl && !imageError ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -121,7 +121,7 @@ export default function RecommendationCard({
               />
             ) : (
               <svg
-                className="w-6 h-6 text-gray-400"
+                className="w-5 h-5 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -136,16 +136,16 @@ export default function RecommendationCard({
             )}
           </div>
 
-          {/* Book Info */}
+          {/* Book Info - Smaller text */}
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">
+            <h4 className="text-xs font-semibold text-gray-900 line-clamp-2 mb-0.5 leading-tight">
               {book.title}
             </h4>
-            <p className="text-xs text-gray-600 line-clamp-1 mb-1">
+            <p className="text-[10px] text-gray-600 line-clamp-1 mb-0.5">
               {book.author}
             </p>
             {book.matchReasons && book.matchReasons.length > 0 && (
-              <p className="text-xs text-blue-600 line-clamp-1">
+              <p className="text-[10px] text-blue-600 line-clamp-1">
                 {book.matchReasons[0]}
               </p>
             )}
@@ -157,7 +157,7 @@ export default function RecommendationCard({
   }
 
   return (
-    <div className="relative">
+    <div className="relative rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow">
       {/* Bookmark Button */}
       <button
         onClick={handleBookmarkClick}
@@ -165,7 +165,7 @@ export default function RecommendationCard({
         className={`absolute right-2 top-2 z-10 p-1.5 rounded-full transition-colors ${
           isBookmarked
             ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-            : "bg-white/90 text-gray-400 hover:bg-white hover:text-gray-600 shadow-sm"
+            : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
         } disabled:opacity-50`}
         title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
       >
@@ -175,83 +175,47 @@ export default function RecommendationCard({
       <button
         type="button"
         onClick={handleClick}
-        className="w-full text-left rounded-lg bg-white border border-gray-200 p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+        className="w-full text-left cursor-pointer"
       >
-      {/* Book Cover */}
-      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center overflow-hidden mb-3">
-        {book.coverImageUrl && !imageError ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={book.coverImageUrl}
-            alt={book.title}
-            className="w-full h-full object-cover"
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <svg
-            className="w-12 h-12 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+        {/* Book Cover */}
+        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2 overflow-hidden">
+          {book.coverImageUrl && !imageError ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={book.coverImageUrl}
+              alt={book.title}
+              className="w-full h-full object-cover"
+              onError={() => setImageError(true)}
             />
-          </svg>
-        )}
-      </div>
-
-      {/* Book Details */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-10">
-          {book.title}
-        </h3>
-        
-        <p className="text-xs text-gray-600 line-clamp-1">
-          {book.author}
-        </p>
-
-        {book.year && (
-          <p className="text-xs text-gray-500">
-            {book.year}
-          </p>
-        )}
-
-        {/* Status */}
-        <div className="flex items-center justify-between">
-          <StatusChip status={book.status} />
-          {book.relevanceScore && (
-            <span className="text-xs text-gray-500">
-              {book.relevanceScore}% match
-            </span>
+          ) : (
+            <span>Book Cover</span>
           )}
         </div>
 
-        {/* Match Reasons */}
-        {book.matchReasons && book.matchReasons.length > 0 && (
-          <div className="pt-2 border-t border-gray-100">
-            <div className="flex items-start gap-1.5">
-              <svg
-                className="w-3.5 h-3.5 text-blue-600 mt-0.5 shrink-0"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <p className="text-xs text-blue-600 line-clamp-2">
-                {book.matchReasons.join(" • ")}
-              </p>
-            </div>
+        {/* Book Details */}
+        <div className="flex-1 flex flex-col">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2">
+            {book.title}
+          </h3>
+          <p className="text-[11px] text-gray-600 mb-1 line-clamp-1">
+            {book.author}
+          </p>
+          <div className="text-[11px] text-gray-500 mb-2">
+            {book.year && <span>{book.year}</span>}
           </div>
-        )}
-      </div>
+
+          {/* Status */}
+          <div className="mb-2">
+            <StatusChip status={book.status} />
+          </div>
+
+          {/* Match Reasons */}
+          {book.matchReasons && book.matchReasons.length > 0 && (
+            <p className="text-[10px] text-blue-600 line-clamp-2 leading-relaxed">
+              {book.matchReasons.join(" • ")}
+            </p>
+          )}
+        </div>
       </button>
     </div>
   );
