@@ -113,6 +113,7 @@ export async function POST(request) {
     const client = await clientPromise;
     const db = client.db();
     const books = db.collection("books");
+    const authors = db.collection("authors");
 
     // Helpful indexes for future queries (no-ops if already exist)
     try {
@@ -123,8 +124,31 @@ export async function POST(request) {
         books.createIndex({ isbn: 1 }),
         books.createIndex({ barcode: 1 }),
         books.createIndex({ slug: 1 }, { unique: true }),
+        authors.createIndex({ name: 1 }, { unique: true }),
       ]);
     } catch (_) {}
+
+    // Check if author exists, if not create it
+    try {
+      const existingAuthor = await authors.findOne({ 
+        name: { $regex: new RegExp(`^${author.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+      });
+      
+      if (!existingAuthor) {
+        // Create new author entry
+        await authors.insertOne({
+          name: author,
+          bio: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: session.user?.email || null,
+        });
+        console.log(`Created new author: ${author}`);
+      }
+    } catch (err) {
+      // If author creation fails (e.g., duplicate key), continue anyway
+      console.log(`Author may already exist: ${author}`, err.message);
+    }
 
     // Check for duplicate entries - same title, author, and year
     const duplicateCheck = await books.findOne({

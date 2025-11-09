@@ -75,6 +75,8 @@ function MyLibraryContent() {
     publisher: "",
     year: "",
   });
+  const [bookmarkStatus, setBookmarkStatus] = useState(new Map()); // Map of bookId -> boolean
+  const [bookmarking, setBookmarking] = useState(null);
   const fileInputRef = useRef(null);
 
   const navigationLinks = getStudentLinks();
@@ -206,6 +208,14 @@ function MyLibraryContent() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load borrowed books");
       setBorrowedBooks(data.items || []);
+      
+      // Load bookmark status for borrowed books
+      if (data.items && data.items.length > 0) {
+        const bookIds = data.items.map(item => item.bookId).filter(Boolean);
+        if (bookIds.length > 0) {
+          loadBookmarkStatus(bookIds);
+        }
+      }
     } catch (e) {
       console.error("Failed to load borrowed books:", e);
     }
@@ -343,6 +353,62 @@ function MyLibraryContent() {
       showToast(e?.message || "Failed to return book", "error");
     } finally {
       setReturning(null);
+    }
+  }
+
+  async function loadBookmarkStatus(bookIds) {
+    if (!bookIds || bookIds.length === 0) return;
+    
+    try {
+      const bookmarkChecks = await Promise.all(
+        bookIds.map(async (bookId) => {
+          const res = await fetch(`/api/student/books/bookmark?bookId=${bookId}`, {
+            cache: "no-store",
+          });
+          const data = await res.json().catch(() => ({}));
+          return { bookId, bookmarked: data?.bookmarked || false };
+        })
+      );
+      
+      const newStatus = new Map();
+      bookmarkChecks.forEach(({ bookId, bookmarked }) => {
+        newStatus.set(bookId, bookmarked);
+      });
+      setBookmarkStatus(newStatus);
+    } catch (e) {
+      console.error("Failed to load bookmark status:", e);
+    }
+  }
+
+  async function handleToggleBookmark(bookId, e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setBookmarking(bookId);
+    try {
+      const res = await fetch("/api/student/books/bookmark", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ bookId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok)
+        throw new Error(data?.error || "Failed to toggle bookmark");
+
+      const newStatus = new Map(bookmarkStatus);
+      newStatus.set(bookId, data.bookmarked);
+      setBookmarkStatus(newStatus);
+      
+      showToast(data.message, "success");
+      
+      // Reload bookmarked books if we're on that tab
+      if (activeTab === "bookmarked") {
+        loadBookmarkedBooks();
+      }
+    } catch (e) {
+      showToast(e?.message || "Failed to toggle bookmark", "error");
+    } finally {
+      setBookmarking(null);
     }
   }
 
@@ -1126,7 +1192,7 @@ function MyLibraryContent() {
                             {/* Action Button */}
                             <div className="flex items-center justify-between">
                               <div></div>
-                              <div onClick={(e) => e.preventDefault()}>
+                              <div className="flex items-center gap-3" onClick={(e) => e.preventDefault()}>
                                 {canReturn ? (
                                   <button
                                     onClick={(e) => {
@@ -1152,6 +1218,20 @@ function MyLibraryContent() {
                                     Pending approval
                                   </span>
                                 )}
+                                
+                                {/* Bookmark Button */}
+                                <button
+                                  onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
+                                  disabled={bookmarking === transaction.bookId}
+                                  className={`p-2 rounded-full transition-colors ${
+                                    bookmarkStatus.get(transaction.bookId)
+                                      ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                                      : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                                  } disabled:opacity-50`}
+                                  title={bookmarkStatus.get(transaction.bookId) ? "Remove bookmark" : "Bookmark this book"}
+                                >
+                                  <Bookmark className={`h-4 w-4 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -1203,8 +1283,8 @@ function MyLibraryContent() {
                           </p>
                         </div>
 
-                        {/* Action Button */}
-                        <div className="mt-auto" onClick={(e) => e.preventDefault()}>
+                        {/* Action Buttons */}
+                        <div className="mt-auto space-y-2" onClick={(e) => e.preventDefault()}>
                           {canReturn ? (
                             <button
                               onClick={(e) => {
@@ -1230,6 +1310,20 @@ function MyLibraryContent() {
                               Pending approval
                             </span>
                           )}
+                          
+                          {/* Bookmark Button */}
+                          <button
+                            onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
+                            disabled={bookmarking === transaction.bookId}
+                            className={`w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-xs font-medium transition-colors ${
+                              bookmarkStatus.get(transaction.bookId)
+                                ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            } disabled:opacity-50`}
+                          >
+                            <Bookmark className={`h-3.5 w-3.5 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
+                            {bookmarkStatus.get(transaction.bookId) ? "Bookmarked" : "Bookmark"}
+                          </button>
                         </div>
                       </div>
                     </Link>

@@ -17,6 +17,7 @@ export async function GET(request, { params }) {
     const { searchParams } = new URL(request.url);
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
     const pageSize = Math.max(Math.min(parseInt(searchParams.get("pageSize") || "20", 10), 100), 1);
+    const search = searchParams.get("search") || "";
     const skip = (page - 1) * pageSize;
 
     const client = await clientPromise;
@@ -46,6 +47,15 @@ export async function GET(request, { params }) {
 
     // Get books by this author
     const query = { author: author.name };
+    
+    // Add search filter if provided
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { isbn: { $regex: search, $options: "i" } },
+        { publisher: { $regex: search, $options: "i" } },
+      ];
+    }
     const projection = {
       title: 1,
       author: 1,

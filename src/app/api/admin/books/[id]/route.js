@@ -176,6 +176,7 @@ export async function PUT(request, context) {
     const client = await clientPromise;
     const db = client.db();
     const books = db.collection("books");
+    const authors = db.collection("authors");
 
     // Find book by slug or ID
     let existingBook;
@@ -190,6 +191,30 @@ export async function PUT(request, context) {
         JSON.stringify({ ok: false, error: "Book not found" }),
         { status: 404, headers: { "content-type": "application/json" } }
       );
+    }
+
+    // Check if author exists (if author is being changed), if not create it
+    if (author && author !== existingBook.author) {
+      try {
+        const existingAuthor = await authors.findOne({ 
+          name: { $regex: new RegExp(`^${author.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+        });
+        
+        if (!existingAuthor) {
+          // Create new author entry
+          await authors.insertOne({
+            name: author,
+            bio: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            createdBy: session.user?.email || null,
+          });
+          console.log(`Created new author: ${author}`);
+        }
+      } catch (err) {
+        // If author creation fails (e.g., duplicate key), continue anyway
+        console.log(`Author may already exist: ${author}`, err.message);
+      }
     }
 
     // Check for duplicate ISBN if changed
