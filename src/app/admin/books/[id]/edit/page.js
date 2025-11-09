@@ -34,6 +34,8 @@ export default function AdminEditBookPage() {
   const [loadingShelves, setLoadingShelves] = useState(true);
   const [authors, setAuthors] = useState([]);
   const [loadingAuthors, setLoadingAuthors] = useState(true);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [extractingMetadata, setExtractingMetadata] = useState(false);
 
   const ALLOWED_STATUS = ["available", "checked-out", "reserved", "maintenance", "lost"];
   const ALLOWED_POLICIES = ["standard", "short-loan", "reference-only", "staff-only"];
@@ -168,6 +170,58 @@ export default function AdminEditBookPage() {
   }
 
   const navigationLinks = getAdminLinks();
+
+  async function handlePDFUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPdfFile(file);
+    setExtractingMetadata(true);
+
+    try {
+      // First, upload the PDF file
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", file);
+      uploadFormData.append("bookId", identifier);
+
+      const uploadRes = await fetch("/api/admin/books/upload-pdf", {
+        method: "POST",
+        body: uploadFormData,
+      });
+
+      const uploadData = await uploadRes.json().catch(() => ({}));
+      
+      if (!uploadRes.ok || !uploadData?.ok) {
+        throw new Error(uploadData?.error || "Failed to upload PDF");
+      }
+
+      // Store the PDF ID as the ebookUrl
+      setEbookUrl(uploadData.pdfId);
+
+      // Then extract metadata (optional for edit, but can help verify)
+      const metadataFormData = new FormData();
+      metadataFormData.append("file", file);
+
+      const metadataRes = await fetch("/api/admin/books/extract-pdf-metadata", {
+        method: "POST",
+        body: metadataFormData,
+      });
+
+      const metadataData = await metadataRes.json().catch(() => ({}));
+      
+      if (metadataRes.ok && metadataData?.ok && metadataData?.metadata) {
+        showToast("PDF uploaded successfully! Metadata extracted for verification.", "success");
+      } else {
+        showToast("PDF uploaded successfully!", "success");
+      }
+    } catch (err) {
+      console.error("Failed to process PDF:", err);
+      showToast(err?.message || "Failed to process PDF", "error");
+      setPdfFile(null);
+    } finally {
+      setExtractingMetadata(false);
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -316,8 +370,33 @@ export default function AdminEditBookPage() {
                   className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.year ? "border-rose-400" : "border-zinc-200"}`}
                   type="text"
                   inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
                   value={year}
-                  onChange={(e) => setYear(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Only allow numeric input
+                    if (value === '' || /^\d{0,4}$/.test(value)) {
+                      setYear(value);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value) {
+                      const yearNum = parseInt(value, 10);
+                      const currentYear = new Date().getFullYear();
+                      if (yearNum > currentYear) {
+                        setErrors(prev => ({ ...prev, year: `Year cannot be in the future (max: ${currentYear})` }));
+                      } else if (yearNum < 1450) {
+                        setErrors(prev => ({ ...prev, year: 'Year must be 1450 or later' }));
+                      } else {
+                        setErrors(prev => {
+                          const { year, ...rest } = prev;
+                          return rest;
+                        });
+                      }
+                    }
+                  }}
                   placeholder={String(new Date().getFullYear())}
                   aria-invalid={!!errors.year}
                   data-field="year"
@@ -423,15 +502,28 @@ export default function AdminEditBookPage() {
               </label>
               {format === "eBook" && (
                 <label className="grid gap-2 text-sm sm:col-span-2">
-                  <span className="text-zinc-700">eBook URL</span>
+                  <span className="text-zinc-700">eBook File (PDF only)</span>
                   <input
-                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
-                    type="url"
-                    value={ebookUrl}
-                    onChange={(e) => setEbookUrl(e.target.value)}
-                    placeholder="e.g., https://example.com/ebook.pdf"
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-700 hover:file:bg-zinc-200"
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    disabled={extractingMetadata}
+                    onChange={handlePDFUpload}
                   />
-                  <p className="text-xs text-zinc-500">Enter the URL where students can access this eBook</p>
+                  {extractingMetadata && (
+                    <p className="text-xs text-blue-600">Uploading and processing PDF...</p>
+                  )}
+                  {ebookUrl && (
+                    <div className="flex items-center gap-2 text-xs text-green-600">
+                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>PDF uploaded successfully</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-zinc-500">
+                    Upload a new PDF to replace the current eBook file. The PDF will be stored securely and accessible to students.
+                  </p>
                 </label>
               )}
               <label className="grid gap-2 text-sm">

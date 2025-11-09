@@ -31,6 +31,8 @@ export default function AdminAddBookPage() {
   const [loadingShelves, setLoadingShelves] = useState(true);
   const [authors, setAuthors] = useState([]);
   const [loadingAuthors, setLoadingAuthors] = useState(true);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [extractingMetadata, setExtractingMetadata] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -502,14 +504,13 @@ export default function AdminAddBookPage() {
                     className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-700 hover:file:bg-zinc-200"
                     type="file"
                     accept=".pdf,application/pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setEbookUrl(file.name);
-                      }
-                    }}
+                    disabled={extractingMetadata}
+                    onChange={handlePDFUpload}
                   />
-                  <p className="text-xs text-zinc-500">Upload a PDF file for students to access this eBook</p>
+                  {extractingMetadata && (
+                    <p className="text-xs text-blue-600">Extracting metadata from PDF...</p>
+                  )}
+                  <p className="text-xs text-zinc-500">Upload a PDF file - metadata will be extracted automatically to fill the form</p>
                 </label>
               )}
               <label className="grid gap-2 text-sm">
