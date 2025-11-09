@@ -371,7 +371,7 @@ export default function StudentBooksPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+    <div className="h-screen bg-gray-50 pr-6 pl-[300px] py-8 flex flex-col overflow-hidden">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"
@@ -380,9 +380,9 @@ export default function StudentBooksPage() {
         SignOutComponent={SignOutButton}
       />
 
-      <main className="space-y-6">
+      <main className="flex flex-col gap-6 flex-1 min-h-0">
         {/* Header */}
-        <header className="flex items-end justify-between gap-4">
+        <header className="flex items-end justify-between gap-4 shrink-0">
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
               STUDENT
@@ -401,7 +401,7 @@ export default function StudentBooksPage() {
           </Link>
         </header>
 
-        <div className="flex gap-6">
+        <div className="flex gap-6 flex-1 min-h-0">
           {/* Filters Modal */}
           {showFilters && (
             <div
@@ -646,9 +646,11 @@ export default function StudentBooksPage() {
           )}
 
           {/* Main Content */}
-          <div className="flex-1 space-y-6">
-            {/* Search Bar */}
-            <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Sticky Controls */}
+            <div className="shrink-0 space-y-6 mb-6">
+              {/* Search Bar */}
+              <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
               <div className="relative flex items-center gap-2">
                 <div className="relative flex-1">
                   <svg
@@ -863,7 +865,10 @@ export default function StudentBooksPage() {
                 </button>
               </div>
             </div>
+            </div>
 
+            {/* Scrollable Books List */}
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
             {/* Books List */}
             {loading ? (
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
@@ -1298,6 +1303,7 @@ export default function StudentBooksPage() {
                 </button>
               </div>
             )}
+            </div>
           </div>
 
           {/* Recommendations Sidebar */}

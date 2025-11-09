@@ -87,7 +87,7 @@ export default function RecommendationsSidebar({
   if (loading) {
     return (
       <aside className={`w-64 shrink-0 ${className}`}>
-        <div className="sticky top-8 space-y-4">
+        <div className="space-y-4">
           <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
@@ -114,7 +114,7 @@ export default function RecommendationsSidebar({
   if (error) {
     return (
       <aside className={`w-64 shrink-0 ${className}`}>
-        <div className="sticky top-8">
+        <div>
           <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               Recommended for You
@@ -154,7 +154,7 @@ export default function RecommendationsSidebar({
   if (recommendations.length === 0) {
     return (
       <aside className={`w-64 shrink-0 ${className}`}>
-        <div className="sticky top-8">
+        <div>
           <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               Recommended for You
@@ -190,7 +190,7 @@ export default function RecommendationsSidebar({
   // Main content with recommendations
   return (
     <aside className={`w-64 shrink-0 ${className}`}>
-      <div className="sticky top-8">
+      <div>
         <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
@@ -222,7 +222,7 @@ export default function RecommendationsSidebar({
 
           {/* Recommendations List */}
           {expanded && (
-            <div className="space-y-2 max-h-[calc(100vh-12rem)] overflow-y-auto relative scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
+            <div className="space-y-2 relative">
               {isRefreshing && (
                 <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
