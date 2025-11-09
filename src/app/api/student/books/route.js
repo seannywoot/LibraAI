@@ -82,22 +82,45 @@ export async function GET(request) {
       ebookUrl: 1,
     };
 
-    // Determine sort order
-    let sortOrder = { title: 1 };
-    if (sortBy === "year") {
-      sortOrder = { year: -1, title: 1 };
-    } else if (sortBy === "author") {
-      sortOrder = { author: 1, title: 1 };
-    } else if (sortBy === "title") {
-      sortOrder = { title: 1 };
-    }
-
-    const [rawItems, total] = await Promise.all([
-      books.find(query, { projection }).sort(sortOrder).skip(skip).limit(pageSize).toArray(),
+    // Fetch all items first (without pagination) to sort by availability
+    const [allRawItems, total] = await Promise.all([
+      books.find(query, { projection }).toArray(),
       books.countDocuments(query),
     ]);
 
-    const items = rawItems.map(({ reservedFor, ...rest }) => ({
+    // Sort by availability first (available books first), then by user's selected sort
+    const sortedItems = allRawItems.sort((a, b) => {
+      const aStatus = (a?.status || "").toLowerCase();
+      const bStatus = (b?.status || "").toLowerCase();
+      
+      // Available books come first
+      const aIsAvailable = aStatus === "available";
+      const bIsAvailable = bStatus === "available";
+      
+      if (aIsAvailable && !bIsAvailable) return -1;
+      if (!aIsAvailable && bIsAvailable) return 1;
+      
+      // If both have same availability, apply secondary sort
+      if (sortBy === "year") {
+        const yearDiff = (b.year || 0) - (a.year || 0);
+        if (yearDiff !== 0) return yearDiff;
+        return (a.title || "").localeCompare(b.title || "");
+      } else if (sortBy === "author") {
+        const authorDiff = (a.author || "").localeCompare(b.author || "");
+        if (authorDiff !== 0) return authorDiff;
+        return (a.title || "").localeCompare(b.title || "");
+      } else if (sortBy === "title") {
+        return (a.title || "").localeCompare(b.title || "");
+      }
+      
+      // Default: sort by title
+      return (a.title || "").localeCompare(b.title || "");
+    });
+
+    // Apply pagination after sorting
+    const paginatedItems = sortedItems.slice(skip, skip + pageSize);
+
+    const items = paginatedItems.map(({ reservedFor, ...rest }) => ({
       ...rest,
       reservedForCurrentUser: reservedFor === session.user?.email,
     }));

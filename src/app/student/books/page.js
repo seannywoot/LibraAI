@@ -54,7 +54,7 @@ export default function StudentBooksPage() {
   const [total, setTotal] = useState(0);
   const [borrowing, setBorrowing] = useState(null);
   const [searchInput, setSearchInput] = useState("");
-  const [viewMode, setViewMode] = useState("list");
+  const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("relevance");
   const [filters, setFilters] = useState({
     resourceTypes: ["Books"],
@@ -171,23 +171,13 @@ export default function StudentBooksPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Failed to load books");
-      const availabilityPriority = ["available", "reserved", "checked-out"];
-      const itemsWithPriority = Array.isArray(data.items) ? [...data.items] : [];
-      itemsWithPriority.sort((a, b) => {
-        const aStatus = (a?.status || "").toLowerCase();
-        const bStatus = (b?.status || "").toLowerCase();
-        const aPriority = availabilityPriority.indexOf(aStatus);
-        const bPriority = availabilityPriority.indexOf(bStatus);
-        const normalizedAPriority = aPriority === -1 ? availabilityPriority.length : aPriority;
-        const normalizedBPriority = bPriority === -1 ? availabilityPriority.length : bPriority;
-        return normalizedAPriority - normalizedBPriority;
-      });
 
-      setItems(itemsWithPriority);
+      const items = Array.isArray(data.items) ? data.items : [];
+      setItems(items);
       setTotal(data.total || 0);
-      
+
       // Load bookmark status for all books
-      loadBookmarkStatus(itemsWithPriority.map(b => b._id));
+      loadBookmarkStatus(items.map((b) => b._id));
     } catch (e) {
       setError(e?.message || "Unknown error");
     } finally {
@@ -197,19 +187,22 @@ export default function StudentBooksPage() {
 
   async function loadBookmarkStatus(bookIds) {
     if (!bookIds || bookIds.length === 0) return;
-    
+
     try {
       // Check each book's bookmark status
       const bookmarkChecks = await Promise.all(
         bookIds.map(async (bookId) => {
-          const res = await fetch(`/api/student/books/bookmark?bookId=${bookId}`, {
-            cache: "no-store",
-          });
+          const res = await fetch(
+            `/api/student/books/bookmark?bookId=${bookId}`,
+            {
+              cache: "no-store",
+            }
+          );
           const data = await res.json().catch(() => ({}));
           return { bookId, bookmarked: data?.bookmarked || false };
         })
       );
-      
+
       // Update bookmarked set
       const newBookmarked = new Set();
       bookmarkChecks.forEach(({ bookId, bookmarked }) => {
@@ -224,7 +217,7 @@ export default function StudentBooksPage() {
   async function handleToggleBookmark(bookId, e) {
     e.preventDefault();
     e.stopPropagation();
-    
+
     setBookmarking(bookId);
     try {
       const res = await fetch("/api/student/books/bookmark", {
@@ -244,7 +237,7 @@ export default function StudentBooksPage() {
         newBookmarked.delete(bookId);
       }
       setBookmarkedBooks(newBookmarked);
-      
+
       showToast(data.message, "success");
     } catch (e) {
       showToast(e?.message || "Failed to toggle bookmark", "error");
@@ -326,8 +319,6 @@ export default function StudentBooksPage() {
         : [...prev.resourceTypes, type],
     }));
   }
-
-
 
   function toggleAvailability(status) {
     setFilters((prev) => ({
@@ -413,11 +404,11 @@ export default function StudentBooksPage() {
         <div className="flex gap-6">
           {/* Filters Modal */}
           {showFilters && (
-            <div 
+            <div
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
               onClick={() => setShowFilters(false)}
             >
-              <div 
+              <div
                 className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col m-4"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -496,7 +487,9 @@ export default function StudentBooksPage() {
                               onChange={() => toggleFormat(format)}
                               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="text-sm text-gray-700">{format}</span>
+                            <span className="text-sm text-gray-700">
+                              {format}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -508,20 +501,24 @@ export default function StudentBooksPage() {
                         Availability
                       </h3>
                       <div className="space-y-2">
-                        {["Available", "Checked Out", "Reserved"].map((status) => (
-                          <label
-                            key={status}
-                            className="flex items-center gap-2 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={filters.availability.includes(status)}
-                              onChange={() => toggleAvailability(status)}
-                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">{status}</span>
-                          </label>
-                        ))}
+                        {["Available", "Checked Out", "Reserved"].map(
+                          (status) => (
+                            <label
+                              key={status}
+                              className="flex items-center gap-2 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={filters.availability.includes(status)}
+                                onChange={() => toggleAvailability(status)}
+                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">
+                                {status}
+                              </span>
+                            </label>
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -545,7 +542,10 @@ export default function StudentBooksPage() {
                               setFilters((prev) => ({
                                 ...prev,
                                 yearRange: [
-                                  Math.max(1950, Math.min(value, prev.yearRange[1])),
+                                  Math.max(
+                                    1950,
+                                    Math.min(value, prev.yearRange[1])
+                                  ),
                                   prev.yearRange[1],
                                 ],
                               }));
@@ -569,7 +569,10 @@ export default function StudentBooksPage() {
                                 ...prev,
                                 yearRange: [
                                   prev.yearRange[0],
-                                  Math.min(2025, Math.max(value, prev.yearRange[0])),
+                                  Math.min(
+                                    2025,
+                                    Math.max(value, prev.yearRange[0])
+                                  ),
                                 ],
                               }));
                             }}
@@ -609,7 +612,9 @@ export default function StudentBooksPage() {
                               onChange={() => toggleCategory(category)}
                               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="text-sm text-gray-700">{category}</span>
+                            <span className="text-sm text-gray-700">
+                              {category}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -903,127 +908,145 @@ export default function StudentBooksPage() {
 
                         {/* Book Details */}
                         <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
-                          {book.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-2">
-                          by {book.author}
-                        </p>
-                        <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
-                          {book.year && <span>Published: {book.year}</span>}
-                          {book.year && book.publisher && <span>|</span>}
-                          {book.publisher && <span>{book.publisher}</span>}
-                          {book.format && (
-                            <>
-                              <span>|</span>
-                              <span className="font-medium">{book.format}</span>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Description */}
-                        {book.description && (
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                            {book.description}
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                            {book.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2">
+                            by {book.author}
                           </p>
-                        )}
-
-                        {/* Status and Actions */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <StatusChip status={book.status} />
-                            {book.isbn && (
-                              <span className="text-sm text-gray-500">
-                                Call #: {book.isbn}
-                              </span>
+                          <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                            {book.year && <span>Published: {book.year}</span>}
+                            {book.year && book.publisher && <span>|</span>}
+                            {book.publisher && <span>{book.publisher}</span>}
+                            {book.format && (
+                              <>
+                                <span>|</span>
+                                <span className="font-medium">
+                                  {book.format}
+                                </span>
+                              </>
                             )}
                           </div>
 
-                          <div
-                            className="flex items-center gap-3"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                          >
-                            {book.format === "eBook" && book.ebookUrl ? (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
-                                  const isPdfId = /^[a-f\d]{24}$/i.test(book.ebookUrl);
-                                  const url = isPdfId 
-                                    ? `/api/ebooks/${book.ebookUrl}`
-                                    : book.ebookUrl;
-                                  window.open(url, "_blank", "noopener,noreferrer");
-                                }}
-                                className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
-                              >
-                                Access
-                              </button>
-                            ) : book.status === "available" &&
-                              !["reference-only", "staff-only"].includes(
-                                book.loanPolicy || ""
-                              ) ? (
-                              <BorrowConfirmButton
-                                onConfirm={() => handleBorrow(book._id)}
-                                disabled={lockedByOther}
-                                busy={isBorrowingThis}
-                                className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                                borrowLabel="Borrow"
-                                confirmingLabel="Confirm?"
-                                confirmingTitle="Submit Borrow Request"
-                                confirmingMessage={`Send a borrow request for "${book.title}"?`}
-                                confirmButtonLabel="Submit Request"
-                                busyLabel="Borrowing..."
-                              />
-                            ) : book.status === "reserved" &&
-                              book.reservedForCurrentUser ? (
-                              <span className="text-sm font-medium text-gray-500">
-                                Awaiting approval
-                              </span>
-                            ) : book.status === "reserved" ? (
-                              <button
-                                disabled
-                                className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
-                              >
-                                Reserved
-                              </button>
-                            ) : book.status === "checked-out" ? (
-                              <button
-                                disabled
-                                className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
-                              >
-                                Unavailable
-                              </button>
-                            ) : book.loanPolicy === "reference-only" ? (
-                              <span className="text-sm text-gray-500">
-                                Reference only
-                              </span>
-                            ) : book.loanPolicy === "staff-only" ? (
-                              <span className="text-sm text-gray-500">
-                                Staff only
-                              </span>
-                            ) : null}
-                            
-                            {/* Bookmark Button */}
-                            <button
-                              onClick={(e) => handleToggleBookmark(book._id, e)}
-                              disabled={isBookmarkingThis}
-                              className={`p-2 rounded-full transition-colors ${
-                                isBookmarked
-                                  ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                                  : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                              } disabled:opacity-50`}
-                              title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+                          {/* Description */}
+                          {book.description && (
+                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                              {book.description}
+                            </p>
+                          )}
+
+                          {/* Status and Actions */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <StatusChip status={book.status} />
+                              {book.isbn && (
+                                <span className="text-sm text-gray-500">
+                                  Call #: {book.isbn}
+                                </span>
+                              )}
+                            </div>
+
+                            <div
+                              className="flex items-center gap-3"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
                             >
-                              <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} />
-                            </button>
+                              {book.format === "eBook" && book.ebookUrl ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
+                                    const isPdfId = /^[a-f\d]{24}$/i.test(
+                                      book.ebookUrl
+                                    );
+                                    const url = isPdfId
+                                      ? `/api/ebooks/${book.ebookUrl}`
+                                      : book.ebookUrl;
+                                    window.open(
+                                      url,
+                                      "_blank",
+                                      "noopener,noreferrer"
+                                    );
+                                  }}
+                                  className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+                                >
+                                  Access
+                                </button>
+                              ) : book.status === "available" &&
+                                !["reference-only", "staff-only"].includes(
+                                  book.loanPolicy || ""
+                                ) ? (
+                                <BorrowConfirmButton
+                                  onConfirm={() => handleBorrow(book._id)}
+                                  disabled={lockedByOther}
+                                  busy={isBorrowingThis}
+                                  className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                                  borrowLabel="Borrow"
+                                  confirmingLabel="Confirm?"
+                                  confirmingTitle="Submit Borrow Request"
+                                  confirmingMessage={`Send a borrow request for "${book.title}"?`}
+                                  confirmButtonLabel="Submit Request"
+                                  busyLabel="Borrowing..."
+                                />
+                              ) : book.status === "reserved" &&
+                                book.reservedForCurrentUser ? (
+                                <span className="text-sm font-medium text-gray-500">
+                                  Awaiting approval
+                                </span>
+                              ) : book.status === "reserved" ? (
+                                <button
+                                  disabled
+                                  className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
+                                >
+                                  Reserved
+                                </button>
+                              ) : book.status === "checked-out" ? (
+                                <button
+                                  disabled
+                                  className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
+                                >
+                                  Unavailable
+                                </button>
+                              ) : book.loanPolicy === "reference-only" ? (
+                                <span className="text-sm text-gray-500">
+                                  Reference only
+                                </span>
+                              ) : book.loanPolicy === "staff-only" ? (
+                                <span className="text-sm text-gray-500">
+                                  Staff only
+                                </span>
+                              ) : null}
+
+                              {/* Bookmark Button */}
+                              <button
+                                onClick={(e) =>
+                                  handleToggleBookmark(book._id, e)
+                                }
+                                disabled={isBookmarkingThis}
+                                className={`p-2 rounded-full transition-colors ${
+                                  isBookmarked
+                                    ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                                    : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                                } disabled:opacity-50`}
+                                title={
+                                  isBookmarked
+                                    ? "Remove bookmark"
+                                    : "Bookmark this book"
+                                }
+                              >
+                                <Bookmark
+                                  className={`h-4 w-4 ${
+                                    isBookmarked ? "fill-current" : ""
+                                  }`}
+                                />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
                     </Link>
                   );
                 })}
@@ -1038,7 +1061,7 @@ export default function StudentBooksPage() {
                   return (
                     <div
                       key={book._id}
-                      className="relative rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow"
+                      className="relative rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow flex flex-col"
                     >
                       {/* Bookmark Button */}
                       <button
@@ -1049,14 +1072,22 @@ export default function StudentBooksPage() {
                             ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
                             : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
                         } disabled:opacity-50`}
-                        title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+                        title={
+                          isBookmarked
+                            ? "Remove bookmark"
+                            : "Bookmark this book"
+                        }
                       >
-                        <Bookmark className={`h-3.5 w-3.5 ${isBookmarked ? "fill-current" : ""}`} />
+                        <Bookmark
+                          className={`h-3.5 w-3.5 ${
+                            isBookmarked ? "fill-current" : ""
+                          }`}
+                        />
                       </button>
 
                       <Link
                         href={`/student/books/${book._id}`}
-                        className="block cursor-pointer"
+                        className="flex flex-col h-full cursor-pointer"
                       >
                         {/* Book Cover */}
                         <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2">
@@ -1065,114 +1096,124 @@ export default function StudentBooksPage() {
 
                         {/* Book Details */}
                         <div className="flex-1 flex flex-col">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2">
-                          {book.title}
-                        </h3>
-                        <p className="text-[11px] text-gray-600 mb-1 line-clamp-1">
-                          {book.author}
-                        </p>
-                        <div className="text-[11px] text-gray-500 mb-2">
-                          {book.year && <span>{book.year}</span>}
-                        </div>
-
-                        {/* Description */}
-                        {book.description && (
-                          <p className="text-[10px] text-gray-600 mb-2 line-clamp-2 leading-relaxed">
-                            {book.description}
+                          <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
+                            {book.title}
+                          </h3>
+                          <p className="text-[11px] text-gray-600 mb-1 line-clamp-1 h-4">
+                            {book.author}
                           </p>
-                        )}
+                          <div className="text-[11px] text-gray-500 mb-2 h-4">
+                            {book.year && <span>{book.year}</span>}
+                          </div>
 
-                        {/* Status */}
-                        <div className="mb-2">
-                          <StatusChip status={book.status} />
-                        </div>
+                          {/* Status */}
+                          <div className="mb-2">
+                            <StatusChip status={book.status} />
+                          </div>
 
-                        {/* Action Buttons */}
-                        <div
-                          className="mt-auto space-y-2"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                        >
-                          {book.format === "eBook" && book.ebookUrl ? (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
-                                const isPdfId = /^[a-f\d]{24}$/i.test(book.ebookUrl);
-                                const url = isPdfId 
-                                  ? `/api/ebooks/${book.ebookUrl}`
-                                  : book.ebookUrl;
-                                window.open(url, "_blank", "noopener,noreferrer");
-                              }}
-                              className="block w-full text-center rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
-                            >
-                              Access
-                            </button>
-                          ) : book.status === "available" &&
-                            !["reference-only", "staff-only"].includes(
-                              book.loanPolicy || ""
-                            ) ? (
-                            <BorrowConfirmButton
-                              onConfirm={() => handleBorrow(book._id)}
-                              disabled={lockedByOther}
-                              busy={isBorrowingThis}
-                              className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                              wrapperClassName="w-full"
-                              borrowLabel="Borrow"
-                              confirmingLabel="Confirm?"
-                              confirmingTitle="Submit Borrow Request"
-                              confirmingMessage={`Send a borrow request for "${book.title}"?`}
-                              confirmButtonLabel="Submit Request"
-                              busyLabel="Borrowing..."
-                            />
-                          ) : book.status === "reserved" &&
-                            book.reservedForCurrentUser ? (
-                            <span className="block text-center text-xs font-medium text-gray-500">
-                              Awaiting approval
-                            </span>
-                          ) : book.status === "reserved" ? (
-                            <button
-                              disabled
-                              className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
-                            >
-                              Reserved
-                            </button>
-                          ) : book.status === "checked-out" ? (
-                            <button
-                              disabled
-                              className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
-                            >
-                              Unavailable
-                            </button>
-                          ) : book.loanPolicy === "reference-only" ? (
-                            <span className="block text-center text-xs text-gray-500">
-                              Reference only
-                            </span>
-                          ) : book.loanPolicy === "staff-only" ? (
-                            <span className="block text-center text-xs text-gray-500">
-                              Staff only
-                            </span>
-                          ) : null}
-                          
-                          {/* Bookmark Button */}
-                          <button
-                            onClick={(e) => handleToggleBookmark(book._id, e)}
-                            disabled={isBookmarkingThis}
-                            className={`w-full flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium transition-colors border ${
-                              isBookmarked
-                                ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                                : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
-                            } disabled:opacity-50`}
-                            title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+                          {/* Action Buttons */}
+                          <div
+                            className="mt-auto space-y-2"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
                           >
-                            <Bookmark className={`h-3 w-3 ${isBookmarked ? "fill-current" : ""}`} />
-                            {isBookmarked ? "Bookmarked" : "Bookmark"}
-                          </button>
+                            {book.format === "eBook" && book.ebookUrl ? (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
+                                  const isPdfId = /^[a-f\d]{24}$/i.test(
+                                    book.ebookUrl
+                                  );
+                                  const url = isPdfId
+                                    ? `/api/ebooks/${book.ebookUrl}`
+                                    : book.ebookUrl;
+                                  window.open(
+                                    url,
+                                    "_blank",
+                                    "noopener,noreferrer"
+                                  );
+                                }}
+                                className="block w-full text-center rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
+                              >
+                                Access
+                              </button>
+                            ) : book.status === "available" &&
+                              !["reference-only", "staff-only"].includes(
+                                book.loanPolicy || ""
+                              ) ? (
+                              <BorrowConfirmButton
+                                onConfirm={() => handleBorrow(book._id)}
+                                disabled={lockedByOther}
+                                busy={isBorrowingThis}
+                                className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                                wrapperClassName="w-full"
+                                borrowLabel="Borrow"
+                                confirmingLabel="Confirm?"
+                                confirmingTitle="Submit Borrow Request"
+                                confirmingMessage={`Send a borrow request for "${book.title}"?`}
+                                confirmButtonLabel="Submit Request"
+                                busyLabel="Borrowing..."
+                              />
+                            ) : book.status === "reserved" &&
+                              book.reservedForCurrentUser ? (
+                              <button
+                                disabled
+                                className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
+                              >
+                                Awaiting approval
+                              </button>
+                            ) : book.status === "reserved" ? (
+                              <button
+                                disabled
+                                className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
+                              >
+                                Reserved
+                              </button>
+                            ) : book.status === "checked-out" ? (
+                              <button
+                                disabled
+                                className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
+                              >
+                                Unavailable
+                              </button>
+                            ) : book.loanPolicy === "reference-only" ? (
+                              <span className="block text-center text-xs text-gray-500">
+                                Reference only
+                              </span>
+                            ) : book.loanPolicy === "staff-only" ? (
+                              <span className="block text-center text-xs text-gray-500">
+                                Staff only
+                              </span>
+                            ) : null}
+
+                            {/* Bookmark Button */}
+                            <button
+                              onClick={(e) => handleToggleBookmark(book._id, e)}
+                              disabled={isBookmarkingThis}
+                              className={`w-full flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium transition-colors border ${
+                                isBookmarked
+                                  ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                  : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+                              } disabled:opacity-50`}
+                              title={
+                                isBookmarked
+                                  ? "Remove bookmark"
+                                  : "Bookmark this book"
+                              }
+                            >
+                              <Bookmark
+                                className={`h-3 w-3 ${
+                                  isBookmarked ? "fill-current" : ""
+                                }`}
+                              />
+                              {isBookmarked ? "Bookmarked" : "Bookmark"}
+                            </button>
+                          </div>
                         </div>
-                      </div>
                       </Link>
                     </div>
                   );
