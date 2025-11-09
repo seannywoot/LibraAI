@@ -144,6 +144,74 @@ export default function AdminAddBookPage() {
 
   const navigationLinks = getAdminLinks();
 
+  async function handlePDFUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPdfFile(file);
+    setExtractingMetadata(true);
+
+    try {
+      // First, upload the PDF file
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", file);
+
+      const uploadRes = await fetch("/api/admin/books/upload-pdf", {
+        method: "POST",
+        body: uploadFormData,
+      });
+
+      const uploadData = await uploadRes.json().catch(() => ({}));
+      
+      if (!uploadRes.ok || !uploadData?.ok) {
+        throw new Error(uploadData?.error || "Failed to upload PDF");
+      }
+
+      // Store the PDF ID as the ebookUrl
+      setEbookUrl(uploadData.pdfId);
+
+      // Then extract metadata
+      const metadataFormData = new FormData();
+      metadataFormData.append("file", file);
+
+      const metadataRes = await fetch("/api/admin/books/extract-pdf-metadata", {
+        method: "POST",
+        body: metadataFormData,
+      });
+
+      const metadataData = await metadataRes.json().catch(() => ({}));
+      
+      if (metadataRes.ok && metadataData?.ok && metadataData?.metadata) {
+        const { metadata } = metadataData;
+        
+        // Fill form fields with extracted metadata (only if fields are empty)
+        if (metadata.title && !title) {
+          setTitle(metadata.title);
+        }
+        if (metadata.author && !author) {
+          setAuthor(metadata.author);
+        }
+        if (metadata.year && !year) {
+          setYear(metadata.year.toString());
+        }
+        if (metadata.publisher && !publisher) {
+          setPublisher(metadata.publisher);
+        }
+
+        showToast("PDF uploaded and metadata extracted successfully!", "success");
+      } else {
+        showToast("PDF uploaded. Please fill in details manually.", "info");
+      }
+    } catch (err) {
+      console.error("Failed to process PDF:", err);
+      showToast(err?.message || "Failed to process PDF", "error");
+      setEbookUrl("");
+      setPdfFile(null);
+    } finally {
+      setExtractingMetadata(false);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (submitting) return;
@@ -192,6 +260,7 @@ export default function AdminAddBookPage() {
       setEbookUrl("");
       setBarcode("");
       setCategory("");
+      setDescription("");
       setStatus("available");
       setLoanPolicy("standard");
       setErrors({});
@@ -295,8 +364,33 @@ export default function AdminAddBookPage() {
                   className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.year ? "border-rose-400" : "border-zinc-200"}`}
                   type="text"
                   inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
                   value={year}
-                  onChange={(e) => setYear(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Only allow numeric input
+                    if (value === '' || /^\d{0,4}$/.test(value)) {
+                      setYear(value);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value) {
+                      const yearNum = parseInt(value, 10);
+                      const currentYear = new Date().getFullYear();
+                      if (yearNum > currentYear) {
+                        setErrors(prev => ({ ...prev, year: `Year cannot be in the future (max: ${currentYear})` }));
+                      } else if (yearNum < 1450) {
+                        setErrors(prev => ({ ...prev, year: 'Year must be 1450 or later' }));
+                      } else {
+                        setErrors(prev => {
+                          const { year, ...rest } = prev;
+                          return rest;
+                        });
+                      }
+                    }
+                  }}
                   placeholder={String(new Date().getFullYear())}
                   aria-invalid={!!errors.year}
                   data-field="year"

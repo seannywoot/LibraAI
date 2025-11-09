@@ -951,11 +951,12 @@ export default function StudentBooksPage() {
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  window.open(
-                                    book.ebookUrl,
-                                    "_blank",
-                                    "noopener,noreferrer"
-                                  );
+                                  // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
+                                  const isPdfId = /^[a-f\d]{24}$/i.test(book.ebookUrl);
+                                  const url = isPdfId 
+                                    ? `/api/ebooks/${book.ebookUrl}`
+                                    : book.ebookUrl;
+                                  window.open(url, "_blank", "noopener,noreferrer");
                                 }}
                                 className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
                               >
@@ -1099,11 +1100,12 @@ export default function StudentBooksPage() {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                window.open(
-                                  book.ebookUrl,
-                                  "_blank",
-                                  "noopener,noreferrer"
-                                );
+                                // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
+                                const isPdfId = /^[a-f\d]{24}$/i.test(book.ebookUrl);
+                                const url = isPdfId 
+                                  ? `/api/ebooks/${book.ebookUrl}`
+                                  : book.ebookUrl;
+                                window.open(url, "_blank", "noopener,noreferrer");
                               }}
                               className="block w-full text-center rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
                             >

@@ -413,7 +413,11 @@ export default function BookDetailPage({ params }) {
 
                 {book.format === "eBook" && book.ebookUrl ? (
                   <a
-                    href={book.ebookUrl}
+                    href={(() => {
+                      // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
+                      const isPdfId = /^[a-f\d]{24}$/i.test(book.ebookUrl);
+                      return isPdfId ? `/api/ebooks/${book.ebookUrl}` : book.ebookUrl;
+                    })()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-lg bg-black px-6 py-3 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
