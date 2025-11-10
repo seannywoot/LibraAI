@@ -24,16 +24,23 @@ export async function GET(request, { params }) {
     const authors = db.collection("authors");
     const books = db.collection("books");
 
-    // Get author details
+    // Get author details - try by slug first, then by ObjectId
     let author;
     try {
-      if (!authorId || !ObjectId.isValid(authorId)) {
+      if (!authorId) {
         return new Response(JSON.stringify({ ok: false, error: "Invalid author ID" }), {
           status: 400,
           headers: { "content-type": "application/json" },
         });
       }
-      author = await authors.findOne({ _id: new ObjectId(authorId) });
+      
+      // Try to find by slug first
+      author = await authors.findOne({ slug: authorId });
+      
+      // If not found by slug and authorId is a valid ObjectId, try by ObjectId
+      if (!author && ObjectId.isValid(authorId)) {
+        author = await authors.findOne({ _id: new ObjectId(authorId) });
+      }
     } catch (err) {
       console.error("Error finding author:", err);
       return new Response(JSON.stringify({ ok: false, error: "Invalid author ID" }), {
@@ -62,6 +69,7 @@ export async function GET(request, { params }) {
       publisher: 1,
       format: 1,
       loanPolicy: 1,
+      slug: 1,
       createdAt: 1,
     };
 

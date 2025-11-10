@@ -23,7 +23,7 @@ export async function GET(request) {
     const db = client.db();
     const authors = db.collection("authors");
     const books = db.collection("books");
-    const projection = { name: 1, bio: 1 };
+    const projection = { name: 1, bio: 1, slug: 1 };
 
     // Build search query with advanced syntax support
     let query = {};

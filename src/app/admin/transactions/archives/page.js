@@ -6,7 +6,9 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Archive } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
-import { ToastContainer } from "@/components/ToastContainer";
+import { ToastContainer, showToast } from "@/components/ToastContainer";
+import ConfirmDialog from "@/components/confirm-dialog";
+import { Trash2 } from "@/components/icons";
 
 function formatDate(dateStr) {
   if (!dateStr) return "—";
@@ -47,6 +49,8 @@ export default function AdminTransactionArchivesPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const shouldCloseOnBlur = useRef(true);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
@@ -172,7 +176,42 @@ export default function AdminTransactionArchivesPage() {
     }
   }
 
+  async function deleteTransaction(id) {
+    if (!id) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/admin/transactions/${id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Delete failed");
+      showToast("Transaction deleted successfully", "success");
+      setPendingDelete(null);
+      // Reload the list
+      setPage(1);
+      const params = new URLSearchParams({ 
+        page: "1", 
+        pageSize: pageSize.toString(),
+        showArchived: "true"
+      });
+      if (statusFilter) params.append("status", statusFilter);
+      if (searchInput) params.append("search", searchInput);
+      
+      const url = `/api/admin/transactions?${params}`;
+      const res2 = await fetch(url, { cache: "no-store" });
+      const data2 = await res2.json().catch(() => ({}));
+      if (res2.ok && data2?.ok) {
+        const archivedItems = (data2.items || []).filter(item => item.archived === true);
+        setItems(archivedItems);
+        setTotal(archivedItems.length);
+      }
+    } catch (e) { 
+      showToast(e?.message || "Failed to delete transaction", "error");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const isDeletingCurrent = pendingDelete ? deletingId === pendingDelete._id : false;
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
@@ -305,6 +344,7 @@ export default function AdminTransactionArchivesPage() {
                     <th className="px-6 py-2">Returned</th>
                     <th className="px-6 py-2">Status</th>
                     <th className="px-6 py-2">Archived</th>
+                    <th className="px-6 py-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -379,6 +419,15 @@ export default function AdminTransactionArchivesPage() {
                           <div className="text-xs text-zinc-600">{formatDate(t.archivedAt)}</div>
                           {t.archivedBy && <div className="text-xs text-zinc-500">{t.archivedBy}</div>}
                         </td>
+                        <td className="px-6 py-3">
+                          <button
+                            onClick={() => setPendingDelete(t)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -412,6 +461,24 @@ export default function AdminTransactionArchivesPage() {
           </section>
         )}
       </main>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Delete Transaction"
+        description={pendingDelete ? `Are you sure you want to permanently delete this transaction for "${pendingDelete.bookTitle}"? This action cannot be undone.` : ""}
+        confirmLabel={isDeletingCurrent ? "Deleting..." : "Delete"}
+        cancelLabel="Cancel"
+        destructive
+        loading={isDeletingCurrent}
+        onCancel={() => {
+          if (!isDeletingCurrent) setPendingDelete(null);
+        }}
+        onConfirm={() => {
+          if (pendingDelete && !isDeletingCurrent) {
+            void deleteTransaction(pendingDelete._id);
+          }
+        }}
+      />
     </div>
   );
 }

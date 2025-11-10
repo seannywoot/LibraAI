@@ -25,17 +25,20 @@ export async function GET(request, { params }) {
     const shelves = db.collection("shelves");
     const books = db.collection("books");
 
-    // Get shelf details - try by ObjectId first, then by code
+    // Get shelf details - try by slug first, then by code, then by ObjectId
     let shelf;
     try {
-      // Try to find by ObjectId first
-      if (ObjectId.isValid(shelfId)) {
-        shelf = await shelves.findOne({ _id: new ObjectId(shelfId) });
-      }
+      // Try to find by slug first
+      shelf = await shelves.findOne({ slug: shelfId });
       
-      // If not found by ObjectId, try by code (in case shelfId is actually a shelf code like "B1")
+      // If not found by slug, try by code (in case shelfId is actually a shelf code like "B1")
       if (!shelf) {
         shelf = await shelves.findOne({ code: shelfId });
+      }
+      
+      // If not found by code and shelfId is a valid ObjectId, try by ObjectId
+      if (!shelf && ObjectId.isValid(shelfId)) {
+        shelf = await shelves.findOne({ _id: new ObjectId(shelfId) });
       }
     } catch (err) {
       console.error("Error finding shelf:", err);
@@ -65,6 +68,7 @@ export async function GET(request, { params }) {
       publisher: 1,
       format: 1,
       loanPolicy: 1,
+      slug: 1,
       createdAt: 1,
     };
 

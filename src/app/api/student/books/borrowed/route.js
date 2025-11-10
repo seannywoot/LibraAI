@@ -38,8 +38,27 @@ export async function GET(request) {
       .sort({ requestedAt: -1, borrowedAt: -1 })
       .toArray();
 
+    // Enrich transactions with book slugs
+    const books = db.collection("books");
+    const enrichedBorrowed = await Promise.all(
+      borrowed.map(async (transaction) => {
+        try {
+          const book = await books.findOne(
+            { _id: transaction.bookId },
+            { projection: { slug: 1 } }
+          );
+          return {
+            ...transaction,
+            bookSlug: book?.slug || null,
+          };
+        } catch (err) {
+          return transaction;
+        }
+      })
+    );
+
     return new Response(
-      JSON.stringify({ ok: true, items: borrowed }),
+      JSON.stringify({ ok: true, items: enrichedBorrowed }),
       { status: 200, headers: { "content-type": "application/json" } }
     );
   } catch (err) {

@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { slugify } from "@/lib/slug";
 
 function normalize(v) { return (v ?? "").toString().trim(); }
 
@@ -26,7 +27,7 @@ export async function GET(request) {
       { nameLower: { $regex: new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") } },
     ] } : {};
 
-    const projection = { code: 1, name: 1, location: 1, capacity: 1, notes: 1, createdAt: 1 };
+    const projection = { code: 1, name: 1, slug: 1, location: 1, capacity: 1, notes: 1, createdAt: 1 };
 
     const [items, total] = await Promise.all([
       shelves.find(query, { projection }).sort({ code: 1 }).skip(skip).limit(pageSize).toArray(),
@@ -80,9 +81,22 @@ export async function POST(request) {
     }
 
     const now = new Date();
+    
+    // Generate unique slug (use code as base)
+    const baseSlug = slugify(code);
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Ensure slug is unique
+    while (await shelves.findOne({ slug })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    
     const doc = {
       code,
       codeLower: code.toLowerCase(),
+      slug,
       name: name || null,
       nameLower: name ? name.toLowerCase() : null,
       location: location || null,

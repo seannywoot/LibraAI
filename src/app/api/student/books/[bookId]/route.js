@@ -16,7 +16,7 @@ export async function GET(request, { params }) {
 
     const { bookId } = await params;
 
-    if (!bookId || !ObjectId.isValid(bookId)) {
+    if (!bookId) {
       return NextResponse.json(
         { ok: false, error: "Invalid book ID" },
         { status: 400 }
@@ -26,10 +26,15 @@ export async function GET(request, { params }) {
     const client = await clientPromise;
     const db = client.db();
 
-    // Fetch the book
-    const book = await db.collection("books").findOne({
-      _id: new ObjectId(bookId),
-    });
+    // Fetch the book - try by slug first, then by ObjectId
+    let book = await db.collection("books").findOne({ slug: bookId });
+    
+    // If not found by slug and bookId is a valid ObjectId, try by ObjectId
+    if (!book && ObjectId.isValid(bookId)) {
+      book = await db.collection("books").findOne({
+        _id: new ObjectId(bookId),
+      });
+    }
 
     if (!book) {
       return NextResponse.json(

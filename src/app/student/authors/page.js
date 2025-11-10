@@ -102,7 +102,21 @@ export default function StudentAuthorsPage() {
         </header>
 
         {loading ? (
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">Loading authors…</div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3 animate-pulse">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-zinc-200 p-2 w-9 h-9" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 bg-zinc-200 rounded w-32" />
+                    <div className="h-4 bg-zinc-200 rounded w-full" />
+                    <div className="h-4 bg-zinc-200 rounded w-3/4" />
+                    <div className="h-3 bg-zinc-200 rounded w-20 mt-2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : error ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">{error}</div>
         ) : items.length === 0 ? (
@@ -119,7 +133,7 @@ export default function StudentAuthorsPage() {
               {items.map((author) => (
                 <Link
                   key={author._id}
-                  href={`/student/authors/${author._id}`}
+                  href={`/student/authors/${encodeURIComponent(author.slug || author._id)}`}
                   className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3 hover:bg-zinc-100 hover:border-zinc-300 transition-colors"
                 >
                   <div className="flex items-start gap-3">

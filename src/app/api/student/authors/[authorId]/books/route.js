@@ -25,10 +25,14 @@ export async function GET(request, { params }) {
     const authors = db.collection("authors");
     const books = db.collection("books");
 
-    // Get author details
+    // Get author details - try by slug first, then by ObjectId
     let author;
     try {
-      if (ObjectId.isValid(authorId)) {
+      // Try to find by slug first
+      author = await authors.findOne({ slug: authorId });
+      
+      // If not found by slug and authorId is a valid ObjectId, try by ObjectId
+      if (!author && ObjectId.isValid(authorId)) {
         author = await authors.findOne({ _id: new ObjectId(authorId) });
       }
     } catch (err) {
@@ -68,6 +72,7 @@ export async function GET(request, { params }) {
       category: 1,
       loanPolicy: 1,
       reservedFor: 1,
+      slug: 1,
     };
 
     const [rawItems, total] = await Promise.all([

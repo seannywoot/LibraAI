@@ -902,7 +902,7 @@ export default function StudentBooksPage() {
                   return (
                     <Link
                       key={book._id}
-                      href={`/student/books/${book._id}`}
+                      href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
                       className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                     >
                       <div className="flex gap-6">
@@ -1091,7 +1091,7 @@ export default function StudentBooksPage() {
                       </button>
 
                       <Link
-                        href={`/student/books/${book._id}`}
+                        href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
                         className="flex flex-col h-full cursor-pointer"
                       >
                         {/* Book Cover */}

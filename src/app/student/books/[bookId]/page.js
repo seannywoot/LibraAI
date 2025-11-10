@@ -493,7 +493,7 @@ export default function BookDetailPage({ params }) {
                 <RecommendationCard
                   key={rec._id}
                   book={rec}
-                  onClick={(book) => router.push(`/student/books/${book._id}`)}
+                  onClick={(book) => router.push(`/student/books/${encodeURIComponent(book.slug || book._id)}`)}
                   isBookmarked={bookmarkedRecommendations.has(rec._id)}
                   onBookmarkToggle={handleRecommendationBookmarkToggle}
                 />

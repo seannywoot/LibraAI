@@ -161,8 +161,11 @@ export default function AdminShelvesPage() {
               <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g., A3" />
             </label>
             <label className="grid gap-2 text-sm">
-              <span className="text-zinc-700">Name (optional)</span>
-              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Fiction — Science" />
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-700">Name (optional)</span>
+                <span className={`text-xs ${name.length >= 100 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{name.length}/100</span>
+              </div>
+              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Fiction — Science" maxLength={100} />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="grid gap-2 text-sm">
@@ -175,8 +178,11 @@ export default function AdminShelvesPage() {
               </label>
             </div>
             <label className="grid gap-2 text-sm">
-              <span className="text-zinc-700">Notes (optional)</span>
-              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Special handling, maintenance" />
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-700">Notes (optional)</span>
+                <span className={`text-xs ${notes.length >= 100 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{notes.length}/100</span>
+              </div>
+              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Special handling, maintenance" maxLength={100} />
             </label>
             <div className="flex justify-end"><button className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800" type="submit">Add</button></div>
           </form>
@@ -223,14 +229,17 @@ export default function AdminShelvesPage() {
                         {editingId === a._id ? (
                           <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.code} onChange={(e) => setEditing((prev) => ({ ...prev, code: e.target.value }))} />
                         ) : (
-                          <Link href={`/admin/shelves/${a._id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                          <Link href={`/admin/shelves/${encodeURIComponent(a.slug || a.code || a._id)}`} className="text-blue-600 hover:text-blue-800 hover:underline">
                             {a.code}
                           </Link>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {editingId === a._id ? (
-                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.name} onChange={(e) => setEditing((prev) => ({ ...prev, name: e.target.value }))} />
+                          <div className="space-y-1">
+                            <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.name} onChange={(e) => setEditing((prev) => ({ ...prev, name: e.target.value }))} maxLength={100} />
+                            <div className={`text-xs text-right ${editing.name.length >= 100 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editing.name.length}/100</div>
+                          </div>
                         ) : (
                           a.name || "—"
                         )}
@@ -246,7 +255,7 @@ export default function AdminShelvesPage() {
                         {editingId === a._id ? (
                           "—"
                         ) : (
-                          <Link href={`/admin/shelves/${a._id}`} className="text-zinc-700 hover:text-zinc-900">
+                          <Link href={`/admin/shelves/${encodeURIComponent(a.slug || a.code || a._id)}`} className="text-zinc-700 hover:text-zinc-900">
                             {a.bookCount ?? 0}
                           </Link>
                         )}
@@ -260,7 +269,10 @@ export default function AdminShelvesPage() {
                       </td>
                       <td className="px-4 py-3">
                         {editingId === a._id ? (
-                          <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.notes} onChange={(e) => setEditing((prev) => ({ ...prev, notes: e.target.value }))} />
+                          <div className="space-y-1">
+                            <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.notes} onChange={(e) => setEditing((prev) => ({ ...prev, notes: e.target.value }))} maxLength={100} />
+                            <div className={`text-xs text-right ${editing.notes.length >= 100 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editing.notes.length}/100</div>
+                          </div>
                         ) : (
                           a.notes || "—"
                         )}

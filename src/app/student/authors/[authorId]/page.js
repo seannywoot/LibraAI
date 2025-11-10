@@ -81,13 +81,15 @@ export default function StudentAuthorBooksPage() {
       setItems(data.items || []);
       setTotal(data.total || 0);
       
-      // Load bookmark status for books
+      // Load bookmark status for books in background (non-blocking)
       if (data.items && data.items.length > 0) {
         loadBookmarkStatus(data.items.map(b => b._id));
       }
+      
+      // Set loading to false immediately after main data loads
+      setLoading(false);
     } catch (e) {
       setError(e?.message || "Unknown error");
-    } finally {
       setLoading(false);
     }
   }
@@ -223,7 +225,22 @@ export default function StudentAuthorBooksPage() {
         </header>
 
         {loading ? (
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">Loading books…</div>
+          <div className="space-y-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 animate-pulse">
+                <div className="w-24 h-32 shrink-0 rounded bg-gray-200" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-6 bg-gray-200 rounded w-3/4" />
+                  <div className="h-4 bg-gray-200 rounded w-1/2" />
+                  <div className="h-4 bg-gray-200 rounded w-2/3" />
+                  <div className="flex items-center gap-3 mt-4">
+                    <div className="h-6 bg-gray-200 rounded-full w-24" />
+                    <div className="h-4 bg-gray-200 rounded w-32" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : error ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">{error}</div>
         ) : items.length === 0 ? (
@@ -245,7 +262,7 @@ export default function StudentAuthorBooksPage() {
                 return (
                   <Link
                     key={book._id}
-                    href={`/student/books/${book._id}`}
+                    href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
                     className="flex items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow"
                   >
                     {/* Book Cover Placeholder */}

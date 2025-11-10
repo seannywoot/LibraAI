@@ -70,7 +70,7 @@ export default function RecommendationsSidebar({
     });
 
     if (book?._id) {
-      router.push(`/student/books/${book._id}`);
+      router.push(`/student/books/${encodeURIComponent(book.slug || book._id)}`);
     }
     
     // Optionally trigger a refresh

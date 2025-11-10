@@ -63,7 +63,6 @@ function MyLibraryContent() {
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const shouldCloseOnBlur = useRef(true);
   const [showScanner, setShowScanner] = useState(false);
-  const [scannerMode, setScannerMode] = useState("barcode"); // 'barcode' or 'ocr'
   const [uploading, setUploading] = useState(false);
   const [returning, setReturning] = useState(null);
   const [showManualForm, setShowManualForm] = useState(false);
@@ -702,31 +701,7 @@ function MyLibraryContent() {
                 Scan Book Barcode
               </h2>
 
-              <div className="mb-4 flex gap-2">
-                <button
-                  onClick={() => setScannerMode("barcode")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    scannerMode === "barcode"
-                      ? "bg-black text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  Barcode Scanner
-                </button>
-                <button
-                  onClick={() => setScannerMode("ocr")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    scannerMode === "ocr"
-                      ? "bg-black text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  OCR Scanner
-                </button>
-              </div>
-
               <BarcodeScanner
-                mode={scannerMode}
                 onDetected={handleBarcodeDetected}
                 onError={(err) => showToast(err, "error")}
               />
@@ -805,7 +780,7 @@ function MyLibraryContent() {
                   {bookmarkedBooks.map((book) => (
                     <Link
                       key={book._id}
-                      href={`/student/books/${book._id}?from=library&tab=bookmarked`}
+                      href={`/student/books/${encodeURIComponent(book.slug || book._id)}?from=library&tab=bookmarked`}
                       className="rounded-lg border border-gray-200 bg-white p-6 hover:shadow-md transition-shadow cursor-pointer block"
                     >
                       <div className="flex gap-6">
@@ -845,7 +820,7 @@ function MyLibraryContent() {
                   {bookmarkedBooks.map((book) => (
                     <Link
                       key={book._id}
-                      href={`/student/books/${book._id}?from=library&tab=bookmarked`}
+                      href={`/student/books/${encodeURIComponent(book.slug || book._id)}?from=library&tab=bookmarked`}
                       className="rounded-lg border border-gray-200 bg-white p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                     >
                       {/* Book Cover */}
@@ -1156,7 +1131,7 @@ function MyLibraryContent() {
                     return (
                       <Link
                         key={transaction._id}
-                        href={`/student/books/${transaction.bookId}?from=library&tab=borrowed`}
+                        href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
                         className={`rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${
                           overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
                         }`}
@@ -1250,7 +1225,7 @@ function MyLibraryContent() {
                   return (
                     <Link
                       key={transaction._id}
-                      href={`/student/books/${transaction.bookId}?from=library&tab=borrowed`}
+                      href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
                       className={`rounded-lg border p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${
                         overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
                       }`}

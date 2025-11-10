@@ -106,12 +106,10 @@ export async function GET(request, context) {
     const books = db.collection("books");
 
     // Try to find by slug first, then by ObjectId for backward compatibility
-    let book;
-    if (ObjectId.isValid(identifier)) {
+    let book = await books.findOne({ slug: identifier });
+    
+    if (!book && ObjectId.isValid(identifier)) {
       book = await books.findOne({ _id: new ObjectId(identifier) });
-    }
-    if (!book) {
-      book = await books.findOne({ slug: identifier });
     }
 
     if (!book) {

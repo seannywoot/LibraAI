@@ -157,7 +157,9 @@ export default function AdminAuthorBooksPage() {
                       className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800"
                     >
                       <td className="px-4 py-3 font-medium text-zinc-900">
-                        {book.title}
+                        <Link href={`/admin/books/${encodeURIComponent(book.slug || book._id)}/edit`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                          {book.title}
+                        </Link>
                       </td>
                       <td className="px-4 py-3">{book.year ?? "—"}</td>
                       <td className="px-4 py-3">{book.shelf || "—"}</td>

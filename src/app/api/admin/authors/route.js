@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { slugify } from "@/lib/slug";
 
 function normalizeName(v) {
   return (v ?? "").toString().trim();
@@ -32,7 +33,7 @@ export async function GET(request) {
 
     const query = s ? { nameLower: { $regex: new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") } } : {};
 
-    const projection = { name: 1, bio: 1, createdAt: 1 };
+    const projection = { name: 1, bio: 1, slug: 1, createdAt: 1 };
 
     const [items, total] = await Promise.all([
       authors.find(query, { projection }).sort({ name: 1 }).skip(skip).limit(pageSize).toArray(),
@@ -80,9 +81,22 @@ export async function POST(request) {
     await authors.createIndex({ nameLower: 1 }, { unique: true });
 
     const now = new Date();
+    
+    // Generate unique slug
+    const baseSlug = slugify(name);
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Ensure slug is unique
+    while (await authors.findOne({ slug })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    
     const doc = {
       name,
       nameLower: name.toLowerCase(),
+      slug,
       bio: bio || null,
       createdAt: now,
       updatedAt: now,

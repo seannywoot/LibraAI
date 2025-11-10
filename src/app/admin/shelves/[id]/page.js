@@ -6,6 +6,7 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Book as BookIcon, ArrowLeft } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
+import Link from "next/link";
 
 function StatusChip({ status }) {
   const map = {
@@ -123,7 +124,11 @@ export default function AdminShelfBooksPage() {
                 <tbody>
                   {items.map((book) => (
                     <tr key={book._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
-                      <td className="px-4 py-3 font-medium text-zinc-900">{book.title}</td>
+                      <td className="px-4 py-3 font-medium text-zinc-900">
+                        <Link href={`/admin/books/${encodeURIComponent(book.slug || book._id)}/edit`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                          {book.title}
+                        </Link>
+                      </td>
                       <td className="px-4 py-3">{book.author || "—"}</td>
                       <td className="px-4 py-3">{book.year ?? "—"}</td>
                       <td className="px-4 py-3"><StatusChip status={book.status} /></td>

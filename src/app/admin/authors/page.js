@@ -177,8 +177,11 @@ export default function AdminAuthorsPage() {
               <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Jane Doe" />
             </label>
             <label className="grid gap-2 text-sm">
-              <span className="text-zinc-700">Bio (optional)</span>
-              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Short biography" />
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-700">Bio (optional)</span>
+                <span className={`text-xs ${bio.length >= 200 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{bio.length}/200</span>
+              </div>
+              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Short biography" maxLength={200} />
             </label>
             <div className="flex justify-end"><button className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800" type="submit">Add</button></div>
           </form>
@@ -222,7 +225,7 @@ export default function AdminAuthorsPage() {
                         {editingId === a._id ? (
                           <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editingName} onChange={(e) => setEditingName(e.target.value)} />
                         ) : (
-                          <Link href={`/admin/authors/${a._id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                          <Link href={`/admin/authors/${encodeURIComponent(a.slug || a._id)}`} className="text-blue-600 hover:text-blue-800 hover:underline">
                             {a.name}
                           </Link>
                         )}
@@ -231,7 +234,7 @@ export default function AdminAuthorsPage() {
                         {editingId === a._id ? (
                           "—"
                         ) : (
-                          <Link href={`/admin/authors/${a._id}`} className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-900 font-medium">
+                          <Link href={`/admin/authors/${encodeURIComponent(a.slug || a._id)}`} className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-900 font-medium">
                             <span className="inline-flex items-center justify-center rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-semibold text-zinc-800">
                               {a.bookCount ?? 0}
                             </span>
@@ -241,7 +244,10 @@ export default function AdminAuthorsPage() {
                       </td>
                       <td className="px-4 py-3">
                         {editingId === a._id ? (
-                          <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editingBio} onChange={(e) => setEditingBio(e.target.value)} />
+                          <div className="space-y-1">
+                            <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editingBio} onChange={(e) => setEditingBio(e.target.value)} maxLength={200} />
+                            <div className={`text-xs text-right ${editingBio.length >= 200 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editingBio.length}/200</div>
+                          </div>
                         ) : (
                           a.bio || "—"
                         )}
