@@ -72,11 +72,16 @@ export default function AdminTransactionsPage() {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError] = useState("");
+  const [returnTarget, setReturnTarget] = useState(null);
+  const [bookCondition, setBookCondition] = useState("good");
+  const [conditionNotes, setConditionNotes] = useState("");
+  const [returnError, setReturnError] = useState("");
 
   const todayInputDateRef = useRef(getTodayInputDate());
   const todayInputDate = todayInputDateRef.current;
 
   const rejectProcessing = rejectTarget ? actionLoading === `${rejectTarget._id}:reject` : false;
+  const returnProcessing = returnTarget ? actionLoading === `${returnTarget._id}:return` : false;
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
@@ -231,6 +236,14 @@ export default function AdminTransactionsPage() {
     setRejectError("");
   }
 
+  function closeReturnDialog() {
+    if (returnProcessing) return;
+    setReturnTarget(null);
+    setBookCondition("good");
+    setConditionNotes("");
+    setReturnError("");
+  }
+
   async function handleAction(transactionId, action, extra = {}) {
     const actionKey = `${transactionId}:${action}`;
     setActionLoading(actionKey);
@@ -279,6 +292,33 @@ export default function AdminTransactionsPage() {
       closeRejectDialog();
     } else if (result?.error) {
       setRejectError(result.error);
+    }
+  }
+
+  async function submitReturn(event) {
+    event.preventDefault();
+    if (!returnTarget) return;
+    
+    if (!bookCondition) {
+      setReturnError("Please select a book condition.");
+      return;
+    }
+
+    if (bookCondition === "damaged" && !conditionNotes.trim()) {
+      setReturnError("Please provide notes explaining the damage.");
+      return;
+    }
+
+    setReturnError("");
+    const result = await handleAction(returnTarget._id, "return", { 
+      bookCondition, 
+      conditionNotes: conditionNotes.trim() 
+    });
+    
+    if (result?.ok) {
+      closeReturnDialog();
+    } else if (result?.error) {
+      setReturnError(result.error);
     }
   }
 
@@ -467,6 +507,28 @@ export default function AdminTransactionsPage() {
                             {t.status === "rejected" && !t.rejectionReason && (
                               <p className="text-xs text-zinc-500">No reason recorded.</p>
                             )}
+                            {t.status === "returned" && t.bookCondition && (
+                              <div className="mt-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                    t.bookCondition === "good"
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : t.bookCondition === "fair"
+                                      ? "bg-amber-100 text-amber-800"
+                                      : "bg-rose-100 text-rose-800"
+                                  }`}
+                                >
+                                  {t.bookCondition === "good" && "✓"}
+                                  {t.bookCondition === "fair" && "⚠"}
+                                  {t.bookCondition === "damaged" && "✕"}
+                                  {" "}
+                                  {t.bookCondition.charAt(0).toUpperCase() + t.bookCondition.slice(1)}
+                                </span>
+                                {t.conditionNotes && (
+                                  <p className="mt-1 text-xs text-zinc-600 italic">{t.conditionNotes}</p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="pl-2 py-3">
@@ -516,7 +578,12 @@ export default function AdminTransactionsPage() {
                             <button
                               className="rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
                               disabled={actionLoading === `${t._id}:return`}
-                              onClick={() => handleAction(t._id, "return")}
+                              onClick={() => {
+                                setReturnTarget(t);
+                                setBookCondition("good");
+                                setConditionNotes("");
+                                setReturnError("");
+                              }}
                             >
                               {actionLoading === `${t._id}:return` ? "Processing…" : "Confirm Return"}
                             </button>
@@ -525,7 +592,12 @@ export default function AdminTransactionsPage() {
                             <button
                               className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-50"
                               disabled={actionLoading === `${t._id}:return`}
-                              onClick={() => handleAction(t._id, "return")}
+                              onClick={() => {
+                                setReturnTarget(t);
+                                setBookCondition("good");
+                                setConditionNotes("");
+                                setReturnError("");
+                              }}
                             >
                               {actionLoading === `${t._id}:return` ? "Processing…" : "Mark Returned"}
                             </button>
@@ -624,6 +696,125 @@ export default function AdminTransactionsPage() {
                   disabled={rejectProcessing}
                 >
                   {rejectProcessing ? "Rejecting…" : "Submit Reason"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {returnTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeReturnDialog}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-zinc-900">Process Book Return</h2>
+            <p className="mt-2 text-sm text-zinc-600">
+              Check the condition of &quot;{returnTarget.bookTitle}&quot; returned by {returnTarget.userName || "the student"}.
+            </p>
+            <form className="mt-4 space-y-4" onSubmit={submitReturn}>
+              <label className="flex flex-col gap-2 text-sm text-zinc-700">
+                Book Condition
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 rounded-lg border border-zinc-300 px-4 py-3 cursor-pointer hover:bg-zinc-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="condition"
+                      value="good"
+                      checked={bookCondition === "good"}
+                      onChange={(e) => {
+                        setBookCondition(e.target.value);
+                        if (returnError) setReturnError("");
+                      }}
+                      disabled={returnProcessing}
+                      className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-zinc-900">Good Condition</div>
+                      <div className="text-xs text-zinc-500">No visible damage or wear</div>
+                    </div>
+                    <span className="text-emerald-600">✓</span>
+                  </label>
+                  <label className="flex items-center gap-3 rounded-lg border border-zinc-300 px-4 py-3 cursor-pointer hover:bg-zinc-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="condition"
+                      value="fair"
+                      checked={bookCondition === "fair"}
+                      onChange={(e) => {
+                        setBookCondition(e.target.value);
+                        if (returnError) setReturnError("");
+                      }}
+                      disabled={returnProcessing}
+                      className="h-4 w-4 text-amber-600 focus:ring-amber-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-zinc-900">Fair Condition</div>
+                      <div className="text-xs text-zinc-500">Minor wear but still usable</div>
+                    </div>
+                    <span className="text-amber-600">⚠</span>
+                  </label>
+                  <label className="flex items-center gap-3 rounded-lg border border-zinc-300 px-4 py-3 cursor-pointer hover:bg-zinc-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="condition"
+                      value="damaged"
+                      checked={bookCondition === "damaged"}
+                      onChange={(e) => {
+                        setBookCondition(e.target.value);
+                        if (returnError) setReturnError("");
+                      }}
+                      disabled={returnProcessing}
+                      className="h-4 w-4 text-rose-600 focus:ring-rose-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-zinc-900">Damaged</div>
+                      <div className="text-xs text-zinc-500">Significant damage requiring attention</div>
+                    </div>
+                    <span className="text-rose-600">✕</span>
+                  </label>
+                </div>
+              </label>
+
+              <label className="flex flex-col gap-2 text-sm text-zinc-700">
+                Notes {bookCondition === "damaged" && <span className="text-rose-600">(Required for damaged books)</span>}
+                <textarea
+                  className="min-h-[100px] rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-zinc-500 focus:outline-none"
+                  value={conditionNotes}
+                  onChange={(e) => {
+                    setConditionNotes(e.target.value);
+                    if (returnError) setReturnError("");
+                  }}
+                  maxLength={100}
+                  placeholder={bookCondition === "damaged" ? "Describe the damage in detail…" : "Optional notes about the book's condition…"}
+                  disabled={returnProcessing}
+                />
+                <span className="text-xs text-zinc-500">{conditionNotes.length}/100 characters</span>
+              </label>
+
+              {returnError && <p className="text-xs text-rose-600">{returnError}</p>}
+              
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
+                  onClick={closeReturnDialog}
+                  disabled={returnProcessing}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-zinc-900 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+                  disabled={returnProcessing}
+                >
+                  {returnProcessing ? "Processing…" : "Confirm Return"}
                 </button>
               </div>
             </form>

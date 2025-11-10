@@ -82,7 +82,7 @@ export async function POST(request) {
     }
 
   const body = await request.json().catch(() => ({}));
-  const { transactionId, action, dueDate, reason } = body;
+  const { transactionId, action, dueDate, reason, bookCondition, conditionNotes } = body;
 
     if (!transactionId || !ObjectId.isValid(transactionId)) {
       return new Response(
@@ -313,17 +313,36 @@ export async function POST(request) {
         );
       }
 
+      // Validate book condition if provided
+      const validConditions = ["good", "fair", "damaged"];
+      const condition = bookCondition && validConditions.includes(bookCondition) ? bookCondition : "good";
+      const notes = typeof conditionNotes === "string" ? conditionNotes.trim() : "";
+
+      // Prepare transaction update
+      const transactionUpdate = {
+        status: "returned",
+        returnedAt: now,
+        returnProcessedAt: now,
+        returnProcessedBy: session.user?.email,
+        bookCondition: condition,
+        updatedAt: now,
+      };
+
+      if (notes) {
+        transactionUpdate.conditionNotes = notes;
+      }
+
+      // Prepare book update - mark as damaged if condition is damaged
+      const bookUpdate = {
+        status: condition === "damaged" ? "damaged" : "available",
+        updatedAt: now,
+      };
+
       await Promise.all([
         transactions.updateOne(
           { _id: transaction._id },
           {
-            $set: {
-              status: "returned",
-              returnedAt: now,
-              returnProcessedAt: now,
-              returnProcessedBy: session.user?.email,
-              updatedAt: now,
-            },
+            $set: transactionUpdate,
             $unset: {
               rejectionReason: "",
             },
@@ -332,7 +351,7 @@ export async function POST(request) {
         books.updateOne(
           { _id: bookObjectId },
           {
-            $set: { status: "available", updatedAt: now },
+            $set: bookUpdate,
             $unset: { reservedFor: "", reservedAt: "" },
           }
         ),

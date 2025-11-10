@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Quagga from "quagga";
 
-export default function BarcodeScanner({ mode = "barcode", onDetected, onError }) {
+export default function BarcodeScanner({ onDetected, onError }) {
   const scannerRef = useRef(null);
   const [detectedCode, setDetectedCode] = useState("");
   const [status, setStatus] = useState("initializing");
 
   useEffect(() => {
-    if (mode !== "barcode" || !scannerRef.current) {
+    if (!scannerRef.current) {
       return;
     }
 
@@ -82,22 +82,7 @@ export default function BarcodeScanner({ mode = "barcode", onDetected, onError }
       Quagga.stop();
       Quagga.offDetected(handleDetected);
     };
-  }, [mode, onDetected, onError]);
-
-  if (mode === "ocr") {
-    return (
-      <div className="space-y-4">
-        <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-          <p className="text-sm text-gray-600 mb-4">
-            OCR mode: Upload an image using the &quot;Upload Image&quot; button to extract ISBN from book covers or pages.
-          </p>
-          <div className="text-xs text-gray-500">
-            Supported formats: JPG, PNG, HEIC
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, [onDetected, onError]);
 
   return (
     <div className="space-y-4">

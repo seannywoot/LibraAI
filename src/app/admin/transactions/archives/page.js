@@ -351,6 +351,28 @@ export default function AdminTransactionArchivesPage() {
                                 {t.rejectionReason}
                               </p>
                             )}
+                            {t.status === "returned" && t.bookCondition && (
+                              <div className="mt-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                    t.bookCondition === "good"
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : t.bookCondition === "fair"
+                                      ? "bg-amber-100 text-amber-800"
+                                      : "bg-rose-100 text-rose-800"
+                                  }`}
+                                >
+                                  {t.bookCondition === "good" && "✓"}
+                                  {t.bookCondition === "fair" && "⚠"}
+                                  {t.bookCondition === "damaged" && "✕"}
+                                  {" "}
+                                  {t.bookCondition.charAt(0).toUpperCase() + t.bookCondition.slice(1)}
+                                </span>
+                                {t.conditionNotes && (
+                                  <p className="mt-1 text-xs text-zinc-600 italic">{t.conditionNotes}</p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-3">
