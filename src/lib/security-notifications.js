@@ -12,10 +12,8 @@ import {
 } from './admin-email-templates';
 import clientPromise from './mongodb';
 
-// In-memory stores for deduplication (use Redis in production)
-const sentNotifications = new Map();
+// In-memory store for failed login tracking (temporary, cleared on restart)
 const failedLoginTracking = new Map();
-const deviceTracking = new Map();
 
 const CONFIG = {
   // Account lockout settings
@@ -38,27 +36,56 @@ const CONFIG = {
 };
 
 /**
- * Check if a notification was recently sent (deduplication)
+ * Check if a notification was recently sent (deduplication) - using MongoDB
  */
-function wasRecentlySent(key, dedupeWindow) {
-  const lastSent = sentNotifications.get(key);
-  if (!lastSent) return false;
-  
-  const now = Date.now();
-  if (now - lastSent < dedupeWindow) {
-    return true;
+async function wasRecentlySent(key, dedupeWindow) {
+  try {
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB_NAME || 'test');
+    const collection = db.collection('security_notifications');
+    
+    const record = await collection.findOne({ key });
+    
+    if (!record) return false;
+    
+    const now = Date.now();
+    if (now - record.lastSent < dedupeWindow) {
+      return true;
+    }
+    
+    // Expired, clean up
+    await collection.deleteOne({ key });
+    return false;
+  } catch (error) {
+    console.error('[Security Notifications] Error checking deduplication:', error);
+    // Fail open - allow notification if database check fails
+    return false;
   }
-  
-  // Expired, clean up
-  sentNotifications.delete(key);
-  return false;
 }
 
 /**
- * Mark a notification as sent
+ * Mark a notification as sent - using MongoDB
  */
-function markAsSent(key) {
-  sentNotifications.set(key, Date.now());
+async function markAsSent(key) {
+  try {
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB_NAME || 'test');
+    const collection = db.collection('security_notifications');
+    
+    await collection.updateOne(
+      { key },
+      { 
+        $set: { 
+          key,
+          lastSent: Date.now(),
+          updatedAt: new Date()
+        }
+      },
+      { upsert: true }
+    );
+  } catch (error) {
+    console.error('[Security Notifications] Error marking as sent:', error);
+  }
 }
 
 /**
@@ -118,7 +145,7 @@ export async function notifyAccountLockout({ lockedEmail, role, attempts, lockWi
   try {
     // Deduplication: one email per identifier per lock window
     const dedupeKey = `lockout:${lockedEmail}`;
-    if (wasRecentlySent(dedupeKey, CONFIG.LOCKOUT_DEDUPE_WINDOW)) {
+    if (await wasRecentlySent(dedupeKey, CONFIG.LOCKOUT_DEDUPE_WINDOW)) {
       console.log(`[Security Notifications] Lockout notification for ${lockedEmail} already sent recently`);
       return { sent: false, reason: 'deduplicated' };
     }
@@ -161,7 +188,7 @@ export async function notifyAccountLockout({ lockedEmail, role, attempts, lockWi
 
     // Mark as sent if at least one succeeded
     if (results.some(r => r.sent)) {
-      markAsSent(dedupeKey);
+      await markAsSent(dedupeKey);
     }
 
     return { sent: true, results };
@@ -214,7 +241,7 @@ export async function checkFailedLoginSpike() {
 
     // Spike detected! Check deduplication
     const dedupeKey = 'spike:global';
-    if (wasRecentlySent(dedupeKey, CONFIG.SPIKE_DEDUPE_WINDOW)) {
+    if (await wasRecentlySent(dedupeKey, CONFIG.SPIKE_DEDUPE_WINDOW)) {
       console.log('[Security Notifications] Spike notification already sent recently');
       return { spike: true, count: recentAttempts.length, sent: false, reason: 'deduplicated' };
     }
@@ -276,7 +303,7 @@ export async function checkFailedLoginSpike() {
 
     // Mark as sent if at least one succeeded
     if (results.some(r => r.sent)) {
-      markAsSent(dedupeKey);
+      await markAsSent(dedupeKey);
     }
 
     return { spike: true, count: recentAttempts.length, sent: true, results };
@@ -304,26 +331,52 @@ function getDeviceFingerprint({ email, ipAddress, userAgent }) {
 }
 
 /**
- * Check if this is a new device/environment for admin login
+ * Check if this is a new device/environment for admin login - using MongoDB
  * @param {Object} params
  * @param {string} params.email - Admin email
  * @param {string} params.ipAddress - IP address
  * @param {string} params.userAgent - User agent
- * @returns {boolean} True if this is a new device
+ * @returns {Promise<boolean>} True if this is a new device
  */
-export function isNewAdminDevice({ email, ipAddress, userAgent }) {
-  const fingerprint = getDeviceFingerprint({ email, ipAddress, userAgent });
-  const lastSeen = deviceTracking.get(fingerprint);
-  
-  if (!lastSeen) {
-    // New device
-    deviceTracking.set(fingerprint, Date.now());
-    return true;
+export async function isNewAdminDevice({ email, ipAddress, userAgent }) {
+  try {
+    const fingerprint = getDeviceFingerprint({ email, ipAddress, userAgent });
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB_NAME || 'test');
+    const collection = db.collection('admin_devices');
+    
+    const device = await collection.findOne({ fingerprint });
+    
+    if (!device) {
+      // New device - store it
+      await collection.insertOne({
+        fingerprint,
+        email,
+        ipAddress,
+        userAgent,
+        firstSeen: new Date(),
+        lastSeen: new Date(),
+      });
+      return true;
+    }
+    
+    // Update last seen
+    await collection.updateOne(
+      { fingerprint },
+      { 
+        $set: { 
+          lastSeen: new Date(),
+          ipAddress, // Update in case IP changed
+          userAgent, // Update in case UA changed
+        }
+      }
+    );
+    return false;
+  } catch (error) {
+    console.error('[Security Notifications] Error checking device:', error);
+    // Fail safe - treat as not new to avoid spam on errors
+    return false;
   }
-  
-  // Update last seen
-  deviceTracking.set(fingerprint, Date.now());
-  return false;
 }
 
 /**
@@ -340,7 +393,7 @@ export async function notifyNewAdminLogin({ loginEmail, ipAddress, userAgent, lo
     const fingerprint = getDeviceFingerprint({ email: loginEmail, ipAddress, userAgent });
     const dedupeKey = `newdevice:${fingerprint}`;
     
-    if (wasRecentlySent(dedupeKey, CONFIG.DEVICE_DEDUPE_WINDOW)) {
+    if (await wasRecentlySent(dedupeKey, CONFIG.DEVICE_DEDUPE_WINDOW)) {
       console.log(`[Security Notifications] New device notification for ${loginEmail} already sent recently`);
       return { sent: false, reason: 'deduplicated' };
     }
@@ -375,7 +428,7 @@ export async function notifyNewAdminLogin({ loginEmail, ipAddress, userAgent, lo
       });
 
       console.log(`✓ New admin login notification sent to ${loginEmail}`);
-      markAsSent(dedupeKey);
+      await markAsSent(dedupeKey);
       
       return { sent: true };
     } catch (error) {
@@ -389,30 +442,31 @@ export async function notifyNewAdminLogin({ loginEmail, ipAddress, userAgent, lo
 }
 
 /**
- * Clean up old tracking data (run periodically)
+ * Clean up old tracking data (run periodically) - using MongoDB
  */
-export function cleanupSecurityTracking() {
-  const now = Date.now();
-  let cleaned = 0;
-
-  // Clean up sent notifications older than 24 hours
-  for (const [key, timestamp] of sentNotifications.entries()) {
-    if (now - timestamp > 24 * 60 * 60 * 1000) {
-      sentNotifications.delete(key);
-      cleaned++;
-    }
+export async function cleanupSecurityTracking() {
+  try {
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB_NAME || 'test');
+    const now = new Date();
+    
+    // Clean up sent notifications older than 24 hours
+    const notificationsResult = await db.collection('security_notifications').deleteMany({
+      updatedAt: { $lt: new Date(now.getTime() - 24 * 60 * 60 * 1000) }
+    });
+    
+    // Clean up device tracking older than 30 days
+    const devicesResult = await db.collection('admin_devices').deleteMany({
+      lastSeen: { $lt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) }
+    });
+    
+    const cleaned = notificationsResult.deletedCount + devicesResult.deletedCount;
+    console.log(`[Security Notifications] Cleaned up ${cleaned} old tracking entries (${notificationsResult.deletedCount} notifications, ${devicesResult.deletedCount} devices)`);
+    return { cleaned, notifications: notificationsResult.deletedCount, devices: devicesResult.deletedCount };
+  } catch (error) {
+    console.error('[Security Notifications] Error during cleanup:', error);
+    return { cleaned: 0, error: error.message };
   }
-
-  // Clean up device tracking older than 30 days
-  for (const [key, timestamp] of deviceTracking.entries()) {
-    if (now - timestamp > 30 * 24 * 60 * 60 * 1000) {
-      deviceTracking.delete(key);
-      cleaned++;
-    }
-  }
-
-  console.log(`[Security Notifications] Cleaned up ${cleaned} old tracking entries`);
-  return { cleaned };
 }
 
 // Auto-cleanup every hour

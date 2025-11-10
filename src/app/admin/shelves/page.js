@@ -163,9 +163,9 @@ export default function AdminShelvesPage() {
             <label className="grid gap-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-700">Name (optional)</span>
-                <span className={`text-xs ${name.length >= 100 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{name.length}/100</span>
+                <span className={`text-xs ${name.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{name.length}/40</span>
               </div>
-              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Fiction — Science" maxLength={100} />
+              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Fiction — Science" maxLength={40} />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="grid gap-2 text-sm">
@@ -180,9 +180,9 @@ export default function AdminShelvesPage() {
             <label className="grid gap-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-700">Notes (optional)</span>
-                <span className={`text-xs ${notes.length >= 100 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{notes.length}/100</span>
+                <span className={`text-xs ${notes.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{notes.length}/40</span>
               </div>
-              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Special handling, maintenance" maxLength={100} />
+              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Special handling, maintenance" maxLength={40} />
             </label>
             <div className="flex justify-end"><button className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800" type="submit">Add</button></div>
           </form>
@@ -237,11 +237,11 @@ export default function AdminShelvesPage() {
                       <td className="px-4 py-3">
                         {editingId === a._id ? (
                           <div className="space-y-1">
-                            <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.name} onChange={(e) => setEditing((prev) => ({ ...prev, name: e.target.value }))} maxLength={100} />
-                            <div className={`text-xs text-right ${editing.name.length >= 100 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editing.name.length}/100</div>
+                            <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.name} onChange={(e) => setEditing((prev) => ({ ...prev, name: e.target.value }))} maxLength={40} />
+                            <div className={`text-xs text-right ${editing.name.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editing.name.length}/40</div>
                           </div>
                         ) : (
-                          a.name || "—"
+                          a.name && a.name.length > 40 ? `${a.name.substring(0, 40)}...` : a.name || "—"
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -270,11 +270,11 @@ export default function AdminShelvesPage() {
                       <td className="px-4 py-3">
                         {editingId === a._id ? (
                           <div className="space-y-1">
-                            <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.notes} onChange={(e) => setEditing((prev) => ({ ...prev, notes: e.target.value }))} maxLength={100} />
-                            <div className={`text-xs text-right ${editing.notes.length >= 100 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editing.notes.length}/100</div>
+                            <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.notes} onChange={(e) => setEditing((prev) => ({ ...prev, notes: e.target.value }))} maxLength={40} />
+                            <div className={`text-xs text-right ${editing.notes.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editing.notes.length}/40</div>
                           </div>
                         ) : (
-                          a.notes || "—"
+                          a.notes && a.notes.length > 40 ? `${a.notes.substring(0, 40)}...` : a.notes || "—"
                         )}
                       </td>
                       <td className="px-4 py-3">

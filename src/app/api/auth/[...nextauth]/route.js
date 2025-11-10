@@ -200,22 +200,23 @@ export const authOptions = {
           const userAgent = credentials?.userAgent || 'Unknown';
           const ipAddress = credentials?.ipAddress || 'unknown';
           
-          const isNew = isNewAdminDevice({
+          // Check if new device (async, don't block login)
+          isNewAdminDevice({
             email,
             ipAddress,
             userAgent,
-          });
-          
-          if (isNew) {
-            console.log('[AUTH] New admin device detected for:', email);
-            // Send new device notification (async, don't wait)
-            notifyNewAdminLogin({
-              loginEmail: email,
-              ipAddress,
-              userAgent,
-              location: 'Unknown', // Could integrate IP geolocation service
-            }).catch(err => console.error('[AUTH] Failed to send new device notification:', err));
-          }
+          }).then(isNew => {
+            if (isNew) {
+              console.log('[AUTH] New admin device detected for:', email);
+              // Send new device notification (async, don't wait)
+              notifyNewAdminLogin({
+                loginEmail: email,
+                ipAddress,
+                userAgent,
+                location: 'Unknown', // Could integrate IP geolocation service
+              }).catch(err => console.error('[AUTH] Failed to send new device notification:', err));
+            }
+          }).catch(err => console.error('[AUTH] Error checking new device:', err));
         }
 
         return resolvedUser;
