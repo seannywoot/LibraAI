@@ -58,6 +58,7 @@ export async function GET(request) {
         ok: true,
         recommendations: result.recommendations,
         basedOn: result.profile,
+        isFallback: result.profile?.isFallback || false,
         meta: {
           algorithmsUsed: ["collaborative-filtering", "content-based", "popularity", "diversity", "engagement-based"],
           version: "3.0"

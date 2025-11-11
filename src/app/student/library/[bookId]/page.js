@@ -34,6 +34,7 @@ export default function PersonalBookDetailPage({ params }) {
   const [removing, setRemoving] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [isFallbackRecommendations, setIsFallbackRecommendations] = useState(false);
   const [showPDFModal, setShowPDFModal] = useState(false);
 
   const navigationLinks = getStudentLinks();
@@ -81,6 +82,7 @@ export default function PersonalBookDetailPage({ params }) {
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.ok) {
         setRecommendations(data.recommendations || []);
+        setIsFallbackRecommendations(data.isFallback || false);
       } else {
         console.error("Recommendations API error:", data?.error);
       }
@@ -283,7 +285,9 @@ export default function PersonalBookDetailPage({ params }) {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              Similar Books You Might Like
+              {isFallbackRecommendations 
+                ? "Popular Books You Might Enjoy" 
+                : "Similar Books You Might Like"}
             </h2>
             {loadingRecommendations && (
               <span className="text-xs text-gray-500">Loading...</span>
@@ -313,8 +317,10 @@ export default function PersonalBookDetailPage({ params }) {
             </div>
           ) : (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-              <p className="text-xs text-gray-500">
-                No similar books found at the moment. Check back later!
+              <p className="text-sm text-gray-600">
+                {isFallbackRecommendations 
+                  ? "We couldn't find books similar to this one, but here are some popular titles from our library."
+                  : "No recommendations available at the moment. Check back later!"}
               </p>
             </div>
           )}

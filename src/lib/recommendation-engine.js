@@ -768,10 +768,23 @@ async function getSimilarBooks(db, bookId, limit, excludeBookIds) {
 
   scored.sort((a, b) => b.relevanceScore - a.relevanceScore);
 
+  // If no similar books found, fall back to popular recommendations
+  if (scored.length === 0) {
+    const fallback = await getPopularRecommendations(db, limit);
+    return {
+      recommendations: fallback.recommendations,
+      profile: {
+        basedOn: sourceBook.title,
+        isFallback: true,
+      },
+    };
+  }
+
   return {
     recommendations: scored.slice(0, limit),
     profile: {
       basedOn: sourceBook.title,
+      isFallback: false,
     },
   };
 }
