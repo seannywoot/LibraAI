@@ -72,6 +72,9 @@ export async function GET(request, { params }) {
       loanPolicy: 1,
       reservedFor: 1,
       slug: 1,
+      coverImage: 1,
+      coverImageUrl: 1,
+      thumbnail: 1,
     };
 
     const [rawItems, total] = await Promise.all([

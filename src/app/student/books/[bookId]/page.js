@@ -11,6 +11,7 @@ import { ToastContainer, showToast } from "@/components/ToastContainer";
 import RecommendationCard from "@/components/recommendation-card";
 import BorrowConfirmButton from "@/components/borrow-confirm-button";
 import { getBehaviorTracker } from "@/lib/behavior-tracker";
+import CategoryBadge from "@/components/category-badge";
 
 function StatusChip({ status }) {
   const map = {
@@ -378,23 +379,31 @@ export default function BookDetailPage({ params }) {
                   </div>
                 )}
                 {((book.categories && book.categories.length > 0) || book.category) && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
+                  <div className="col-span-2">
+                    <p className="text-sm font-semibold text-gray-900 mb-2">
                       {book.categories && book.categories.length > 1 ? "Categories" : "Category"}
                     </p>
-                    <p className="text-sm text-gray-600">
-                      {book.categories && book.categories.length > 0
-                        ? book.categories.join(", ")
-                        : book.category}
-                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {book.categories && book.categories.length > 0 ? (
+                        book.categories.map((category, idx) => (
+                          <CategoryBadge key={idx} label={category} variant="category" />
+                        ))
+                      ) : (
+                        <CategoryBadge label={book.category} variant="category" />
+                      )}
+                    </div>
                   </div>
                 )}
                 {book.tags && book.tags.length > 0 && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
+                  <div className="col-span-2">
+                    <p className="text-sm font-semibold text-gray-900 mb-2">
                       Tags
                     </p>
-                    <p className="text-sm text-gray-600">{book.tags.join(", ")}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {book.tags.map((tag, idx) => (
+                        <CategoryBadge key={idx} label={tag} variant="tag" />
+                      ))}
+                    </div>
                   </div>
                 )}
                 {book.language && (
@@ -520,31 +529,34 @@ export default function BookDetailPage({ params }) {
         </div>
 
         {/* Recommended Books */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Recommended Books
+            <h2 className="text-lg font-semibold text-gray-900">
+              Similar Books You Might Like
             </h2>
             {loadingRecommendations && (
-              <span className="text-sm text-gray-500">Loading...</span>
+              <span className="text-xs text-gray-500">Loading...</span>
             )}
           </div>
 
           {recommendations.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-              {recommendations.map((rec) => (
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">
+              {recommendations.slice(0, 6).map((rec) => (
                 <RecommendationCard
                   key={rec._id}
                   book={rec}
                   onClick={(book) => router.push(`/student/books/${encodeURIComponent(book.slug || book._id)}`)}
                   isBookmarked={bookmarkedRecommendations.has(rec._id)}
                   onBookmarkToggle={handleRecommendationBookmarkToggle}
+                  compact={true}
                 />
               ))}
             </div>
           ) : !loadingRecommendations ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-600">
-              No recommendations available at this time.
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+              <p className="text-xs text-gray-500">
+                No recommendations available at this time.
+              </p>
             </div>
           ) : null}
         </div>

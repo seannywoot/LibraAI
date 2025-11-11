@@ -10,6 +10,7 @@ import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import RecommendationCard from "@/components/recommendation-card";
 import PDFViewer from "@/components/pdf-viewer";
+import CategoryBadge from "@/components/category-badge";
 
 function formatDisplayDate(date) {
   if (!date) return "—";
@@ -227,12 +228,17 @@ export default function PersonalBookDetailPage({ params }) {
                     <p className="text-sm font-semibold text-gray-900 mb-2">Categories</p>
                     <div className="flex flex-wrap gap-2">
                       {book.categories.map((category, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800"
-                        >
-                          {category}
-                        </span>
+                        <CategoryBadge key={idx} label={category} variant="category" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {book.tags && book.tags.length > 0 && (
+                  <div className="md:col-span-2">
+                    <p className="text-sm font-semibold text-gray-900 mb-2">Tags</p>
+                    <div className="flex flex-wrap gap-2">
+                      {book.tags.map((tag, idx) => (
+                        <CategoryBadge key={idx} label={tag} variant="tag" />
                       ))}
                     </div>
                   </div>
@@ -274,39 +280,40 @@ export default function PersonalBookDetailPage({ params }) {
         </div>
 
         {/* Similar Books / Recommendations Section */}
-        <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">
               Similar Books You Might Like
             </h2>
             {loadingRecommendations && (
-              <span className="text-sm text-gray-500">Loading...</span>
+              <span className="text-xs text-gray-500">Loading...</span>
             )}
           </div>
 
           {loadingRecommendations ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3].map((i) => (
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="bg-gray-200 h-48 rounded-lg mb-3"></div>
-                  <div className="bg-gray-200 h-4 rounded w-3/4 mb-2"></div>
-                  <div className="bg-gray-200 h-3 rounded w-1/2"></div>
+                  <div className="bg-gray-200 aspect-2/3 rounded-lg mb-2"></div>
+                  <div className="bg-gray-200 h-3 rounded w-3/4 mb-1"></div>
+                  <div className="bg-gray-200 h-2 rounded w-1/2"></div>
                 </div>
               ))}
             </div>
           ) : recommendations.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recommendations.map((rec) => (
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">
+              {recommendations.slice(0, 6).map((rec) => (
                 <RecommendationCard
                   key={rec._id}
                   book={rec}
-                  reason={rec.reason}
+                  onClick={(book) => router.push(`/student/books/${encodeURIComponent(book.slug || book._id)}`)}
+                  compact={true}
                 />
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p className="text-sm">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+              <p className="text-xs text-gray-500">
                 No similar books found at the moment. Check back later!
               </p>
             </div>

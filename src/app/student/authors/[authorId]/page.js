@@ -272,9 +272,22 @@ export default function StudentAuthorBooksPage() {
                     href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
                     className="flex items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow"
                   >
-                    {/* Book Cover Placeholder */}
-                    <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
-                      Book Cover
+                    {/* Book Cover */}
+                    <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                      {book.coverImage || book.coverImageUrl || book.thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={book.coverImage || book.coverImageUrl || book.thumbnail}
+                          alt={`Cover of ${book.title}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
+                          }}
+                        />
+                      ) : (
+                        <span>No Cover</span>
+                      )}
                     </div>
 
                     {/* Book Details */}
