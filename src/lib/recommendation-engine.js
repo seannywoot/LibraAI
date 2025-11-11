@@ -584,8 +584,16 @@ function scoreBooks(books, profile) {
  */
 async function getSimilarBooks(db, bookId, limit, excludeBookIds) {
   const books = db.collection("books");
+  const personalLibraries = db.collection("personal_libraries");
 
-  const sourceBook = await books.findOne({ _id: new ObjectId(bookId) });
+  // Try to find in main catalog first
+  let sourceBook = await books.findOne({ _id: new ObjectId(bookId) });
+  
+  // If not found, check personal libraries (for scanned books)
+  if (!sourceBook) {
+    sourceBook = await personalLibraries.findOne({ _id: new ObjectId(bookId) });
+  }
+  
   if (!sourceBook) {
     return getPopularRecommendations(db, limit);
   }

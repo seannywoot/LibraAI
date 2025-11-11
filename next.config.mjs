@@ -6,6 +6,22 @@ const nextConfig = {
       bodySizeLimit: '10mb', // Adjust based on your needs
     },
   },
+  // Turbopack configuration for Next.js 16+
+  turbopack: {
+    resolveAlias: {
+      canvas: './empty-module.js',
+    },
+  },
+  // Webpack fallback for when not using Turbopack
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

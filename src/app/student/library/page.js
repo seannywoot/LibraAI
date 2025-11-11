@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Book as BookIcon, BookOpen, Camera, Upload, X, Scan, Bookmark } from "@/components/icons";
@@ -48,6 +48,7 @@ function StatusBadge({ status }) {
 
 function MyLibraryContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const tabParam = searchParams.get("tab");
   const initialTab = tabParam === "borrowed" ? "borrowed" : tabParam === "bookmarked" ? "bookmarked" : "personal";
   
@@ -248,7 +249,13 @@ function MyLibraryContent() {
         throw new Error(data?.error || "Failed to add book");
 
       showToast("Book added to your library!", "success");
-      loadMyLibrary();
+      
+      // Navigate to the book detail page to show recommendations
+      if (data.bookId) {
+        router.push(`/student/library/${data.bookId}`);
+      } else {
+        loadMyLibrary();
+      }
     } catch (e) {
       showToast(e?.message || "Failed to add book", "error");
     } finally {
@@ -441,7 +448,7 @@ function MyLibraryContent() {
                 className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 <Upload className="h-4 w-4" />
-                {uploading ? "Uploading..." : "Upload PDF/Image"}
+                {uploading ? "Uploading..." : "Upload PDF"}
               </button>
               <button
                 onClick={() => setShowScanner(true)}
@@ -567,7 +574,7 @@ function MyLibraryContent() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="application/pdf,image/*"
+          accept="application/pdf"
           onChange={handleFileUpload}
           className="hidden"
         />
@@ -964,20 +971,9 @@ function MyLibraryContent() {
 
                             {/* Action Button */}
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-400">View details</span>
-                              {book.fileType === "application/pdf" && book.fileUrl ? (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    window.open(book.fileUrl, "_blank", "noopener,noreferrer");
-                                  }}
-                                  className="rounded-md bg-black px-5 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
-                                >
-                                  Open PDF
-                                </button>
-                              ) : null}
+                              <span className="text-xs text-gray-400">
+                                {book.fileType === "application/pdf" && book.fileUrl ? "Click to read PDF" : "View details"}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -1027,17 +1023,9 @@ function MyLibraryContent() {
                           {/* Action Button */}
                           <div className="mt-auto space-y-2">
                             {book.fileType === "application/pdf" && book.fileUrl ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  window.open(book.fileUrl, "_blank", "noopener,noreferrer");
-                                }}
-                                className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
-                              >
-                                Open PDF
-                              </button>
+                              <div className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white text-center">
+                                Read PDF
+                              </div>
                             ) : (
                               <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-[11px] font-medium text-gray-500 text-center">
                                 Added {new Date(book.addedAt).toLocaleDateString()}

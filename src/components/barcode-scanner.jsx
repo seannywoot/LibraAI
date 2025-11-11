@@ -5,15 +5,26 @@ import Quagga from "quagga";
 
 export default function BarcodeScanner({ onDetected, onError }) {
   const scannerRef = useRef(null);
+  const onDetectedRef = useRef(onDetected);
+  const onErrorRef = useRef(onError);
   const [detectedCode, setDetectedCode] = useState("");
   const [status, setStatus] = useState("initializing");
 
+  // Keep refs updated
+  useEffect(() => {
+    onDetectedRef.current = onDetected;
+    onErrorRef.current = onError;
+  }, [onDetected, onError]);
+
   useEffect(() => {
     if (!scannerRef.current) {
+      console.log("Scanner ref not ready");
       return;
     }
 
+    console.log("Initializing Quagga barcode scanner...");
     let mounted = true;
+    let hasDetected = false;
 
     Quagga.init(
       {
@@ -50,27 +61,51 @@ export default function BarcodeScanner({ onDetected, onError }) {
         
         if (err) {
           console.error("Barcode scanner init error:", err);
-          onError?.("Failed to initialize camera");
+          if (onErrorRef.current) {
+            onErrorRef.current("Failed to initialize camera");
+          }
           setStatus("error");
           return;
         }
+        console.log("Quagga initialized successfully, starting scanner...");
         Quagga.start();
         setStatus("scanning");
+        console.log("Scanner status set to: scanning");
       }
     );
 
     const handleDetected = (result) => {
-      if (!mounted) return;
+      if (!mounted) {
+        console.log("Component unmounted, ignoring detection");
+        return;
+      }
+      
+      if (hasDetected) {
+        console.log("Already detected a code, ignoring");
+        return;
+      }
       
       if (result?.codeResult?.code) {
         const code = result.codeResult.code;
-        setDetectedCode(code);
+        console.log("Barcode detected:", code, "Format:", result.codeResult.format);
         
         // Validate ISBN format (10 or 13 digits)
         if (/^\d{10}(\d{3})?$/.test(code)) {
+          hasDetected = true;
+          setDetectedCode(code);
           Quagga.stop();
           setStatus("detected");
-          onDetected?.(code);
+          
+          console.log("Valid ISBN detected, calling onDetected callback");
+          console.log("onDetectedRef.current exists:", !!onDetectedRef.current);
+          
+          if (onDetectedRef.current) {
+            onDetectedRef.current(code);
+          } else {
+            console.error("onDetected callback is not defined!");
+          }
+        } else {
+          console.log("Invalid ISBN format, continuing to scan...");
         }
       }
     };
@@ -82,7 +117,7 @@ export default function BarcodeScanner({ onDetected, onError }) {
       Quagga.stop();
       Quagga.offDetected(handleDetected);
     };
-  }, [onDetected, onError]);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -91,7 +126,7 @@ export default function BarcodeScanner({ onDetected, onError }) {
         className="relative w-full aspect-video bg-black rounded-lg overflow-hidden"
       >
         {status === "initializing" && (
-          <div className="absolute inset-0 flex items-center justify-center text-white">
+          <div className="absolute inset-0 flex items-center justify-center text-white z-10">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
               <p>Initializing camera...</p>
@@ -99,10 +134,16 @@ export default function BarcodeScanner({ onDetected, onError }) {
           </div>
         )}
         {status === "error" && (
-          <div className="absolute inset-0 flex items-center justify-center text-white">
+          <div className="absolute inset-0 flex items-center justify-center text-white z-10 bg-black">
             <div className="text-center">
               <p>Failed to initialize camera</p>
+              <p className="text-xs mt-2">Please allow camera access</p>
             </div>
+          </div>
+        )}
+        {status === "scanning" && (
+          <div className="absolute top-2 left-2 z-10 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+            Scanning...
           </div>
         )}
       </div>

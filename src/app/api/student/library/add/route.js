@@ -63,6 +63,27 @@ export async function POST(request) {
 
         if (googleData.items && googleData.items.length > 0) {
           const volumeInfo = googleData.items[0].volumeInfo;
+          
+          // Extract and process categories from Google Books
+          let categories = [];
+          if (volumeInfo.categories && Array.isArray(volumeInfo.categories)) {
+            // Google Books categories are often like "Computers / Programming / Java"
+            // Split them and clean them up
+            categories = volumeInfo.categories.flatMap(cat => 
+              cat.split('/').map(c => c.trim())
+            ).filter(c => c.length > 0);
+            
+            // Remove duplicates
+            categories = [...new Set(categories)];
+          }
+          
+          // Extract subjects as additional tags
+          let tags = [];
+          if (volumeInfo.subjects && Array.isArray(volumeInfo.subjects)) {
+            tags = volumeInfo.subjects.map(s => s.trim()).filter(s => s.length > 0);
+            tags = [...new Set(tags)];
+          }
+          
           bookInfo = {
             title: volumeInfo.title || "Unknown Title",
             author: volumeInfo.authors?.[0] || "Unknown Author",
@@ -71,12 +92,16 @@ export async function POST(request) {
             year: volumeInfo.publishedDate?.substring(0, 4),
             description: volumeInfo.description,
             thumbnail: volumeInfo.imageLinks?.thumbnail,
+            categories: categories.length > 0 ? categories : ["General"],
+            tags: tags.length > 0 ? tags : [],
           };
         } else {
           bookInfo = {
             title: "Unknown Book",
             author: "Unknown Author",
             isbn: isbn,
+            categories: ["General"],
+            tags: [],
           };
         }
       } catch (apiError) {
@@ -85,6 +110,8 @@ export async function POST(request) {
           title: "Unknown Book",
           author: "Unknown Author",
           isbn: isbn,
+          categories: ["General"],
+          tags: [],
         };
       }
     }
@@ -102,8 +129,15 @@ export async function POST(request) {
       );
     }
 
+    // Log the book info for debugging
+    console.log("Adding book to library:", {
+      title: bookInfo.title,
+      categories: bookInfo.categories,
+      tags: bookInfo.tags
+    });
+
     // Add to personal library
-    await db.collection("personal_libraries").insertOne({
+    const insertResult = await db.collection("personal_libraries").insertOne({
       userId: user._id,
       isbn: isbn,
       title: bookInfo.title,
@@ -112,6 +146,8 @@ export async function POST(request) {
       year: bookInfo.year,
       description: bookInfo.description,
       thumbnail: bookInfo.thumbnail,
+      categories: bookInfo.categories || ["General"],
+      tags: bookInfo.tags || [],
       addedAt: new Date(),
       addedMethod: method || "manual",
     });
@@ -120,6 +156,7 @@ export async function POST(request) {
       ok: true,
       message: "Book added to library",
       book: bookInfo,
+      bookId: insertResult.insertedId.toString(),
     });
   } catch (error) {
     console.error("Error adding book:", error);

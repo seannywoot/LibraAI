@@ -20,6 +20,12 @@ export async function POST(request) {
     const file = formData.get("file");
     const fileType = formData.get("fileType");
 
+    console.log("Upload request received:", {
+      hasFile: !!file,
+      fileType: fileType,
+      fileName: file?.name
+    });
+
     if (!file) {
       return NextResponse.json(
         { ok: false, error: "No file provided" },
@@ -75,13 +81,76 @@ export async function POST(request) {
       await writeFile(filepath, buffer);
 
       // Extract title from filename (remove extension and timestamp)
-      const title = file.name.replace(/\.pdf$/i, "").replace(/_/g, " ");
+      const extractedTitle = file.name.replace(/\.pdf$/i, "").replace(/_/g, " ");
+
+      // Try to enrich metadata from Google Books API using title search
+      let bookInfo = {
+        title: extractedTitle,
+        author: "Unknown Author",
+        categories: ["General"],
+        tags: [],
+      };
+
+      try {
+        console.log(`Searching Google Books for: "${extractedTitle}"`);
+        const googleRes = await fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(extractedTitle)}&maxResults=1`
+        );
+        const googleData = await googleRes.json();
+
+        if (googleData.items && googleData.items.length > 0) {
+          const volumeInfo = googleData.items[0].volumeInfo;
+          
+          // Extract and process categories
+          let categories = [];
+          if (volumeInfo.categories && Array.isArray(volumeInfo.categories)) {
+            categories = volumeInfo.categories.flatMap(cat => 
+              cat.split('/').map(c => c.trim())
+            ).filter(c => c.length > 0);
+            categories = [...new Set(categories)];
+          }
+          
+          // Extract subjects as tags
+          let tags = [];
+          if (volumeInfo.subjects && Array.isArray(volumeInfo.subjects)) {
+            tags = volumeInfo.subjects.map(s => s.trim()).filter(s => s.length > 0);
+            tags = [...new Set(tags)];
+          }
+          
+          bookInfo = {
+            title: volumeInfo.title || extractedTitle,
+            author: volumeInfo.authors?.[0] || "Unknown Author",
+            isbn: volumeInfo.industryIdentifiers?.[0]?.identifier,
+            publisher: volumeInfo.publisher,
+            year: volumeInfo.publishedDate?.substring(0, 4),
+            description: volumeInfo.description,
+            thumbnail: volumeInfo.imageLinks?.thumbnail,
+            categories: categories.length > 0 ? categories : ["General"],
+            tags: tags.length > 0 ? tags : [],
+          };
+          
+          console.log(`Found book: "${bookInfo.title}" by ${bookInfo.author}`);
+          console.log(`Categories: ${bookInfo.categories.join(", ")}`);
+        } else {
+          console.log(`No results found for: "${extractedTitle}"`);
+        }
+      } catch (apiError) {
+        console.error("Error fetching book info from Google Books:", apiError);
+        // Continue with extracted title if API fails
+      }
 
       // Add to personal library
       const result = await db.collection("personal_libraries").insertOne({
         userId: user._id,
-        title: title,
-        author: "Unknown Author",
+        title: bookInfo.title,
+        author: bookInfo.author,
+        isbn: bookInfo.isbn,
+        publisher: bookInfo.publisher,
+        year: bookInfo.year,
+        description: bookInfo.description,
+        thumbnail: bookInfo.thumbnail,
+        categories: bookInfo.categories,
+        tags: bookInfo.tags,
         fileType: "application/pdf",
         fileName: file.name,
         fileUrl: `/uploads/ebooks/${filename}`,
@@ -94,8 +163,8 @@ export async function POST(request) {
         ok: true,
         message: "PDF uploaded successfully",
         book: {
-          _id: result.insertedId,
-          title: title,
+          _id: result.insertedId.toString(),
+          title: bookInfo.title,
           fileUrl: `/uploads/ebooks/${filename}`,
         },
       });
@@ -198,8 +267,9 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error("Error uploading file:", error);
+    console.error("Error stack:", error.stack);
     return NextResponse.json(
-      { ok: false, error: "Failed to upload file" },
+      { ok: false, error: error.message || "Failed to upload file" },
       { status: 500 }
     );
   }

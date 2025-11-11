@@ -8,6 +8,8 @@ import { ArrowLeft, BookOpen, Trash2 } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
+import RecommendationCard from "@/components/recommendation-card";
+import PDFViewer from "@/components/pdf-viewer";
 
 function formatDisplayDate(date) {
   if (!date) return "—";
@@ -29,6 +31,8 @@ export default function PersonalBookDetailPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [removing, setRemoving] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
   const navigationLinks = getStudentLinks();
 
@@ -41,6 +45,7 @@ export default function PersonalBookDetailPage({ params }) {
   useEffect(() => {
     if (!bookId) return;
     loadBook();
+    loadRecommendations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookId]);
 
@@ -60,6 +65,27 @@ export default function PersonalBookDetailPage({ params }) {
       setError(err?.message || "Failed to load book");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadRecommendations() {
+    if (!bookId) return;
+    
+    setLoadingRecommendations(true);
+    try {
+      const res = await fetch(`/api/student/books/recommendations?context=library&bookId=${bookId}`, {
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        setRecommendations(data.recommendations || []);
+      } else {
+        console.error("Recommendations API error:", data?.error);
+      }
+    } catch (err) {
+      console.error("Failed to load recommendations:", err);
+    } finally {
+      setLoadingRecommendations(false);
     }
   }
 
@@ -140,8 +166,20 @@ export default function PersonalBookDetailPage({ params }) {
 
         <div className="rounded-lg bg-white border border-gray-200 p-8 shadow-sm">
           <div className="flex flex-col gap-8 md:flex-row">
-            <div className="w-full max-w-xs aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium">
-              {coverLabel}
+            <div className="w-full max-w-xs aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium overflow-hidden">
+              {book.thumbnail ? (
+                <img
+                  src={book.thumbnail}
+                  alt={`Cover of ${book.title}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = `<span class="text-gray-400 text-sm font-medium">${coverLabel}</span>`;
+                  }}
+                />
+              ) : (
+                <span>{coverLabel}</span>
+              )}
             </div>
 
             <div className="flex-1 space-y-6">
@@ -181,6 +219,21 @@ export default function PersonalBookDetailPage({ params }) {
                   <p className="text-sm font-semibold text-gray-900">Date Added</p>
                   <p className="text-sm text-gray-600">{formatDisplayDate(book.addedAt)}</p>
                 </div>
+                {book.categories && book.categories.length > 0 && (
+                  <div className="md:col-span-2">
+                    <p className="text-sm font-semibold text-gray-900 mb-2">Categories</p>
+                    <div className="flex flex-wrap gap-2">
+                      {book.categories.map((category, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800"
+                        >
+                          {category}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {book.description && (
@@ -193,16 +246,6 @@ export default function PersonalBookDetailPage({ params }) {
               )}
 
               <div className="flex flex-wrap items-center gap-3">
-                {book.fileType === "application/pdf" && book.fileUrl ? (
-                  <button
-                    type="button"
-                    onClick={() => window.open(book.fileUrl, "_blank", "noopener,noreferrer")}
-                    className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    Open PDF
-                  </button>
-                ) : null}
                 <button
                   type="button"
                   onClick={handleRemove}
@@ -215,6 +258,54 @@ export default function PersonalBookDetailPage({ params }) {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* PDF Viewer Section */}
+        {book.fileType === "application/pdf" && book.fileUrl && (
+          <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Read PDF</h2>
+            <PDFViewer fileUrl={book.fileUrl} />
+          </div>
+        )}
+
+        {/* Similar Books / Recommendations Section */}
+        <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Similar Books You Might Like
+            </h2>
+            {loadingRecommendations && (
+              <span className="text-sm text-gray-500">Loading...</span>
+            )}
+          </div>
+
+          {loadingRecommendations ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-gray-200 h-48 rounded-lg mb-3"></div>
+                  <div className="bg-gray-200 h-4 rounded w-3/4 mb-2"></div>
+                  <div className="bg-gray-200 h-3 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : recommendations.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recommendations.map((rec) => (
+                <RecommendationCard
+                  key={rec._id}
+                  book={rec}
+                  reason={rec.reason}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p className="text-sm">
+                No similar books found at the moment. Check back later!
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </div>
