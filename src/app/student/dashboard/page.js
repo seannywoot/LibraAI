@@ -18,6 +18,21 @@ function formatDate(dateStr) {
   });
 }
 
+function formatTimeAgo(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  
+  if (seconds < 60) return 'just now';
+  
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 function getDaysUntilDue(dueDateStr) {
   if (!dueDateStr) return null;
   const dueDate = new Date(dueDateStr);
@@ -33,11 +48,21 @@ export default function StudentDashboardPage() {
   const [recommendations, setRecommendations] = useState([]);
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [refreshingRecommendations, setRefreshingRecommendations] = useState(false);
+  const [lastRecommendationUpdate, setLastRecommendationUpdate] = useState(null);
   const navigationLinks = getStudentLinks();
 
   useEffect(() => {
     loadDashboardData();
     loadStats();
+
+    // Auto-refresh recommendations every 60 seconds
+    const refreshInterval = setInterval(() => {
+      loadRecommendations(false);
+    }, 60000);
+
+    return () => clearInterval(refreshInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadDashboardData() {
@@ -66,6 +91,20 @@ export default function StudentDashboardPage() {
       }
 
       // Load recommendations
+      await loadRecommendations(true);
+    } catch (e) {
+      console.error("Failed to load dashboard data:", e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadRecommendations(isInitialLoad = false) {
+    if (!isInitialLoad) {
+      setRefreshingRecommendations(true);
+    }
+    
+    try {
       const recsRes = await fetch(
         "/api/student/books/recommendations?limit=6",
         { cache: "no-store" }
@@ -73,11 +112,14 @@ export default function StudentDashboardPage() {
       const recsData = await recsRes.json().catch(() => ({}));
       if (recsRes.ok && recsData?.ok) {
         setRecommendations(recsData.recommendations || []);
+        setLastRecommendationUpdate(new Date());
       }
     } catch (e) {
-      console.error("Failed to load dashboard data:", e);
+      console.error("Failed to load recommendations:", e);
     } finally {
-      setLoading(false);
+      if (!isInitialLoad) {
+        setRefreshingRecommendations(false);
+      }
     }
   }
 
@@ -414,20 +456,54 @@ export default function StudentDashboardPage() {
         {/* Recommended Books Section */}
         <section className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Recommended for You
-            </h2>
-            <Link
-              href="/student/books"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900"
-            >
-              Browse all →
-            </Link>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Recommended for You
+              </h2>
+              {lastRecommendationUpdate && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Updated {formatTimeAgo(lastRecommendationUpdate)}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => loadRecommendations(false)}
+                disabled={refreshingRecommendations}
+                className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors"
+                title="Refresh recommendations"
+              >
+                <svg
+                  className={`w-4 h-4 ${refreshingRecommendations ? 'animate-spin' : ''}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                {refreshingRecommendations ? 'Updating...' : 'Refresh'}
+              </button>
+              <Link
+                href="/student/books"
+                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                Browse all →
+              </Link>
+            </div>
           </div>
 
           {loading ? (
             <div className="text-center py-8 text-gray-600">
               Loading recommendations...
+            </div>
+          ) : refreshingRecommendations && recommendations.length === 0 ? (
+            <div className="text-center py-8 text-gray-600">
+              Updating recommendations...
             </div>
           ) : recommendations.length === 0 ? (
             <div className="text-center py-8">
@@ -437,8 +513,17 @@ export default function StudentDashboardPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {recommendations.map((book) => (
+            <div className="relative">
+              {refreshingRecommendations && (
+                <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded-lg">
+                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-md">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                    <span className="text-sm text-gray-700">Updating...</span>
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {recommendations.map((book) => (
                 <Link
                   key={book._id}
                   href={`/student/books/${book._id}`}
@@ -488,6 +573,7 @@ export default function StudentDashboardPage() {
                   )}
                 </Link>
               ))}
+            </div>
             </div>
           )}
         </section>

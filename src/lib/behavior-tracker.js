@@ -6,6 +6,7 @@
  * - Debouncing to prevent excessive API calls
  * - Queue-based batching for performance
  * - Silent error handling (doesn't interrupt UX)
+ * - Cache invalidation on key interactions
  */
 
 class BehaviorTracker {
@@ -17,6 +18,26 @@ class BehaviorTracker {
     
     // Start auto-flush interval (every 5 seconds)
     this.startAutoFlush();
+  }
+
+  /**
+   * Invalidate recommendation cache
+   */
+  invalidateRecommendationCache() {
+    if (typeof window === "undefined") return;
+    
+    try {
+      // Dynamically import to avoid circular dependencies
+      import('./recommendation-service').then(module => {
+        const getRecommendationService = module.getRecommendationService || module.default;
+        const service = getRecommendationService();
+        service.invalidateCache();
+      }).catch(err => {
+        console.error("Failed to invalidate cache:", err);
+      });
+    } catch (error) {
+      console.error("Failed to invalidate cache:", error);
+    }
   }
 
   /**
@@ -34,6 +55,9 @@ class BehaviorTracker {
     };
 
     this.addToQueue(event);
+    
+    // Invalidate cache after view to update recommendations
+    this.invalidateRecommendationCache();
   }
 
   /**
@@ -60,6 +84,10 @@ class BehaviorTracker {
       };
 
       this.addToQueue(event);
+      
+      // Invalidate cache after search to update recommendations
+      this.invalidateRecommendationCache();
+      
       delete this.debounceTimers[eventKey];
     }, 300);
   }

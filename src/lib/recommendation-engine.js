@@ -17,7 +17,8 @@ export async function getRecommendations({
   bookId = null,
 }) {
   const client = await clientPromise;
-  const db = client.db();
+  const dbName = process.env.MONGODB_DB || process.env.MONGODB_DB_NAME || "test";
+  const db = client.db(dbName);
 
   // Get user
   const users = db.collection("users");
@@ -469,22 +470,40 @@ function scoreBooks(books, profile) {
     let score = 0;
     const matchReasons = [];
 
-    // Category matching (40 points max)
+    // Enhanced category matching with Google Books enriched data
     const categoryMatches = countMatches(book.categories || [], profile.topCategories);
     if (categoryMatches > 0) {
-      const categoryScore = categoryMatches === 1 ? 40 : categoryMatches === 2 ? 70 : 90;
+      // Improved scoring for multiple category matches (Google Books provides detailed categories)
+      let categoryScore;
+      if (categoryMatches === 1) {
+        categoryScore = 45; // Increased from 40
+      } else if (categoryMatches === 2) {
+        categoryScore = 75; // Increased from 70
+      } else {
+        categoryScore = 95; // Increased from 90 for 3+ matches
+      }
       score += categoryScore;
+      
       const matchedCat = (book.categories || []).find((c) => profile.topCategories.includes(c));
       if (matchedCat) {
         matchReasons.push(`You like ${matchedCat}`);
       }
     }
 
-    // Tag matching (30 points max)
+    // Enhanced tag matching with Google Books subjects/tags
     const tagMatches = countMatches(book.tags || [], profile.topTags);
     if (tagMatches > 0) {
-      const tagScore = tagMatches === 1 ? 30 : tagMatches === 2 ? 50 : 70;
+      // Better scoring for tag matches (Google Books provides rich subject tags)
+      let tagScore;
+      if (tagMatches === 1) {
+        tagScore = 35; // Increased from 30
+      } else if (tagMatches === 2) {
+        tagScore = 55; // Increased from 50
+      } else {
+        tagScore = 75; // Increased from 70 for 3+ matches
+      }
       score += tagScore;
+      
       if (matchReasons.length < 3) {
         const matchedTag = (book.tags || []).find((t) => profile.topTags.includes(t));
         if (matchedTag) {
@@ -493,6 +512,16 @@ function scoreBooks(books, profile) {
           matchReasons.push("Matches your interests");
         }
       }
+    }
+    
+    // Bonus for books with rich metadata from Google Books
+    if (book.description && book.description.length > 100) {
+      score += 5; // Small bonus for well-documented books
+    }
+    
+    // Bonus for books with cover images (indicates Google Books enrichment)
+    if (book.coverImage || book.thumbnail) {
+      score += 3; // Small bonus for visual appeal
     }
 
     // Author matching (50 points max - high value)
@@ -641,9 +670,18 @@ async function getSimilarBooks(db, bookId, limit, excludeBookIds) {
       matchReasons.push(`Also by ${book.author}`);
     }
 
+    // Enhanced category matching with Google Books enriched data
     const categoryMatches = countMatches(book.categories || [], sourceBook.categories || []);
     if (categoryMatches > 0) {
-      score += categoryMatches === 1 ? 40 : categoryMatches === 2 ? 70 : 90;
+      // Higher scores for multiple category matches (Google Books provides detailed categories)
+      if (categoryMatches === 1) {
+        score += 45; // Increased from 40
+      } else if (categoryMatches === 2) {
+        score += 75; // Increased from 70
+      } else if (categoryMatches >= 3) {
+        score += 95; // Increased from 90 for 3+ matches
+      }
+      
       if (matchReasons.length < 3) {
         const matchedCat = (book.categories || []).find((c) => 
           (sourceBook.categories || []).includes(c)
@@ -656,12 +694,26 @@ async function getSimilarBooks(db, bookId, limit, excludeBookIds) {
       }
     }
 
+    // Enhanced tag matching with Google Books subjects/tags
     const tagMatches = countMatches(book.tags || [], sourceBook.tags || []);
     if (tagMatches > 0) {
-      score += tagMatches === 1 ? 30 : tagMatches === 2 ? 50 : 70;
+      // Better scoring for tag matches (Google Books provides rich subject tags)
+      if (tagMatches === 1) {
+        score += 35; // Increased from 30
+      } else if (tagMatches === 2) {
+        score += 55; // Increased from 50
+      } else if (tagMatches >= 3) {
+        score += 75; // Increased from 70 for 3+ matches
+      }
+      
       if (matchReasons.length < 3) {
         matchReasons.push("Related topics");
       }
+    }
+    
+    // Bonus for books with rich metadata (Google Books enriched)
+    if (book.description && book.description.length > 100) {
+      score += 5; // Small bonus for well-documented books
     }
 
     if (book.publisher === sourceBook.publisher && matchReasons.length < 3) {

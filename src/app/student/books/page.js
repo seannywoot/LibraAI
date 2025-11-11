@@ -72,6 +72,7 @@ export default function StudentBooksPage() {
   const [recommendationsKey, setRecommendationsKey] = useState(0);
   const [bookmarkedBooks, setBookmarkedBooks] = useState(new Set());
   const [bookmarking, setBookmarking] = useState(null);
+  const [availableCategories, setAvailableCategories] = useState([]);
 
   const navigationLinks = getStudentLinks();
   const tracker = getBehaviorTracker();
@@ -122,6 +123,7 @@ export default function StudentBooksPage() {
 
   useEffect(() => {
     loadBooks();
+    loadCategories();
 
     // Track filter changes as search events
     if (
@@ -138,6 +140,35 @@ export default function StudentBooksPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pageSize, sortBy, filters]);
+
+  async function loadCategories() {
+    try {
+      const res = await fetch("/api/student/books/categories", {
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        setAvailableCategories(data.categories || []);
+      }
+    } catch (e) {
+      console.error("Failed to load categories:", e);
+      // Fallback to default categories if API fails
+      setAvailableCategories([
+        "Fiction",
+        "Non-Fiction",
+        "Science",
+        "Technology",
+        "History",
+        "Biography",
+        "Self-Help",
+        "Business",
+        "Arts",
+        "Education",
+        "Children",
+        "Young Adult",
+      ]);
+    }
+  }
 
   async function loadBooks() {
     setLoading(true);
@@ -587,37 +618,30 @@ export default function StudentBooksPage() {
                       <h3 className="text-sm font-semibold text-gray-900 mb-3">
                         Category
                       </h3>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          "Fiction",
-                          "Non-Fiction",
-                          "Science",
-                          "Technology",
-                          "History",
-                          "Biography",
-                          "Self-Help",
-                          "Business",
-                          "Arts",
-                          "Education",
-                          "Children",
-                          "Young Adult",
-                        ].map((category) => (
-                          <label
-                            key={category}
-                            className="flex items-center gap-2 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={filters.categories.includes(category)}
-                              onChange={() => toggleCategory(category)}
-                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">
-                              {category}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
+                      {availableCategories.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                          {availableCategories.map((category) => (
+                            <label
+                              key={category}
+                              className="flex items-center gap-2 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={filters.categories.includes(category)}
+                                onChange={() => toggleCategory(category)}
+                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">
+                                {category}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">
+                          Loading categories...
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

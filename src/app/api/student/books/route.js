@@ -46,9 +46,10 @@ export async function GET(request) {
       query.format = { $in: formats };
     }
 
-    // Apply category filter
+    // Apply category filter (check both category and categories fields)
     if (categories.length > 0) {
-      query.category = { $in: categories };
+      // Use categories array field (from Google Books enrichment)
+      query.categories = { $in: categories };
     }
 
     // Apply year range filter

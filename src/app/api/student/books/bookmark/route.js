@@ -33,7 +33,8 @@ export async function POST(request) {
     }
 
     const client = await clientPromise;
-    const db = client.db();
+    const dbName = process.env.MONGODB_DB || process.env.MONGODB_DB_NAME || "test";
+    const db = client.db(dbName);
 
     // Get user
     const user = await db.collection("users").findOne({
@@ -88,6 +89,23 @@ export async function POST(request) {
         createdAt: new Date(),
       });
 
+      // Track bookmark as an interaction
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
+      
+      await db.collection("user_interactions").insertOne({
+        userId: user._id,
+        userEmail: session.user.email,
+        eventType: "bookmark",
+        bookId: new ObjectId(bookId),
+        bookTitle: book.title,
+        bookAuthor: book.author,
+        bookCategories: book.categories || [],
+        bookTags: book.tags || [],
+        timestamp: now,
+        expiresAt,
+      });
+
       return NextResponse.json({
         ok: true,
         bookmarked: true,
@@ -132,7 +150,8 @@ export async function GET(request) {
     }
 
     const client = await clientPromise;
-    const db = client.db();
+    const dbName = process.env.MONGODB_DB || process.env.MONGODB_DB_NAME || "test";
+    const db = client.db(dbName);
 
     // Get user
     const user = await db.collection("users").findOne({

@@ -17,6 +17,7 @@ export default function RecommendationsSidebar({
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
   const recommendationService = getRecommendationService();
   const router = useRouter();
 
@@ -40,6 +41,7 @@ export default function RecommendationsSidebar({
       }
 
       setRecommendations(data.recommendations || []);
+      setLastUpdate(new Date());
     } catch (err) {
       console.error("Failed to load recommendations:", err);
       setError(err?.message || "Failed to load recommendations");
@@ -47,6 +49,21 @@ export default function RecommendationsSidebar({
       setLoading(false);
       setIsRefreshing(false);
     }
+  }
+
+  function formatTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
   }
 
   useEffect(() => {
@@ -58,6 +75,16 @@ export default function RecommendationsSidebar({
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context]);
+
+  useEffect(() => {
+    // Auto-refresh every 60 seconds
+    const refreshInterval = setInterval(() => {
+      loadRecommendations(false, false);
+    }, 60000);
+
+    return () => clearInterval(refreshInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleRecommendationClick(book) {
     // Track the view event
@@ -194,9 +221,16 @@ export default function RecommendationsSidebar({
         <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Recommended for You
-            </h2>
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Recommended for You
+              </h2>
+              {lastUpdate && (
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Updated {formatTimeAgo(lastUpdate)}
+                </p>
+              )}
+            </div>
             <button
               onClick={() => setExpanded(!expanded)}
               className="lg:hidden p-1 hover:bg-gray-100 rounded"
@@ -243,10 +277,11 @@ export default function RecommendationsSidebar({
           {expanded && (
             <button
               onClick={() => loadRecommendations(false, true)}
-              className="w-full mt-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-center gap-2"
+              disabled={isRefreshing}
+              className="w-full mt-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <svg
-                className="w-4 h-4"
+                className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -258,7 +293,7 @@ export default function RecommendationsSidebar({
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                 />
               </svg>
-              Refresh
+              {isRefreshing ? 'Updating...' : 'Refresh'}
             </button>
           )}
         </div>

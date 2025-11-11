@@ -40,22 +40,22 @@ export async function POST(request) {
     const { eventType, bookId, searchQuery, searchFilters } = body;
 
     // Validate event type
-    if (!eventType || !["view", "search"].includes(eventType)) {
+    if (!eventType || !["view", "search", "bookmark"].includes(eventType)) {
       return new Response(
         JSON.stringify({ 
           ok: false, 
-          error: "Invalid event type. Must be 'view' or 'search'" 
+          error: "Invalid event type. Must be 'view', 'search', or 'bookmark'" 
         }),
         { status: 400, headers: { "content-type": "application/json" } }
       );
     }
 
     // Validate required fields based on event type
-    if (eventType === "view" && !bookId) {
+    if ((eventType === "view" || eventType === "bookmark") && !bookId) {
       return new Response(
         JSON.stringify({ 
           ok: false, 
-          error: "bookId is required for view events" 
+          error: "bookId is required for view and bookmark events" 
         }),
         { status: 400, headers: { "content-type": "application/json" } }
       );
@@ -72,7 +72,8 @@ export async function POST(request) {
     }
 
     const client = await clientPromise;
-    const db = client.db();
+    const dbName = process.env.MONGODB_DB || process.env.MONGODB_DB_NAME || "test";
+    const db = client.db(dbName);
     const interactions = db.collection("user_interactions");
     const users = db.collection("users");
     const books = db.collection("books");
@@ -100,8 +101,8 @@ export async function POST(request) {
       expiresAt,
     };
 
-    // Handle view events
-    if (eventType === "view") {
+    // Handle view and bookmark events
+    if (eventType === "view" || eventType === "bookmark") {
       // Fetch book details
       const book = await books.findOne({ _id: new ObjectId(bookId) });
       
@@ -124,11 +125,13 @@ export async function POST(request) {
         bookTags: book.tags || [],
       };
 
-      // Update book popularity score
-      await books.updateOne(
-        { _id: book._id },
-        { $inc: { popularityScore: 1 } }
-      );
+      // Update book popularity score (only for views, not bookmarks)
+      if (eventType === "view") {
+        await books.updateOne(
+          { _id: book._id },
+          { $inc: { popularityScore: 1 } }
+        );
+      }
     }
 
     // Handle search events

@@ -10,6 +10,7 @@ import Link from "next/link";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import RecommendationCard from "@/components/recommendation-card";
 import BorrowConfirmButton from "@/components/borrow-confirm-button";
+import { getBehaviorTracker } from "@/lib/behavior-tracker";
 
 function StatusChip({ status }) {
   const map = {
@@ -86,6 +87,15 @@ export default function BookDetailPage({ params }) {
     if (book) {
       loadRecommendations();
       checkBookmarkStatus();
+      
+      // Track book view
+      const tracker = getBehaviorTracker();
+      tracker.trackBookView(book._id, {
+        title: book.title,
+        author: book.author,
+        categories: book.categories,
+        tags: book.tags
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book]);

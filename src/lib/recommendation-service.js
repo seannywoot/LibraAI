@@ -11,7 +11,7 @@
 class RecommendationService {
   constructor() {
     this.cache = new Map();
-    this.CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    this.CACHE_TTL = 30 * 1000; // 30 seconds (reduced from 5 minutes for real-time updates)
   }
 
   /**
