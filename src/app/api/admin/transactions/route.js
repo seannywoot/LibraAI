@@ -53,8 +53,13 @@ export async function GET(request) {
       ];
     }
 
+    // Sort by archivedAt if showing archived, otherwise by requestedAt/borrowedAt
+    const sortOrder = showArchived 
+      ? { archivedAt: -1, requestedAt: -1 }
+      : { requestedAt: -1, borrowedAt: -1 };
+
     const [items, total] = await Promise.all([
-      transactions.find(query).sort({ requestedAt: -1, borrowedAt: -1 }).skip(skip).limit(pageSize).toArray(),
+      transactions.find(query).sort(sortOrder).skip(skip).limit(pageSize).toArray(),
       transactions.countDocuments(query),
     ]);
 

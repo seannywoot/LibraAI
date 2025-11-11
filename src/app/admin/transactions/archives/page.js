@@ -333,18 +333,18 @@ export default function AdminTransactionArchivesPage() {
         ) : (
           <section className="space-y-4">
             <div className="overflow-x-auto">
-              <table className="w-full border-separate border-spacing-y-3">
+              <table className="w-full border-separate" style={{ borderSpacing: "0 12px" }}>
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-zinc-500">
-                    <th className="px-6 py-2">Book</th>
-                    <th className="px-6 py-2">User</th>
-                    <th className="px-6 py-2">Requested</th>
-                    <th className="px-6 py-2">Borrowed</th>
-                    <th className="px-6 py-2">Due Date</th>
-                    <th className="px-6 py-2">Returned</th>
-                    <th className="px-6 py-2">Status</th>
-                    <th className="px-6 py-2">Archived</th>
-                    <th className="px-6 py-2">Actions</th>
+                    <th className="px-4 py-2">Book</th>
+                    <th className="px-4 py-2">User</th>
+                    <th className="px-3 py-2">Requested</th>
+                    <th className="px-3 py-2">Borrowed</th>
+                    <th className="px-3 py-2">Due Date</th>
+                    <th className="px-3 py-2">Returned</th>
+                    <th className="px-4 py-2">Status</th>
+                    <th className="px-3 py-2">Archived</th>
+                    <th className="px-3 py-2 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -365,22 +365,22 @@ export default function AdminTransactionArchivesPage() {
 
                     return (
                       <tr key={t._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
-                        <td className="px-6 py-3">
+                        <td className="px-4 py-4 rounded-l-xl">
                           <div className="font-medium text-zinc-900">{t.bookTitle}</div>
                           <div className="text-xs text-zinc-600">{t.bookAuthor}</div>
                         </td>
-                        <td className="px-6 py-3">
+                        <td className="px-4 py-4">
                           <div className="font-medium">{t.userName}</div>
                           <div className="text-xs text-zinc-600">{t.userId}</div>
                         </td>
-                        <td className="px-6 py-3">{formatDate(t.requestedAt)}</td>
-                        <td className="px-6 py-3">{formatDate(t.borrowedAt)}</td>
-                        <td className="px-6 py-3">
-                          <div>{formatDate(dueDateValue)}</div>
+                        <td className="px-3 py-4 whitespace-nowrap">{formatDate(t.requestedAt)}</td>
+                        <td className="px-3 py-4 whitespace-nowrap">{formatDate(t.borrowedAt)}</td>
+                        <td className="px-3 py-4">
+                          <div className="whitespace-nowrap">{formatDate(dueDateValue)}</div>
                           {durationLabel && <div className="text-xs text-zinc-500">{durationLabel}</div>}
                         </td>
-                        <td className="px-6 py-3">{formatDate(t.returnedAt)}</td>
-                        <td className="px-6 py-3">
+                        <td className="px-3 py-4 whitespace-nowrap">{formatDate(t.returnedAt)}</td>
+                        <td className="px-4 py-4">
                           <div className="space-y-2">
                             <StatusBadge status={t.status} />
                             {t.status === "rejected" && t.rejectionReason && (
@@ -415,17 +415,18 @@ export default function AdminTransactionArchivesPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-3">
-                          <div className="text-xs text-zinc-600">{formatDate(t.archivedAt)}</div>
-                          {t.archivedBy && <div className="text-xs text-zinc-500">{t.archivedBy}</div>}
+                        <td className="px-3 py-4">
+                          <div className="text-xs text-zinc-600 whitespace-nowrap">{formatDate(t.archivedAt)}</div>
+                          {t.archivedBy && <div className="text-xs text-zinc-500 truncate max-w-[150px]" title={t.archivedBy}>{t.archivedBy}</div>}
                         </td>
-                        <td className="px-6 py-3">
+                        <td className="px-3 py-4 text-center rounded-r-xl">
                           <button
                             onClick={() => setPendingDelete(t)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100"
+                            className="inline-flex items-center justify-center rounded-lg border border-rose-500 bg-rose-50 p-2 text-rose-600 hover:bg-rose-100 transition-colors"
+                            title="Delete transaction"
+                            aria-label="Delete transaction"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </td>
                       </tr>
