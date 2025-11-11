@@ -1175,10 +1175,10 @@ function MyLibraryContent() {
                         <div className="flex gap-6">
                           {/* Book Cover */}
                           <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
-                            {transaction.bookCoverImage || transaction.bookCoverImageUrl ? (
+                            {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={transaction.bookCoverImage || transaction.bookCoverImageUrl}
+                                src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
                                 alt={`Cover of ${transaction.bookTitle}`}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
@@ -1281,10 +1281,10 @@ function MyLibraryContent() {
                     >
                       {/* Book Cover */}
                       <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
-                        {transaction.bookCoverImage || transaction.bookCoverImageUrl ? (
+                        {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={transaction.bookCoverImage || transaction.bookCoverImageUrl}
+                            src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
                             alt={`Cover of ${transaction.bookTitle}`}
                             className="w-full h-full object-cover"
                             onError={(e) => {

@@ -81,6 +81,9 @@ export async function GET(request) {
       reservedFor: 1,
       ebookUrl: 1,
       slug: 1,
+      coverImage: 1,
+      thumbnail: 1,
+      description: 1,
     };
 
     // Fetch all items first (without pagination) to sort by availability

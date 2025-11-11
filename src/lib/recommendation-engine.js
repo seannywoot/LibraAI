@@ -49,12 +49,20 @@ export async function getRecommendations({
   // Score and rank candidates
   const scored = scoreBooks(candidates, profile);
 
+  // If no books passed scoring threshold, fall back to popular
+  if (scored.length === 0) {
+    return getPopularRecommendations(db, limit);
+  }
+
   // Apply diversity filter
   const diverse = applyDiversityFilter(scored, profile.diversityScore);
 
+  // If diversity filter removed everything, use scored books
+  const finalRecommendations = diverse.length > 0 ? diverse : scored;
+
   // Return top recommendations
   return {
-    recommendations: diverse.slice(0, limit),
+    recommendations: finalRecommendations.slice(0, limit),
     profile: {
       totalInteractions: profile.totalInteractions,
       topCategories: profile.topCategories.slice(0, 3),
@@ -332,20 +340,21 @@ async function getCandidateBooks(db, profile, userId, excludeBookIds) {
   // Combine strategies
   const baseQuery = queries.length > 0 ? { $or: queries } : { status: "available" };
 
-  // Add exclusions
-  const excludeConditions = [];
+  // Build exclusion conditions
+  const exclusions = {};
   if (excludeIsbns.length > 0) {
-    excludeConditions.push({ isbn: { $nin: excludeIsbns } });
+    exclusions.isbn = { $nin: excludeIsbns };
   }
   if (excludeTitles.length > 0) {
-    excludeConditions.push({ title: { $nin: excludeTitles } });
+    exclusions.title = { $nin: excludeTitles };
   }
   if (excludeIds.length > 0) {
-    excludeConditions.push({ _id: { $nin: excludeIds } });
+    exclusions._id = { $nin: excludeIds };
   }
 
-  const finalQuery = excludeConditions.length > 0
-    ? { $and: [baseQuery, ...excludeConditions] }
+  // Combine base query with exclusions
+  const finalQuery = Object.keys(exclusions).length > 0
+    ? { $and: [baseQuery, exclusions] }
     : baseQuery;
 
   // Fetch candidates
@@ -552,9 +561,9 @@ function scoreBooks(books, profile) {
       score += Math.min(profile.recentInteractions * 1.5, 20);
     }
 
-    // Penalty for weak matches
+    // Penalty for weak matches (but not too harsh)
     if (categoryMatches === 0 && tagMatches === 0 && authorIndex === -1) {
-      score *= 0.4;
+      score *= 0.5; // Reduced from 0.4 to 0.5 to be less aggressive
     }
 
     // Ensure match reasons with better messaging
@@ -576,7 +585,7 @@ function scoreBooks(books, profile) {
       relevanceScore: Math.min(Math.round(score), 100),
       matchReasons: matchReasons.slice(0, 3),
     };
-  }).filter((book) => book.relevanceScore > 20);
+  }).filter((book) => book.relevanceScore > 15); // Lowered from 20 to 15 to be more inclusive
 }
 
 /**

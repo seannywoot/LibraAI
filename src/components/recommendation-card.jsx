@@ -111,10 +111,10 @@ export default function RecommendationCard({
           <div className="flex gap-2">
             {/* Book Cover - Smaller */}
             <div className="w-10 h-14 shrink-0 rounded bg-gray-200 flex items-center justify-center overflow-hidden">
-            {book.coverImageUrl && !imageError ? (
+            {(book.coverImage || book.coverImageUrl || book.thumbnail) && !imageError ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={book.coverImageUrl}
+                src={book.coverImage || book.coverImageUrl || book.thumbnail}
                 alt={book.title}
                 className="w-full h-full object-cover"
                 onError={() => setImageError(true)}
@@ -179,10 +179,10 @@ export default function RecommendationCard({
       >
         {/* Book Cover */}
         <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2 overflow-hidden">
-          {book.coverImageUrl && !imageError ? (
+          {(book.coverImage || book.coverImageUrl || book.thumbnail) && !imageError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={book.coverImageUrl}
+              src={book.coverImage || book.coverImageUrl || book.thumbnail}
               alt={book.title}
               className="w-full h-full object-cover"
               onError={() => setImageError(true)}

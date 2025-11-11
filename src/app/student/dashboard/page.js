@@ -345,8 +345,21 @@ export default function StudentDashboardPage() {
                     }`}
                   >
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-16 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
-                        Book
+                      <div className="w-12 h-16 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs overflow-hidden">
+                        {transaction.bookCoverImage || transaction.bookThumbnail ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={transaction.bookCoverImage || transaction.bookThumbnail}
+                            alt={`Cover of ${transaction.bookTitle}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs">Book</span>';
+                            }}
+                          />
+                        ) : (
+                          <span>Book</span>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 text-sm line-clamp-1">
@@ -432,15 +445,19 @@ export default function StudentDashboardPage() {
                   className="group rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow"
                 >
                   <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs mb-2 overflow-hidden">
-                    {book.coverImageUrl ? (
+                    {book.coverImage || book.coverImageUrl || book.thumbnail ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={book.coverImageUrl}
+                        src={book.coverImage || book.coverImageUrl || book.thumbnail}
                         alt={book.title}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs">Book</span>';
+                        }}
                       />
                     ) : (
-                      "Book"
+                      <span>Book</span>
                     )}
                   </div>
                   <h3 className="text-xs font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700">

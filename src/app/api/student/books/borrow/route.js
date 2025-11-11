@@ -84,6 +84,8 @@ export async function POST(request) {
       bookId: new ObjectId(bookId),
       bookTitle: book.title,
       bookAuthor: book.author,
+      bookCoverImage: book.coverImage || book.thumbnail || null,
+      bookThumbnail: book.thumbnail || book.coverImage || null,
       userId: session.user?.email,
       userName: session.user?.name || session.user?.email,
       requestedAt: now,

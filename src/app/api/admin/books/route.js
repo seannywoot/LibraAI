@@ -33,6 +33,8 @@ export async function GET(request) {
       barcode: 1,
       slug: 1,
       createdAt: 1,
+      coverImage: 1,
+      thumbnail: 1,
     };
 
     // Build search query

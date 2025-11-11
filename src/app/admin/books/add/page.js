@@ -144,6 +144,11 @@ export default function AdminAddBookPage() {
       e.shelf = "Shelf is required";
     }
 
+    // eBook file is required for eBook format
+    if (format === "eBook" && !ebookUrl) {
+      e.format = "Please upload a PDF file for eBook format";
+    }
+
     if (!ALLOWED_STATUS.includes(status)) e.status = "Invalid status";
     if (!ALLOWED_POLICIES.includes(loanPolicy)) e.loanPolicy = "Invalid loan policy";
 
@@ -160,7 +165,11 @@ export default function AdminAddBookPage() {
   const navigationLinks = getAdminLinks();
 
   async function handleFetchFromGoogleBooks() {
-    if (!isbn && !title) {
+    // Get current values from the form inputs directly
+    const currentIsbn = isbn.trim();
+    const currentTitle = title.trim();
+    
+    if (!currentIsbn && !currentTitle) {
       showToast("Please enter ISBN or Title to fetch book details", "error");
       return;
     }
@@ -168,12 +177,20 @@ export default function AdminAddBookPage() {
     setFetchingFromGoogle(true);
     try {
       // Build search query - prefer ISBN for accuracy
-      const searchQuery = isbn 
-        ? `isbn:${isbn}` 
-        : encodeURIComponent(title);
+      const searchQuery = currentIsbn 
+        ? `isbn:${currentIsbn}` 
+        : encodeURIComponent(currentTitle);
+
+      console.log('Fetching from Google Books with query:', searchQuery);
 
       const googleRes = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${searchQuery}&maxResults=1`
+        `https://www.googleapis.com/books/v1/volumes?q=${searchQuery}&maxResults=1`,
+        {
+          cache: 'no-store', // Prevent caching
+          headers: {
+            'Cache-Control': 'no-cache',
+          }
+        }
       );
       const googleData = await googleRes.json();
 
@@ -193,37 +210,38 @@ export default function AdminAddBookPage() {
         categories = [...new Set(categories)];
       }
 
-      // Auto-fill form fields (only if empty)
-      if (volumeInfo.title && !title) {
+      // Auto-fill form fields (always overwrite with fetched data)
+      if (volumeInfo.title) {
         setTitle(volumeInfo.title);
         setHasUnsavedChanges(true);
       }
-      if (volumeInfo.authors?.[0] && !author) {
+      if (volumeInfo.authors?.[0]) {
         setAuthor(volumeInfo.authors[0]);
         setHasUnsavedChanges(true);
       }
-      if (volumeInfo.publishedDate && !year) {
+      if (volumeInfo.publishedDate) {
         const extractedYear = volumeInfo.publishedDate.substring(0, 4);
         setYear(extractedYear);
         setHasUnsavedChanges(true);
       }
-      if (volumeInfo.publisher && !publisher) {
+      if (volumeInfo.publisher) {
         setPublisher(volumeInfo.publisher);
         setHasUnsavedChanges(true);
       }
-      if (volumeInfo.industryIdentifiers?.[0]?.identifier && !isbn) {
+      if (volumeInfo.industryIdentifiers?.[0]?.identifier) {
         const extractedIsbn = volumeInfo.industryIdentifiers[0].identifier.replace(/[^\d]/g, "");
         if (extractedIsbn.length === 13) {
           setIsbn(extractedIsbn);
           setHasUnsavedChanges(true);
         }
       }
-      if (volumeInfo.description && !description) {
+      if (volumeInfo.description) {
         setDescription(volumeInfo.description);
         setHasUnsavedChanges(true);
       }
-      if (categories.length > 0 && !category) {
-        // Map Google Books categories to our categories
+      
+      // Map Google Books categories to our categories (always update if found)
+      if (categories.length > 0) {
         const categoryMap = {
           'Fiction': 'Fiction',
           'Science': 'Science',
@@ -236,17 +254,31 @@ export default function AdminAddBookPage() {
           'Education': 'Education',
           'Juvenile': 'Children',
           'Young Adult': 'Young Adult',
+          'Computers': 'Technology',
+          'Computer': 'Technology',
+          'Mathematics': 'Science',
+          'Philosophy': 'Non-Fiction',
+          'Religion': 'Non-Fiction',
+          'Psychology': 'Self-Help',
         };
         
+        let foundCategory = false;
         for (const cat of categories) {
           for (const [key, value] of Object.entries(categoryMap)) {
-            if (cat.includes(key)) {
+            if (cat.toLowerCase().includes(key.toLowerCase())) {
               setCategory(value);
               setHasUnsavedChanges(true);
+              foundCategory = true;
               break;
             }
           }
-          if (category) break;
+          if (foundCategory) break;
+        }
+        
+        // If no mapping found, use Non-Fiction as default
+        if (!foundCategory) {
+          setCategory('Non-Fiction');
+          setHasUnsavedChanges(true);
         }
       }
       
@@ -669,18 +701,26 @@ export default function AdminAddBookPage() {
               </label>
               {format === "eBook" && (
                 <label className="grid gap-2 text-sm sm:col-span-2">
-                  <span className="text-zinc-700">eBook File (PDF only)</span>
+                  <span className="text-zinc-700">
+                    eBook File (PDF only) <span className="text-rose-600">*</span>
+                  </span>
                   <input
-                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-700 hover:file:bg-zinc-200"
+                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-700 hover:file:bg-zinc-200 ${errors.format ? "border-rose-400" : "border-zinc-200"}`}
                     type="file"
                     accept=".pdf,application/pdf"
                     disabled={extractingMetadata}
                     onChange={handlePDFUpload}
+                    required
                   />
                   {extractingMetadata && (
                     <p className="text-xs text-blue-600">Extracting metadata from PDF...</p>
                   )}
-                  <p className="text-xs text-zinc-500">Upload a PDF file - metadata will be extracted automatically to fill the form</p>
+                  {ebookUrl && (
+                    <p className="text-xs text-emerald-600">✓ PDF uploaded successfully</p>
+                  )}
+                  {!ebookUrl && (
+                    <p className="text-xs text-zinc-500">Upload a PDF file - metadata will be extracted automatically to fill the form</p>
+                  )}
                 </label>
               )}
               <label className="grid gap-2 text-sm">
