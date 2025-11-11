@@ -1165,34 +1165,25 @@ export default function StudentBooksPage() {
                               />
                             ) : book.status === "reserved" &&
                               book.reservedForCurrentUser ? (
-                              <button
-                                disabled
-                                className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
-                              >
+                              <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
                                 Awaiting approval
-                              </button>
+                              </div>
                             ) : book.status === "reserved" ? (
-                              <button
-                                disabled
-                                className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
-                              >
+                              <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
                                 Reserved
-                              </button>
+                              </div>
                             ) : book.status === "checked-out" ? (
-                              <button
-                                disabled
-                                className="w-full rounded-md bg-gray-300 px-4 py-2 text-xs font-medium text-gray-500 cursor-not-allowed"
-                              >
+                              <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
                                 Unavailable
-                              </button>
+                              </div>
                             ) : book.loanPolicy === "reference-only" ? (
-                              <span className="block text-center text-xs text-gray-500">
+                              <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
                                 Reference only
-                              </span>
+                              </div>
                             ) : book.loanPolicy === "staff-only" ? (
-                              <span className="block text-center text-xs text-gray-500">
+                              <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
                                 Staff only
-                              </span>
+                              </div>
                             ) : null}
 
                             {/* Bookmark Button */}

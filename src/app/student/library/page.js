@@ -830,21 +830,19 @@ function MyLibraryContent() {
 
                       {/* Book Details */}
                       <div className="flex-1 flex flex-col">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
                           {book.title}
                         </h3>
-                        <p className="text-xs text-gray-600 mb-1 line-clamp-1">
+                        <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
                           {book.author}
                         </p>
-                        {book.isbn && (
-                          <p className="text-xs text-gray-500">
-                            ISBN: {book.isbn}
-                          </p>
-                        )}
+                        <div className="text-xs text-gray-500 mb-2 h-4">
+                          {book.isbn && <span>ISBN: {book.isbn}</span>}
+                        </div>
 
                         {/* Bookmark Date */}
-                        <div className="mt-auto pt-2">
-                          <div className="text-[11px] text-gray-400 text-center">
+                        <div className="mt-auto">
+                          <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-[11px] font-medium text-gray-500 text-center">
                             Bookmarked {new Date(book.bookmarkedAt).toLocaleDateString()}
                           </div>
                         </div>
@@ -1007,29 +1005,27 @@ function MyLibraryContent() {
 
                       <Link
                         href={`/student/library/${book._id}`}
-                        className="flex h-full flex-col gap-2 rounded-lg p-4 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/40"
+                        className="flex h-full flex-col rounded-lg p-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/40"
                       >
                         {/* Book Cover */}
-                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
+                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2">
                           {book.fileType === "application/pdf" ? "PDF" : "Book"}
                         </div>
 
                         {/* Book Details */}
                         <div className="flex-1 flex flex-col">
-                          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">
+                          <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
                             {book.title}
                           </h3>
-                          <p className="text-xs text-gray-600 line-clamp-1">
+                          <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
                             {book.author || "Unknown Author"}
                           </p>
-                          {book.isbn && (
-                            <p className="text-xs text-gray-500">
-                              ISBN: {book.isbn}
-                            </p>
-                          )}
+                          <div className="text-xs text-gray-500 mb-2 h-4">
+                            {book.isbn && <span>ISBN: {book.isbn}</span>}
+                          </div>
 
                           {/* Action Button */}
-                          <div className="mt-auto pt-2">
+                          <div className="mt-auto space-y-2">
                             {book.fileType === "application/pdf" && book.fileUrl ? (
                               <button
                                 type="button"
@@ -1043,7 +1039,7 @@ function MyLibraryContent() {
                                 Open PDF
                               </button>
                             ) : (
-                              <div className="text-[11px] text-gray-400 text-center">
+                              <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-[11px] font-medium text-gray-500 text-center">
                                 Added {new Date(book.addedAt).toLocaleDateString()}
                               </div>
                             )}
@@ -1237,15 +1233,15 @@ function MyLibraryContent() {
 
                       {/* Book Details */}
                       <div className="flex-1 flex flex-col">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
                           {transaction.bookTitle}
                         </h3>
-                        <p className="text-xs text-gray-600 mb-1 line-clamp-1">
+                        <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
                           {transaction.bookAuthor}
                         </p>
 
                         {/* Status Badge */}
-                        <div className="mb-2">
+                        <div className="mb-2 h-6 flex items-center">
                           <StatusBadge status={transaction.status} />
                         </div>
 
@@ -1273,17 +1269,17 @@ function MyLibraryContent() {
                               {returning === transaction.bookId ? "Submitting..." : "Request Return"}
                             </button>
                           ) : transaction.status === "return-requested" ? (
-                            <span className="block text-center text-xs font-medium text-gray-500">
+                            <div className="w-full rounded-md bg-amber-100 border border-amber-200 px-4 py-2 text-xs font-medium text-amber-700 text-center">
                               Awaiting confirmation
-                            </span>
+                            </div>
                           ) : transaction.status === "rejected" ? (
-                            <span className="block text-center text-xs font-medium text-rose-600">
+                            <div className="w-full rounded-md bg-rose-100 border border-rose-200 px-4 py-2 text-xs font-medium text-rose-700 text-center">
                               Request rejected
-                            </span>
+                            </div>
                           ) : (
-                            <span className="block text-center text-xs font-medium text-gray-500">
+                            <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
                               Pending approval
-                            </span>
+                            </div>
                           )}
                           
                           {/* Bookmark Button */}
