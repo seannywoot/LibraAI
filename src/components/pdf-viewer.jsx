@@ -9,7 +9,16 @@ import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 
 export default function PDFViewer({ fileUrl }) {
   const [error, setError] = useState(null);
-  const defaultLayoutPluginInstance = defaultLayoutPlugin();
+  const defaultLayoutPluginInstance = defaultLayoutPlugin({
+    sidebarTabs: (defaultTabs) => [],
+    toolbarPlugin: {
+      fullScreenPlugin: {
+        onEnterFullScreen: (zoom) => {
+          zoom(1);
+        },
+      },
+    },
+  });
 
   if (!fileUrl) {
     return (
@@ -30,6 +39,8 @@ export default function PDFViewer({ fileUrl }) {
           <Viewer
             fileUrl={fileUrl}
             plugins={[defaultLayoutPluginInstance]}
+            defaultScale={1}
+            theme="dark"
             onError={(err) => setError(err.message)}
           />
         </Worker>
