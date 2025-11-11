@@ -333,24 +333,146 @@ export default function AdminAddBookPage() {
 
       const metadataData = await metadataRes.json().catch(() => ({}));
       
+      let extractedTitle = "";
+      
       if (metadataRes.ok && metadataData?.ok && metadataData?.metadata) {
         const { metadata } = metadataData;
         
         // Fill form fields with extracted metadata (only if fields are empty)
         if (metadata.title && !title) {
           setTitle(metadata.title);
+          extractedTitle = metadata.title;
+          setHasUnsavedChanges(true);
         }
         if (metadata.author && !author) {
           setAuthor(metadata.author);
+          setHasUnsavedChanges(true);
         }
         if (metadata.year && !year) {
           setYear(metadata.year.toString());
+          setHasUnsavedChanges(true);
         }
         if (metadata.publisher && !publisher) {
           setPublisher(metadata.publisher);
+          setHasUnsavedChanges(true);
         }
+      } else {
+        // If no metadata extracted, use filename as title
+        extractedTitle = file.name.replace(/\.pdf$/i, "").replace(/_/g, " ");
+        if (!title) {
+          setTitle(extractedTitle);
+          setHasUnsavedChanges(true);
+        }
+      }
 
-        showToast("PDF uploaded and metadata extracted successfully!", "success");
+      // Try to enrich metadata from Google Books API using title search
+      if (extractedTitle) {
+        try {
+          console.log(`Searching Google Books for: "${extractedTitle}"`);
+          const googleRes = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(extractedTitle)}&maxResults=1`
+          );
+          const googleData = await googleRes.json();
+
+          if (googleData.items && googleData.items.length > 0) {
+            const volumeInfo = googleData.items[0].volumeInfo;
+            
+            // Extract and process categories
+            let categories = [];
+            if (volumeInfo.categories && Array.isArray(volumeInfo.categories)) {
+              categories = volumeInfo.categories.flatMap(cat => 
+                cat.split('/').map(c => c.trim())
+              ).filter(c => c.length > 0);
+              categories = [...new Set(categories)];
+            }
+            
+            // Fill form fields with Google Books data (only if fields are empty)
+            if (volumeInfo.title && !title) {
+              setTitle(volumeInfo.title);
+              setHasUnsavedChanges(true);
+            }
+            if (volumeInfo.authors?.[0] && !author) {
+              setAuthor(volumeInfo.authors[0]);
+              setHasUnsavedChanges(true);
+            }
+            if (volumeInfo.publishedDate && !year) {
+              const extractedYear = volumeInfo.publishedDate.substring(0, 4);
+              setYear(extractedYear);
+              setHasUnsavedChanges(true);
+            }
+            if (volumeInfo.publisher && !publisher) {
+              setPublisher(volumeInfo.publisher);
+              setHasUnsavedChanges(true);
+            }
+            if (volumeInfo.industryIdentifiers?.[0]?.identifier && !isbn) {
+              const extractedIsbn = volumeInfo.industryIdentifiers[0].identifier.replace(/[^\d]/g, "");
+              if (extractedIsbn.length === 13) {
+                setIsbn(extractedIsbn);
+                setHasUnsavedChanges(true);
+              }
+            }
+            if (volumeInfo.description && !description) {
+              setDescription(volumeInfo.description);
+              setHasUnsavedChanges(true);
+            }
+            
+            // Map Google Books categories to our categories (only if category is empty)
+            if (categories.length > 0 && !category) {
+              const categoryMap = {
+                'Fiction': 'Fiction',
+                'Science': 'Science',
+                'Technology': 'Technology',
+                'History': 'History',
+                'Biography': 'Biography',
+                'Self-Help': 'Self-Help',
+                'Business': 'Business',
+                'Art': 'Arts',
+                'Education': 'Education',
+                'Juvenile': 'Children',
+                'Young Adult': 'Young Adult',
+                'Computers': 'Technology',
+                'Computer': 'Technology',
+                'Mathematics': 'Science',
+                'Philosophy': 'Non-Fiction',
+                'Religion': 'Non-Fiction',
+                'Psychology': 'Self-Help',
+              };
+              
+              let foundCategory = false;
+              for (const cat of categories) {
+                for (const [key, value] of Object.entries(categoryMap)) {
+                  if (cat.toLowerCase().includes(key.toLowerCase())) {
+                    setCategory(value);
+                    setHasUnsavedChanges(true);
+                    foundCategory = true;
+                    break;
+                  }
+                }
+                if (foundCategory) break;
+              }
+              
+              // If no mapping found, use Non-Fiction as default
+              if (!foundCategory) {
+                setCategory('Non-Fiction');
+                setHasUnsavedChanges(true);
+              }
+            }
+            
+            // Store cover image URL
+            if (volumeInfo.imageLinks?.thumbnail && !coverImage) {
+              setCoverImage(volumeInfo.imageLinks.thumbnail);
+            }
+            
+            console.log(`Found book: "${volumeInfo.title}" by ${volumeInfo.authors?.[0] || 'Unknown'}`);
+            showToast("PDF uploaded and enriched with Google Books data!", "success");
+          } else {
+            console.log(`No Google Books results found for: "${extractedTitle}"`);
+            showToast("PDF uploaded and metadata extracted successfully!", "success");
+          }
+        } catch (apiError) {
+          console.error("Error fetching book info from Google Books:", apiError);
+          showToast("PDF uploaded and metadata extracted successfully!", "success");
+        }
       } else {
         showToast("PDF uploaded. Please fill in details manually.", "info");
       }
@@ -713,13 +835,13 @@ export default function AdminAddBookPage() {
                     required
                   />
                   {extractingMetadata && (
-                    <p className="text-xs text-blue-600">Extracting metadata from PDF...</p>
+                    <p className="text-xs text-blue-600">Uploading PDF and extracting metadata from Google Books...</p>
                   )}
                   {ebookUrl && (
                     <p className="text-xs text-emerald-600">✓ PDF uploaded successfully</p>
                   )}
                   {!ebookUrl && (
-                    <p className="text-xs text-zinc-500">Upload a PDF file - metadata will be extracted automatically to fill the form</p>
+                    <p className="text-xs text-zinc-500">Upload a PDF file - metadata will be extracted and enriched with Google Books data automatically</p>
                   )}
                 </label>
               )}
