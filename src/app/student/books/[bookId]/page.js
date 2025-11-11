@@ -309,18 +309,18 @@ export default function BookDetailPage({ params }) {
             {/* Book Cover */}
             <div className="w-48 shrink-0">
               <div className="aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium overflow-hidden">
-                {book.coverImage ? (
+                {book.coverImage || book.coverImageUrl ? (
                   <img
-                    src={book.coverImage}
+                    src={book.coverImage || book.coverImageUrl}
                     alt={`Cover of ${book.title}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       e.target.style.display = 'none';
-                      e.target.parentElement.innerHTML = '<span class="text-gray-400 text-sm font-medium">Book Cover</span>';
+                      e.target.parentElement.innerHTML = '<span class="text-gray-400 text-sm font-medium">No Cover</span>';
                     }}
                   />
                 ) : (
-                  <span>Book Cover</span>
+                  <span>No Cover</span>
                 )}
               </div>
             </div>

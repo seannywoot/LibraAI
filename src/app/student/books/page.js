@@ -906,9 +906,22 @@ export default function StudentBooksPage() {
                       className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                     >
                       <div className="flex gap-6">
-                        {/* Book Cover Placeholder */}
-                        <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
-                          Book Cover
+                        {/* Book Cover */}
+                        <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                          {book.coverImage || book.coverImageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={book.coverImage || book.coverImageUrl}
+                              alt={`Cover of ${book.title}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
+                              }}
+                            />
+                          ) : (
+                            <span>No Cover</span>
+                          )}
                         </div>
 
                         {/* Book Details */}
@@ -1095,8 +1108,21 @@ export default function StudentBooksPage() {
                         className="flex flex-col h-full cursor-pointer"
                       >
                         {/* Book Cover */}
-                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2">
-                          Book Cover
+                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2 overflow-hidden">
+                          {book.coverImage || book.coverImageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={book.coverImage || book.coverImageUrl}
+                              alt={`Cover of ${book.title}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = '<span class="text-gray-400 text-[10px] font-medium">No Cover</span>';
+                              }}
+                            />
+                          ) : (
+                            <span>No Cover</span>
+                          )}
                         </div>
 
                         {/* Book Details */}

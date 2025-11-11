@@ -36,6 +36,8 @@ export default function AdminAddBookPage() {
   const [pdfFile, setPdfFile] = useState(null);
   const [extractingMetadata, setExtractingMetadata] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [fetchingFromGoogle, setFetchingFromGoogle] = useState(false);
+  const [coverImage, setCoverImage] = useState("");
 
   const { showDialog, cancelNavigation, confirmNavigation, navigateTo, handleNavigation } = useUnsavedChanges(hasUnsavedChanges);
 
@@ -157,6 +159,111 @@ export default function AdminAddBookPage() {
 
   const navigationLinks = getAdminLinks();
 
+  async function handleFetchFromGoogleBooks() {
+    if (!isbn && !title) {
+      showToast("Please enter ISBN or Title to fetch book details", "error");
+      return;
+    }
+
+    setFetchingFromGoogle(true);
+    try {
+      // Build search query - prefer ISBN for accuracy
+      const searchQuery = isbn 
+        ? `isbn:${isbn}` 
+        : encodeURIComponent(title);
+
+      const googleRes = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${searchQuery}&maxResults=1`
+      );
+      const googleData = await googleRes.json();
+
+      if (!googleData.items || googleData.items.length === 0) {
+        showToast("No book found on Google Books. Try a different ISBN or title.", "info");
+        return;
+      }
+
+      const volumeInfo = googleData.items[0].volumeInfo;
+      
+      // Extract and process categories
+      let categories = [];
+      if (volumeInfo.categories && Array.isArray(volumeInfo.categories)) {
+        categories = volumeInfo.categories.flatMap(cat => 
+          cat.split('/').map(c => c.trim())
+        ).filter(c => c.length > 0);
+        categories = [...new Set(categories)];
+      }
+
+      // Auto-fill form fields (only if empty)
+      if (volumeInfo.title && !title) {
+        setTitle(volumeInfo.title);
+        setHasUnsavedChanges(true);
+      }
+      if (volumeInfo.authors?.[0] && !author) {
+        setAuthor(volumeInfo.authors[0]);
+        setHasUnsavedChanges(true);
+      }
+      if (volumeInfo.publishedDate && !year) {
+        const extractedYear = volumeInfo.publishedDate.substring(0, 4);
+        setYear(extractedYear);
+        setHasUnsavedChanges(true);
+      }
+      if (volumeInfo.publisher && !publisher) {
+        setPublisher(volumeInfo.publisher);
+        setHasUnsavedChanges(true);
+      }
+      if (volumeInfo.industryIdentifiers?.[0]?.identifier && !isbn) {
+        const extractedIsbn = volumeInfo.industryIdentifiers[0].identifier.replace(/[^\d]/g, "");
+        if (extractedIsbn.length === 13) {
+          setIsbn(extractedIsbn);
+          setHasUnsavedChanges(true);
+        }
+      }
+      if (volumeInfo.description && !description) {
+        setDescription(volumeInfo.description);
+        setHasUnsavedChanges(true);
+      }
+      if (categories.length > 0 && !category) {
+        // Map Google Books categories to our categories
+        const categoryMap = {
+          'Fiction': 'Fiction',
+          'Science': 'Science',
+          'Technology': 'Technology',
+          'History': 'History',
+          'Biography': 'Biography',
+          'Self-Help': 'Self-Help',
+          'Business': 'Business',
+          'Art': 'Arts',
+          'Education': 'Education',
+          'Juvenile': 'Children',
+          'Young Adult': 'Young Adult',
+        };
+        
+        for (const cat of categories) {
+          for (const [key, value] of Object.entries(categoryMap)) {
+            if (cat.includes(key)) {
+              setCategory(value);
+              setHasUnsavedChanges(true);
+              break;
+            }
+          }
+          if (category) break;
+        }
+      }
+      
+      // Store cover image URL
+      if (volumeInfo.imageLinks?.thumbnail) {
+        setCoverImage(volumeInfo.imageLinks.thumbnail);
+      }
+
+      showToast("Book details fetched from Google Books!", "success");
+    } catch (err) {
+      console.error("Failed to fetch from Google Books:", err);
+      showToast("Failed to fetch book details from Google Books", "error");
+    } finally {
+      setFetchingFromGoogle(false);
+    }
+  }
+
   async function handlePDFUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -255,6 +362,7 @@ export default function AdminAddBookPage() {
           description,
           status,
           loanPolicy,
+          coverImage,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -277,6 +385,7 @@ export default function AdminAddBookPage() {
       setDescription("");
       setStatus("available");
       setLoanPolicy("standard");
+      setCoverImage("");
       setErrors({});
       // Optionally navigate to dashboard or a list page later
     } catch (err) {
@@ -301,7 +410,56 @@ export default function AdminAddBookPage() {
 
         <form onSubmit={handleSubmit} className="grid gap-8">
           <section className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
-            <h2 className="text-base font-semibold text-zinc-900">Book details</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-zinc-900">Book details</h2>
+              <button
+                type="button"
+                onClick={handleFetchFromGoogleBooks}
+                disabled={fetchingFromGoogle || (!isbn && !title)}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {fetchingFromGoogle ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Fetching...
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Fetch from Google Books
+                  </>
+                )}
+              </button>
+            </div>
+            
+            {coverImage && (
+              <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-zinc-200">
+                <img 
+                  src={coverImage} 
+                  alt="Book cover preview" 
+                  className="w-20 h-28 object-cover rounded shadow-sm"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-zinc-900">Cover Image Found</p>
+                  <p className="text-xs text-zinc-500 mt-1">This cover will be saved with the book</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCoverImage("")}
+                  className="text-zinc-400 hover:text-zinc-600 transition-colors"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
