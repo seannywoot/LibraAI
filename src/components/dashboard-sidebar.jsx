@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { User, Settings, LogOut, ChevronRight } from "@/components/icons";
@@ -64,13 +64,24 @@ export default function DashboardSidebar({
   SignOutComponent,
   fullHeight = true,
   fixed = true,
+  onNavigate, // Optional navigation interceptor for unsaved changes
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const theme = VARIANTS[variant] ?? VARIANTS.student;
   const { data: session } = useSession();
   const { name: contextName } = useUserPreferences();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+
+  // Handle navigation with optional interception
+  const handleLinkClick = (e, href) => {
+    if (onNavigate) {
+      e.preventDefault();
+      const targetHref = typeof href === "string" ? href : href?.pathname ?? "/";
+      onNavigate(() => router.push(targetHref));
+    }
+  };
 
   // Use context name if available, otherwise fall back to session
   const displayName = contextName || session?.user?.name || "Account";
@@ -131,7 +142,13 @@ export default function DashboardSidebar({
           const key = link.key ?? (typeof link.href === "string" ? link.href : link.href?.pathname ?? link.label);
 
           return (
-            <Link key={key} href={link.href} className={linkClasses} aria-current={isActive ? "page" : undefined}>
+            <Link 
+              key={key} 
+              href={link.href} 
+              className={linkClasses} 
+              aria-current={isActive ? "page" : undefined}
+              onClick={(e) => handleLinkClick(e, link.href)}
+            >
               <span className="flex items-center gap-3">
                 {link.icon ? (
                   <span className="text-(--text)/60 transition-colors group-hover:text-(--text)">
@@ -184,6 +201,7 @@ export default function DashboardSidebar({
               href={profileHref}
               className={`${baseLinkStyles} ${theme.defaultLink} rounded-lg`}
               role="menuitem"
+              onClick={(e) => handleLinkClick(e, profileHref)}
             >
               <Settings className="h-4 w-4 mr-3" />
               <span>Profile & Settings</span>

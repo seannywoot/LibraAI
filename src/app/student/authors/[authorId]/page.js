@@ -76,6 +76,13 @@ export default function StudentAuthorBooksPage() {
         { cache: "no-store" }
       );
       const data = await res.json().catch(() => ({}));
+      
+      // Show 404 page if author not found or invalid ID
+      if (res.status === 404 || (res.status === 400 && data?.error?.includes("Invalid"))) {
+        router.push("/404");
+        return;
+      }
+      
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load books");
       setAuthor(data.author);
       setItems(data.items || []);

@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import { useRouter, useParams } from "next/navigation";
+import UnsavedChangesDialog from "@/components/unsaved-changes-dialog";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 export default function AdminEditBookPage() {
   const { data: session } = useSession();
@@ -36,9 +38,19 @@ export default function AdminEditBookPage() {
   const [loadingAuthors, setLoadingAuthors] = useState(true);
   const [pdfFile, setPdfFile] = useState(null);
   const [extractingMetadata, setExtractingMetadata] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const initialDataRef = useRef(null);
 
   const ALLOWED_STATUS = ["available", "checked-out", "reserved", "maintenance", "lost"];
   const ALLOWED_POLICIES = ["standard", "short-loan", "reference-only", "staff-only"];
+
+  const { showDialog, cancelNavigation, confirmNavigation, navigateTo, navigateBack, handleNavigation } = useUnsavedChanges(hasUnsavedChanges);
+
+  // Track changes on all form fields
+  const handleFieldChange = (setter) => (value) => {
+    setter(value);
+    setHasUnsavedChanges(true);
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -53,6 +65,12 @@ export default function AdminEditBookPage() {
         console.log("Book response status:", bookRes.status);
         const bookData = await bookRes.json().catch(() => ({}));
         console.log("Book data:", bookData);
+        
+        // Show 404 page if book not found or invalid ID
+        if (bookRes.status === 404 || (bookRes.status === 400 && bookData?.error?.includes("Invalid"))) {
+          router.push("/404");
+          return;
+        }
         
         if (bookRes.ok && bookData?.ok && bookData?.book) {
           const book = bookData.book;
@@ -70,6 +88,23 @@ export default function AdminEditBookPage() {
           setDescription(book.description || "");
           setStatus(book.status || "available");
           setLoanPolicy(book.loanPolicy || "standard");
+          
+          // Store initial data for comparison
+          initialDataRef.current = {
+            title: book.title || "",
+            author: book.author || "",
+            year: book.year ? String(book.year) : "",
+            shelf: book.shelf || "",
+            isbn: book.isbn || "",
+            publisher: book.publisher || "",
+            format: book.format || "",
+            ebookUrl: book.ebookUrl || "",
+            barcode: book.barcode || "",
+            category: book.category || "",
+            description: book.description || "",
+            status: book.status || "available",
+            loanPolicy: book.loanPolicy || "standard"
+          };
         } else {
           console.error("Failed to load book:", bookData);
           showToast(bookData?.error || "Failed to load book details", "error");
@@ -96,7 +131,7 @@ export default function AdminEditBookPage() {
     if (identifier) {
       loadData();
     }
-  }, [identifier]);
+  }, [identifier, router]);
 
   function validateForm() {
     const e = {};
@@ -259,7 +294,8 @@ export default function AdminEditBookPage() {
         throw new Error(data?.error || "Failed to update book");
       }
       showToast(`Book "${data.book?.title || title}" updated successfully!`, "success");
-      setTimeout(() => router.push("/admin/books"), 1500);
+      setHasUnsavedChanges(false);
+      setTimeout(() => navigateTo("/admin/books"), 1500);
     } catch (err) {
       showToast(err?.message || "Failed to update book", "error");
     } finally {
@@ -270,7 +306,7 @@ export default function AdminEditBookPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-        <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
+        <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} onNavigate={handleNavigation} />
         <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
           <p className="text-zinc-600">Loading book details...</p>
         </main>
@@ -280,7 +316,7 @@ export default function AdminEditBookPage() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-      <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
+      <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} onNavigate={handleNavigation} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-3 border-b border-(--stroke) pb-6">
@@ -303,7 +339,10 @@ export default function AdminEditBookPage() {
                   className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.title ? "border-rose-400" : "border-zinc-200"}`}
                   type="text"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
                   placeholder="e.g., Deep Learning with Python"
                   aria-invalid={!!errors.title}
                   data-field="title"
@@ -377,7 +416,7 @@ export default function AdminEditBookPage() {
                     const value = e.target.value;
                     // Only allow numeric input
                     if (value === '' || /^\d{0,4}$/.test(value)) {
-                      setYear(value);
+                      handleFieldChange(setYear)(value);
                     }
                   }}
                   onBlur={(e) => {
@@ -457,7 +496,7 @@ export default function AdminEditBookPage() {
                   value={isbn}
                   onChange={(e) => {
                     const value = e.target.value.replace(/\D/g, "");
-                    setIsbn(value);
+                    handleFieldChange(setIsbn)(value);
                   }}
                   placeholder="e.g., 9781492032649 (13 digits)"
                   aria-invalid={!!errors.isbn}
@@ -575,7 +614,7 @@ export default function AdminEditBookPage() {
                 <textarea
                   className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 min-h-[120px] resize-y"
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => handleFieldChange(setDescription)(e.target.value)}
                   placeholder="Enter a brief description of the book's content, themes, and key topics. This helps students discover books through the chatbot and improves search results."
                   rows={4}
                 />
@@ -634,7 +673,7 @@ export default function AdminEditBookPage() {
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              onClick={() => router.push("/admin/books")}
+              onClick={() => navigateTo("/admin/books")}
               className="rounded-xl border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
             >
               Cancel
@@ -651,6 +690,13 @@ export default function AdminEditBookPage() {
       </main>
       
       <ToastContainer position="top-right" />
+      
+      <UnsavedChangesDialog
+        hasUnsavedChanges={hasUnsavedChanges}
+        showDialog={showDialog}
+        onConfirm={confirmNavigation}
+        onCancel={cancelNavigation}
+      />
     </div>
   );
 }

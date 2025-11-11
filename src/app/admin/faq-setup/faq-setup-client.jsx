@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { Plus, Edit2, Trash2, X } from "lucide-react";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import ConfirmDialog from "@/components/confirm-dialog";
+import UnsavedChangesDialog from "@/components/unsaved-changes-dialog";
 
 export default function FAQSetupClient() {
   const [loading, setLoading] = useState(false);
@@ -21,11 +22,22 @@ export default function FAQSetupClient() {
   });
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingCloseAction, setPendingCloseAction] = useState(null);
+  const initialFormDataRef = useRef(null);
 
   const navigationLinks = getAdminLinks();
 
   useEffect(() => {
     fetchFAQs();
+    
+    // Check if URL has #add hash to auto-open the add modal
+    if (window.location.hash === "#add") {
+      openAddModal();
+      // Remove the hash from URL after opening modal
+      window.history.replaceState(null, "", window.location.pathname);
+    }
   }, []);
 
   const fetchFAQs = async () => {
@@ -62,6 +74,8 @@ export default function FAQSetupClient() {
         showToast("FAQ added successfully!", "success");
         setShowAddModal(false);
         setFormData({ question: "", answer: "", category: "general", keywords: "" });
+        setHasUnsavedChanges(false);
+        initialFormDataRef.current = null;
         fetchFAQs();
       } else {
         showToast(data.error || "Failed to add FAQ", "error");
@@ -92,6 +106,8 @@ export default function FAQSetupClient() {
         showToast("FAQ updated successfully!", "success");
         setEditingFaq(null);
         setFormData({ question: "", answer: "", category: "general", keywords: "" });
+        setHasUnsavedChanges(false);
+        initialFormDataRef.current = null;
         fetchFAQs();
       } else {
         showToast(data.error || "Failed to update FAQ", "error");
@@ -130,12 +146,46 @@ export default function FAQSetupClient() {
 
   const openEditModal = (faq) => {
     setEditingFaq(faq);
-    setFormData({
+    const newFormData = {
       question: faq.question,
       answer: faq.answer,
       category: faq.category,
       keywords: Array.isArray(faq.keywords) ? faq.keywords.join(", ") : ""
-    });
+    };
+    setFormData(newFormData);
+    initialFormDataRef.current = newFormData;
+    setHasUnsavedChanges(false);
+  };
+
+  const openAddModal = () => {
+    const newFormData = { question: "", answer: "", category: "general", keywords: "" };
+    setFormData(newFormData);
+    initialFormDataRef.current = newFormData;
+    setShowAddModal(true);
+    setHasUnsavedChanges(false);
+  };
+
+  const handleFormChange = (updates) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+    setHasUnsavedChanges(true);
+  };
+
+  const closeModal = () => {
+    if (hasUnsavedChanges) {
+      setPendingCloseAction(() => () => {
+        setShowAddModal(false);
+        setEditingFaq(null);
+        setFormData({ question: "", answer: "", category: "general", keywords: "" });
+        setHasUnsavedChanges(false);
+        initialFormDataRef.current = null;
+      });
+      setShowUnsavedDialog(true);
+    } else {
+      setShowAddModal(false);
+      setEditingFaq(null);
+      setFormData({ question: "", answer: "", category: "general", keywords: "" });
+      initialFormDataRef.current = null;
+    }
   };
 
   const categories = [
@@ -158,6 +208,15 @@ export default function FAQSetupClient() {
         links={navigationLinks}
         variant="light"
         SignOutComponent={SignOutButton}
+        onNavigate={(callback) => {
+          if (hasUnsavedChanges) {
+            setPendingCloseAction(() => callback);
+            setShowUnsavedDialog(true);
+            return false;
+          }
+          callback();
+          return true;
+        }}
       />
 
       <main className="max-w-6xl mx-auto">
@@ -171,7 +230,7 @@ export default function FAQSetupClient() {
             </p>
           </div>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={openAddModal}
             className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 transition"
           >
             <Plus className="h-4 w-4" />
@@ -244,11 +303,7 @@ export default function FAQSetupClient() {
                 {editingFaq ? "Edit FAQ" : "Add New FAQ"}
               </h2>
               <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setEditingFaq(null);
-                  setFormData({ question: "", answer: "", category: "general", keywords: "" });
-                }}
+                onClick={closeModal}
                 className="p-2 hover:bg-zinc-100 rounded-lg transition"
               >
                 <X className="h-5 w-5" />
@@ -262,7 +317,7 @@ export default function FAQSetupClient() {
                 <input
                   type="text"
                   value={formData.question}
-                  onChange={(e) => setFormData({ ...formData, question: e.target.value })}
+                  onChange={(e) => handleFormChange({ question: e.target.value })}
                   className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900"
                   placeholder="Enter FAQ question"
                   required
@@ -274,7 +329,7 @@ export default function FAQSetupClient() {
                 </label>
                 <textarea
                   value={formData.answer}
-                  onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
+                  onChange={(e) => handleFormChange({ answer: e.target.value })}
                   className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 min-h-[120px]"
                   placeholder="Enter FAQ answer"
                   required
@@ -286,7 +341,7 @@ export default function FAQSetupClient() {
                 </label>
                 <select
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  onChange={(e) => handleFormChange({ category: e.target.value })}
                   className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900"
                   required
                 >
@@ -302,7 +357,7 @@ export default function FAQSetupClient() {
                 <input
                   type="text"
                   value={formData.keywords}
-                  onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+                  onChange={(e) => handleFormChange({ keywords: e.target.value })}
                   className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900"
                   placeholder="e.g., library, hours, borrowing"
                 />
@@ -317,11 +372,7 @@ export default function FAQSetupClient() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditingFaq(null);
-                    setFormData({ question: "", answer: "", category: "general", keywords: "" });
-                  }}
+                  onClick={closeModal}
                   className="px-4 py-2 border border-zinc-300 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition"
                 >
                   Cancel
@@ -349,6 +400,22 @@ export default function FAQSetupClient() {
           if (pendingDelete && !isDeletingCurrent) {
             void handleDeleteFAQ(pendingDelete._id);
           }
+        }}
+      />
+
+      <UnsavedChangesDialog
+        hasUnsavedChanges={hasUnsavedChanges}
+        showDialog={showUnsavedDialog}
+        onConfirm={() => {
+          setShowUnsavedDialog(false);
+          if (pendingCloseAction) {
+            pendingCloseAction();
+            setPendingCloseAction(null);
+          }
+        }}
+        onCancel={() => {
+          setShowUnsavedDialog(false);
+          setPendingCloseAction(null);
         }}
       />
     </div>

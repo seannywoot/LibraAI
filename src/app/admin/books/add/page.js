@@ -7,6 +7,8 @@ import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import { useRouter } from "next/navigation";
+import UnsavedChangesDialog from "@/components/unsaved-changes-dialog";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 export default function AdminAddBookPage() {
   const { data: session } = useSession();
@@ -33,6 +35,15 @@ export default function AdminAddBookPage() {
   const [loadingAuthors, setLoadingAuthors] = useState(true);
   const [pdfFile, setPdfFile] = useState(null);
   const [extractingMetadata, setExtractingMetadata] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const { showDialog, cancelNavigation, confirmNavigation, navigateTo, handleNavigation } = useUnsavedChanges(hasUnsavedChanges);
+
+  // Track any form field change
+  const handleFieldChange = (setter) => (value) => {
+    setter(value);
+    setHasUnsavedChanges(true);
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -251,6 +262,7 @@ export default function AdminAddBookPage() {
         throw new Error(data?.error || "Failed to add book");
       }
       showToast(`Book "${data.book?.title || title}" added successfully!`, "success");
+      setHasUnsavedChanges(false);
       // Reset form after success
       setTitle("");
       setAuthor("");
@@ -276,7 +288,7 @@ export default function AdminAddBookPage() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-      <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
+      <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} onNavigate={handleNavigation} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-3 border-b border-(--stroke) pb-6">
@@ -299,7 +311,7 @@ export default function AdminAddBookPage() {
                   className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.title ? "border-rose-400" : "border-zinc-200"}`}
                   type="text"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => handleFieldChange(setTitle)(e.target.value)}
                   placeholder="e.g., Deep Learning with Python"
                   aria-invalid={!!errors.title}
                   data-field="title"
@@ -323,7 +335,7 @@ export default function AdminAddBookPage() {
                     <select
                       className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
                       value={author}
-                      onChange={(e) => setAuthor(e.target.value)}
+                      onChange={(e) => handleFieldChange(setAuthor)(e.target.value)}
                       aria-invalid={!!errors.author}
                       data-field="author"
                     >
@@ -618,7 +630,7 @@ export default function AdminAddBookPage() {
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              onClick={() => router.push("/admin/dashboard")}
+              onClick={() => navigateTo("/admin/dashboard")}
               className="rounded-xl border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
             >
               Cancel
@@ -635,6 +647,13 @@ export default function AdminAddBookPage() {
       </main>
       
       <ToastContainer position="top-right" />
+      
+      <UnsavedChangesDialog
+        hasUnsavedChanges={hasUnsavedChanges}
+        showDialog={showDialog}
+        onConfirm={confirmNavigation}
+        onCancel={cancelNavigation}
+      />
     </div>
   );
 }

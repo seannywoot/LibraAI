@@ -123,7 +123,22 @@ CHAT HISTORY:\n${convo}`
       name: err.name
     });
     
-    // Return more specific error message
+    // Check if it's a rate limit error
+    const isRateLimitError = err.message?.includes('429') || 
+                            err.message?.includes('quota') || 
+                            err.message?.includes('rate limit');
+    
+    if (isRateLimitError) {
+      console.warn('Rate limit hit for title generation, will use fallback');
+      // Return a success response with a flag indicating to use fallback
+      return NextResponse.json({ 
+        title: null,
+        useFallback: true,
+        rateLimited: true
+      }, { status: 200 });
+    }
+    
+    // Return more specific error message for other errors
     const errorMessage = err.message || 'Failed to generate title';
     return NextResponse.json({ 
       error: errorMessage,

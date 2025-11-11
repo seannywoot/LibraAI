@@ -34,7 +34,7 @@ export default async function AdminDashboardPage() {
             </p>
           </div>
           <a
-            href="/admin/faq-setup"
+            href="/admin/faq-setup#add"
             className="inline-flex items-center gap-2 rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

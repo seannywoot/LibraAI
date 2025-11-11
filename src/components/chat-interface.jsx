@@ -524,20 +524,23 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         
         if (!res.ok) {
           const errorText = await res.text();
-          console.error('Title API error:', res.status, errorText);
+          console.warn('Title API error:', res.status, errorText);
           throw new Error(`Title request failed: ${res.status}`);
         }
         
         const data = await res.json();
-        console.log('Generated title from API:', data.title);
         
-        if (data.title && data.title !== 'Conversation') {
-          setAutoTitle(data.title);
-        } else {
-          // Fallback if API returns generic title
+        // Check if we should use fallback (rate limited or no title)
+        if (data.rateLimited || data.useFallback || !data.title || data.title === 'Conversation') {
+          if (data.rateLimited) {
+            console.log('Title generation rate limited, using heuristic fallback');
+          }
           const fallback = heuristicTitle(messages);
           console.log('Using heuristic fallback:', fallback);
           setAutoTitle(fallback);
+        } else {
+          console.log('Generated title from API:', data.title);
+          setAutoTitle(data.title);
         }
       } catch (e) {
         console.warn('Title generation failed, using heuristic:', e.message);

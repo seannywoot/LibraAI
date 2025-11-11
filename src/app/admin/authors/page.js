@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Edit as EditIcon, Trash2 } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import ConfirmDialog from "@/components/confirm-dialog";
+import UnsavedChangesDialog from "@/components/unsaved-changes-dialog";
 import Link from "next/link";
 
 function RowActions({ onEdit, onDelete }) {
@@ -41,6 +42,9 @@ export default function AdminAuthorsPage() {
   const [editingBio, setEditingBio] = useState("");
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
@@ -100,7 +104,7 @@ export default function AdminAuthorsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Create failed");
       showToast(`Author "${n}" added successfully!`, "success");
-      setName(""); setBio("");
+      setName(""); setBio(""); setHasUnsavedChanges(false);
       await load();
     } catch (e) { 
       showToast(e?.message || "Failed to add author", "error");
@@ -115,7 +119,7 @@ export default function AdminAuthorsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Update failed");
       showToast(`Author "${n}" updated successfully!`, "success");
-      setEditingId(null);
+      setEditingId(null); setHasUnsavedChanges(false);
       await load();
     } catch (e) { 
       showToast(e?.message || "Failed to update author", "error");
@@ -144,7 +148,15 @@ export default function AdminAuthorsPage() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-  <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
+  <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} onNavigate={(callback) => {
+    if (hasUnsavedChanges) {
+      setPendingAction(() => callback);
+      setShowUnsavedDialog(true);
+      return false;
+    }
+    callback();
+    return true;
+  }} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-4 border-b border-(--stroke) pb-6">
@@ -174,14 +186,14 @@ export default function AdminAuthorsPage() {
             <h2 className="text-base font-semibold text-zinc-900">Add author</h2>
             <label className="grid gap-2 text-sm">
               <span className="text-zinc-700">Name</span>
-              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Jane Doe" />
+              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => { setName(e.target.value); setHasUnsavedChanges(true); }} placeholder="e.g., Jane Doe" />
             </label>
             <label className="grid gap-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-700">Bio (optional)</span>
                 <span className={`text-xs ${bio.length >= 200 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{bio.length}/200</span>
               </div>
-              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Short biography" maxLength={200} />
+              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={bio} onChange={(e) => { setBio(e.target.value); setHasUnsavedChanges(true); }} placeholder="Short biography" maxLength={200} />
             </label>
             <div className="flex justify-end"><button className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800" type="submit">Add</button></div>
           </form>
@@ -223,7 +235,7 @@ export default function AdminAuthorsPage() {
                     <tr key={a._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
                       <td className="px-4 py-3 font-medium text-zinc-900">
                         {editingId === a._id ? (
-                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editingName} onChange={(e) => setEditingName(e.target.value)} />
+                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editingName} onChange={(e) => { setEditingName(e.target.value); setHasUnsavedChanges(true); }} />
                         ) : (
                           <Link href={`/admin/authors/${encodeURIComponent(a.slug || a._id)}`} className="text-blue-600 hover:text-blue-800 hover:underline">
                             {a.name}
@@ -245,7 +257,7 @@ export default function AdminAuthorsPage() {
                       <td className="px-4 py-3">
                         {editingId === a._id ? (
                           <div className="space-y-1">
-                            <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editingBio} onChange={(e) => setEditingBio(e.target.value)} maxLength={200} />
+                            <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editingBio} onChange={(e) => { setEditingBio(e.target.value); setHasUnsavedChanges(true); }} maxLength={200} />
                             <div className={`text-xs text-right ${editingBio.length >= 200 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editingBio.length}/200</div>
                           </div>
                         ) : (
@@ -256,7 +268,14 @@ export default function AdminAuthorsPage() {
                         {editingId === a._id ? (
                           <div className="flex items-center gap-2">
                             <button onClick={() => saveEdit(a._id)} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Save</button>
-                            <button onClick={() => setEditingId(null)} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Cancel</button>
+                            <button onClick={() => {
+                              if (hasUnsavedChanges) {
+                                setPendingAction(() => () => { setEditingId(null); setHasUnsavedChanges(false); });
+                                setShowUnsavedDialog(true);
+                              } else {
+                                setEditingId(null);
+                              }
+                            }} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Cancel</button>
                           </div>
                         ) : (
                           <RowActions
@@ -298,6 +317,22 @@ export default function AdminAuthorsPage() {
           if (pendingDelete && !isDeletingCurrent) {
             void deleteAuthor(pendingDelete._id);
           }
+        }}
+      />
+
+      <UnsavedChangesDialog
+        hasUnsavedChanges={hasUnsavedChanges}
+        showDialog={showUnsavedDialog}
+        onConfirm={() => {
+          setShowUnsavedDialog(false);
+          if (pendingAction) {
+            pendingAction();
+            setPendingAction(null);
+          }
+        }}
+        onCancel={() => {
+          setShowUnsavedDialog(false);
+          setPendingAction(null);
         }}
       />
     </div>

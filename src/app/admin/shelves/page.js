@@ -7,6 +7,7 @@ import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import ConfirmDialog from "@/components/confirm-dialog";
+import UnsavedChangesDialog from "@/components/unsaved-changes-dialog";
 import Link from "next/link";
 
 function RowActions({ onEdit, onDelete }) {
@@ -43,6 +44,9 @@ export default function AdminShelvesPage() {
   const [editing, setEditing] = useState({ code: "", name: "", location: "", capacity: "", notes: "" });
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
 
@@ -91,7 +95,7 @@ export default function AdminShelvesPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Create failed");
       showToast(`Shelf "${c}" added successfully!`, "success");
-      setCode(""); setName(""); setLocation(""); setCapacity(""); setNotes("");
+      setCode(""); setName(""); setLocation(""); setCapacity(""); setNotes(""); setHasUnsavedChanges(false);
       await load();
     } catch (e) { 
       showToast(e?.message || "Failed to add shelf", "error");
@@ -107,7 +111,7 @@ export default function AdminShelvesPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Update failed");
       showToast(`Shelf "${c}" updated successfully!`, "success");
-      setEditingId(null);
+      setEditingId(null); setHasUnsavedChanges(false);
       await load();
     } catch (e) { 
       showToast(e?.message || "Failed to update shelf", "error");
@@ -144,6 +148,15 @@ export default function AdminShelvesPage() {
         variant="light"
         footer="Manage shelving codes and locations."
         SignOutComponent={SignOutButton}
+        onNavigate={(callback) => {
+          if (hasUnsavedChanges) {
+            setPendingAction(() => callback);
+            setShowUnsavedDialog(true);
+            return false;
+          }
+          callback();
+          return true;
+        }}
       />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
@@ -158,23 +171,23 @@ export default function AdminShelvesPage() {
             <h2 className="text-base font-semibold text-zinc-900">Add shelf</h2>
             <label className="grid gap-2 text-sm">
               <span className="text-zinc-700">Code</span>
-              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g., A3" />
+              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={code} onChange={(e) => { setCode(e.target.value); setHasUnsavedChanges(true); }} placeholder="e.g., A3" />
             </label>
             <label className="grid gap-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-700">Name (optional)</span>
                 <span className={`text-xs ${name.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{name.length}/40</span>
               </div>
-              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Fiction — Science" maxLength={40} />
+              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => { setName(e.target.value); setHasUnsavedChanges(true); }} placeholder="e.g., Fiction — Science" maxLength={40} />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">Location (optional)</span>
-                <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., 2nd floor" />
+                <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={location} onChange={(e) => { setLocation(e.target.value); setHasUnsavedChanges(true); }} placeholder="e.g., 2nd floor" />
               </label>
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">Capacity (optional)</span>
-                <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" type="number" min="0" value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="e.g., 120" />
+                <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" type="number" min="0" value={capacity} onChange={(e) => { setCapacity(e.target.value); setHasUnsavedChanges(true); }} placeholder="e.g., 120" />
               </label>
             </div>
             <label className="grid gap-2 text-sm">
@@ -182,7 +195,7 @@ export default function AdminShelvesPage() {
                 <span className="text-zinc-700">Notes (optional)</span>
                 <span className={`text-xs ${notes.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{notes.length}/40</span>
               </div>
-              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Special handling, maintenance" maxLength={40} />
+              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={notes} onChange={(e) => { setNotes(e.target.value); setHasUnsavedChanges(true); }} placeholder="Special handling, maintenance" maxLength={40} />
             </label>
             <div className="flex justify-end"><button className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800" type="submit">Add</button></div>
           </form>
@@ -227,7 +240,7 @@ export default function AdminShelvesPage() {
                     <tr key={a._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
                       <td className="px-4 py-3 font-medium text-zinc-900">
                         {editingId === a._id ? (
-                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.code} onChange={(e) => setEditing((prev) => ({ ...prev, code: e.target.value }))} />
+                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.code} onChange={(e) => { setEditing((prev) => ({ ...prev, code: e.target.value })); setHasUnsavedChanges(true); }} />
                         ) : (
                           <Link href={`/admin/shelves/${encodeURIComponent(a.slug || a.code || a._id)}`} className="text-blue-600 hover:text-blue-800 hover:underline">
                             {a.code}
@@ -237,7 +250,7 @@ export default function AdminShelvesPage() {
                       <td className="px-4 py-3">
                         {editingId === a._id ? (
                           <div className="space-y-1">
-                            <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.name} onChange={(e) => setEditing((prev) => ({ ...prev, name: e.target.value }))} maxLength={40} />
+                            <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.name} onChange={(e) => { setEditing((prev) => ({ ...prev, name: e.target.value })); setHasUnsavedChanges(true); }} maxLength={40} />
                             <div className={`text-xs text-right ${editing.name.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editing.name.length}/40</div>
                           </div>
                         ) : (
@@ -246,7 +259,7 @@ export default function AdminShelvesPage() {
                       </td>
                       <td className="px-4 py-3">
                         {editingId === a._id ? (
-                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.location} onChange={(e) => setEditing((prev) => ({ ...prev, location: e.target.value }))} />
+                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.location} onChange={(e) => { setEditing((prev) => ({ ...prev, location: e.target.value })); setHasUnsavedChanges(true); }} />
                         ) : (
                           a.location || "—"
                         )}
@@ -262,7 +275,7 @@ export default function AdminShelvesPage() {
                       </td>
                       <td className="px-4 py-3">
                         {editingId === a._id ? (
-                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" type="number" min="0" value={editing.capacity ?? ""} onChange={(e) => setEditing((prev) => ({ ...prev, capacity: e.target.value }))} />
+                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" type="number" min="0" value={editing.capacity ?? ""} onChange={(e) => { setEditing((prev) => ({ ...prev, capacity: e.target.value })); setHasUnsavedChanges(true); }} />
                         ) : (
                           a.capacity ?? "—"
                         )}
@@ -270,7 +283,7 @@ export default function AdminShelvesPage() {
                       <td className="px-4 py-3">
                         {editingId === a._id ? (
                           <div className="space-y-1">
-                            <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.notes} onChange={(e) => setEditing((prev) => ({ ...prev, notes: e.target.value }))} maxLength={40} />
+                            <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.notes} onChange={(e) => { setEditing((prev) => ({ ...prev, notes: e.target.value })); setHasUnsavedChanges(true); }} maxLength={40} />
                             <div className={`text-xs text-right ${editing.notes.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editing.notes.length}/40</div>
                           </div>
                         ) : (
@@ -281,7 +294,14 @@ export default function AdminShelvesPage() {
                         {editingId === a._id ? (
                           <div className="flex items-center gap-2">
                             <button onClick={() => saveEdit(a._id)} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Save</button>
-                            <button onClick={() => setEditingId(null)} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Cancel</button>
+                            <button onClick={() => {
+                              if (hasUnsavedChanges) {
+                                setPendingAction(() => () => { setEditingId(null); setHasUnsavedChanges(false); });
+                                setShowUnsavedDialog(true);
+                              } else {
+                                setEditingId(null);
+                              }
+                            }} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Cancel</button>
                           </div>
                         ) : (
                           <RowActions onEdit={() => { setEditingId(a._id); setEditing({ code: a.code, name: a.name || "", location: a.location || "", capacity: a.capacity ?? "", notes: a.notes || "" }); }} onDelete={() => setPendingDelete(a)} />
@@ -320,6 +340,22 @@ export default function AdminShelvesPage() {
           if (pendingDelete && !isDeletingCurrent) {
             void deleteShelf(pendingDelete._id);
           }
+        }}
+      />
+
+      <UnsavedChangesDialog
+        hasUnsavedChanges={hasUnsavedChanges}
+        showDialog={showUnsavedDialog}
+        onConfirm={() => {
+          setShowUnsavedDialog(false);
+          if (pendingAction) {
+            pendingAction();
+            setPendingAction(null);
+          }
+        }}
+        onCancel={() => {
+          setShowUnsavedDialog(false);
+          setPendingAction(null);
         }}
       />
     </div>
