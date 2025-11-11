@@ -307,8 +307,22 @@ export default function BookDetailPage({ params }) {
         <div className="rounded-lg bg-white border border-gray-200 p-8 shadow-sm">
           <div className="flex gap-8">
             {/* Book Cover */}
-            <div className="w-64 h-96 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium">
-              Book Cover
+            <div className="w-48 shrink-0">
+              <div className="aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium overflow-hidden">
+                {book.coverImage ? (
+                  <img
+                    src={book.coverImage}
+                    alt={`Cover of ${book.title}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = '<span class="text-gray-400 text-sm font-medium">Book Cover</span>';
+                    }}
+                  />
+                ) : (
+                  <span>Book Cover</span>
+                )}
+              </div>
             </div>
 
             {/* Book Information */}

@@ -792,8 +792,21 @@ function MyLibraryContent() {
                     >
                       <div className="flex gap-6">
                         {/* Book Cover */}
-                        <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
-                          Book Cover
+                        <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                          {book.coverImage || book.coverImageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={book.coverImage || book.coverImageUrl}
+                              alt={`Cover of ${book.title}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
+                              }}
+                            />
+                          ) : (
+                            <span>Book Cover</span>
+                          )}
                         </div>
 
                         {/* Book Details */}
@@ -831,8 +844,21 @@ function MyLibraryContent() {
                       className="rounded-lg border border-gray-200 bg-white p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                     >
                       {/* Book Cover */}
-                      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2">
-                        Book Cover
+                      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
+                        {book.coverImage || book.coverImageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={book.coverImage || book.coverImageUrl}
+                            alt={`Cover of ${book.title}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
+                            }}
+                          />
+                        ) : (
+                          <span>Book Cover</span>
+                        )}
                       </div>
 
                       {/* Book Details */}
@@ -950,8 +976,21 @@ function MyLibraryContent() {
                       >
                         <div className="flex gap-5">
                           {/* Book Cover */}
-                          <div className="w-20 h-28 md:w-24 md:h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
-                            {book.fileType === "application/pdf" ? "PDF" : "Book"}
+                          <div className="w-20 h-28 md:w-24 md:h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                            {book.thumbnail ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={book.thumbnail}
+                                alt={`Cover of ${book.title}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
+                                }}
+                              />
+                            ) : (
+                              <span>No Cover</span>
+                            )}
                           </div>
 
                           {/* Book Details */}
@@ -1004,8 +1043,21 @@ function MyLibraryContent() {
                         className="flex h-full flex-col rounded-lg p-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/40"
                       >
                         {/* Book Cover */}
-                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2">
-                          {book.fileType === "application/pdf" ? "PDF" : "Book"}
+                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
+                          {book.thumbnail ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={book.thumbnail}
+                              alt={`Cover of ${book.title}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
+                              }}
+                            />
+                          ) : (
+                            <span>No Cover</span>
+                          )}
                         </div>
 
                         {/* Book Details */}
@@ -1122,8 +1174,21 @@ function MyLibraryContent() {
                       >
                         <div className="flex gap-6">
                           {/* Book Cover */}
-                          <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
-                            Book Cover
+                          <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                            {transaction.bookCoverImage || transaction.bookCoverImageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={transaction.bookCoverImage || transaction.bookCoverImageUrl}
+                                alt={`Cover of ${transaction.bookTitle}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
+                                }}
+                              />
+                            ) : (
+                              <span>Book Cover</span>
+                            )}
                           </div>
 
                           {/* Book Details */}
@@ -1215,8 +1280,21 @@ function MyLibraryContent() {
                       }`}
                     >
                       {/* Book Cover */}
-                      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2">
-                        Book Cover
+                      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
+                        {transaction.bookCoverImage || transaction.bookCoverImageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={transaction.bookCoverImage || transaction.bookCoverImageUrl}
+                            alt={`Cover of ${transaction.bookTitle}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
+                            }}
+                          />
+                        ) : (
+                          <span>Book Cover</span>
+                        )}
                       </div>
 
                       {/* Book Details */}

@@ -167,20 +167,22 @@ export default function PersonalBookDetailPage({ params }) {
 
         <div className="rounded-lg bg-white border border-gray-200 p-8 shadow-sm">
           <div className="flex flex-col gap-8 md:flex-row">
-            <div className="w-full max-w-xs aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium overflow-hidden">
-              {book.thumbnail ? (
-                <img
-                  src={book.thumbnail}
-                  alt={`Cover of ${book.title}`}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = `<span class="text-gray-400 text-sm font-medium">${coverLabel}</span>`;
-                  }}
-                />
-              ) : (
-                <span>{coverLabel}</span>
-              )}
+            <div className="w-48 shrink-0">
+              <div className="aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium overflow-hidden">
+                {book.thumbnail ? (
+                  <img
+                    src={book.thumbnail}
+                    alt={`Cover of ${book.title}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = '<span class="text-gray-400 text-sm font-medium">No Cover</span>';
+                    }}
+                  />
+                ) : (
+                  <span>No Cover</span>
+                )}
+              </div>
             </div>
 
             <div className="flex-1 space-y-6">
