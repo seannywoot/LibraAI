@@ -116,12 +116,19 @@ export async function POST(request) {
         );
       }
 
+      // Normalize categories to array (handle both singular 'category' and plural 'categories')
+      const bookCategories = book.categories && book.categories.length > 0
+        ? book.categories
+        : book.category
+        ? [book.category]
+        : [];
+
       interactionData = {
         ...interactionData,
         bookId: book._id,
         bookTitle: book.title,
         bookAuthor: book.author,
-        bookCategories: book.categories || [],
+        bookCategories: bookCategories,
         bookTags: book.tags || [],
       };
 

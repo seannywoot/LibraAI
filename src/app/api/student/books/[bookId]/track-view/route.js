@@ -37,13 +37,19 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Track the view
+    // Track the view - normalize categories to array
+    const bookCategories = book.categories && book.categories.length > 0
+      ? book.categories
+      : book.category
+      ? [book.category]
+      : [];
+
     await trackBookView({
       userId: session.user.email,
       bookId: book._id.toString(),
       bookTitle: book.title,
       bookAuthor: book.author,
-      bookCategories: book.categories || [],
+      bookCategories: bookCategories,
       bookTags: book.tags || [],
       bookFormat: book.format,
       bookPublisher: book.publisher,

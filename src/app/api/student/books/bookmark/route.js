@@ -93,6 +93,13 @@ export async function POST(request) {
       const now = new Date();
       const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
       
+      // Normalize categories to array (handle both singular 'category' and plural 'categories')
+      const bookCategories = book.categories && book.categories.length > 0
+        ? book.categories
+        : book.category
+        ? [book.category]
+        : [];
+      
       await db.collection("user_interactions").insertOne({
         userId: user._id,
         userEmail: session.user.email,
@@ -100,7 +107,7 @@ export async function POST(request) {
         bookId: new ObjectId(bookId),
         bookTitle: book.title,
         bookAuthor: book.author,
-        bookCategories: book.categories || [],
+        bookCategories: bookCategories,
         bookTags: book.tags || [],
         timestamp: now,
         expiresAt,

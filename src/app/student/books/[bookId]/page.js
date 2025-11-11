@@ -377,12 +377,24 @@ export default function BookDetailPage({ params }) {
                     <p className="text-sm text-gray-600">{book.format}</p>
                   </div>
                 )}
-                {book.category && (
+                {((book.categories && book.categories.length > 0) || book.category) && (
                   <div>
                     <p className="text-sm font-semibold text-gray-900">
-                      Category
+                      {book.categories && book.categories.length > 1 ? "Categories" : "Category"}
                     </p>
-                    <p className="text-sm text-gray-600">{book.category}</p>
+                    <p className="text-sm text-gray-600">
+                      {book.categories && book.categories.length > 0
+                        ? book.categories.join(", ")
+                        : book.category}
+                    </p>
+                  </div>
+                )}
+                {book.tags && book.tags.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Tags
+                    </p>
+                    <p className="text-sm text-gray-600">{book.tags.join(", ")}</p>
                   </div>
                 )}
                 {book.language && (
