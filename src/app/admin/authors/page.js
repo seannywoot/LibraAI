@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Edit as EditIcon, Trash2 } from "@/components/icons";
+import { Edit as EditIcon, Trash2, Plus, X } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
@@ -30,45 +30,48 @@ export default function AdminAuthorsPage() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
-  const [totalBooks, setTotalBooks] = useState(0);
-  const [s, setS] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const [name, setName] = useState("");
-  const [bio, setBio] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [editingName, setEditingName] = useState("");
-  const [editingBio, setEditingBio] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingAuthor, setEditingAuthor] = useState(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    bio: ""
+  });
+
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null);
+  const [pendingCloseAction, setPendingCloseAction] = useState(null);
+  const initialFormDataRef = useRef(null);
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const load = useCallback(async function load() {
     setLoading(true);
     setError("");
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-      if (s) params.set("s", s);
+      if (searchInput) params.set("s", searchInput);
       
-      // Fetch authors and stats in parallel
-      const [authorsRes, statsRes] = await Promise.all([
-        fetch(`/api/admin/authors?${params.toString()}`, { cache: "no-store" }),
-        fetch("/api/admin/authors/stats", { cache: "no-store" })
-      ]);
+      const res = await fetch(`/api/admin/authors?${params.toString()}`, { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
       
-      const [authorsData, statsData] = await Promise.all([
-        authorsRes.json().catch(() => ({})),
-        statsRes.json().catch(() => ({}))
-      ]);
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load authors");
       
-      if (!authorsRes.ok || !authorsData?.ok) throw new Error(authorsData?.error || "Failed to load authors");
-      
-      const authors = authorsData.items || [];
+      const authors = data.items || [];
       
       // Fetch book counts for each author
       const authorsWithCounts = await Promise.all(
@@ -84,45 +87,107 @@ export default function AdminAuthorsPage() {
       );
       
       setItems(authorsWithCounts);
-      setTotal(authorsData.total || 0);
-      setTotalBooks(statsData?.totalBooks || 0);
+      setTotal(data.total || 0);
     } catch (e) {
       setError(e?.message || "Unknown error");
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, s]);
+  }, [page, pageSize, searchInput]);
 
   useEffect(() => { load(); }, [load]);
 
-  async function addAuthor(e) {
+  const openAddModal = () => {
+    const newFormData = { name: "", bio: "" };
+    setFormData(newFormData);
+    initialFormDataRef.current = newFormData;
+    setShowAddModal(true);
+    setHasUnsavedChanges(false);
+  };
+
+  const openEditModal = (author) => {
+    setEditingAuthor(author);
+    const newFormData = {
+      name: author.name,
+      bio: author.bio || ""
+    };
+    setFormData(newFormData);
+    initialFormDataRef.current = newFormData;
+    setHasUnsavedChanges(false);
+  };
+
+  const handleFormChange = (updates) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+    setHasUnsavedChanges(true);
+  };
+
+  const closeModal = () => {
+    if (hasUnsavedChanges) {
+      setPendingCloseAction(() => () => {
+        setShowAddModal(false);
+        setEditingAuthor(null);
+        setFormData({ name: "", bio: "" });
+        setHasUnsavedChanges(false);
+        initialFormDataRef.current = null;
+      });
+      setShowUnsavedDialog(true);
+    } else {
+      setShowAddModal(false);
+      setEditingAuthor(null);
+      setFormData({ name: "", bio: "" });
+      initialFormDataRef.current = null;
+    }
+  };
+
+  async function handleAddAuthor(e) {
     e.preventDefault();
-    const n = name.trim();
+    const n = formData.name.trim();
     if (!n) return;
+    setSubmitting(true);
     try {
-      const res = await fetch("/api/admin/authors", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: n, bio }) });
+      const res = await fetch("/api/admin/authors", { 
+        method: "POST", 
+        headers: { "content-type": "application/json" }, 
+        body: JSON.stringify({ name: n, bio: formData.bio }) 
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Create failed");
       showToast(`Author "${n}" added successfully!`, "success");
-      setName(""); setBio(""); setHasUnsavedChanges(false);
+      setShowAddModal(false);
+      setFormData({ name: "", bio: "" });
+      setHasUnsavedChanges(false);
+      initialFormDataRef.current = null;
       await load();
     } catch (e) { 
       showToast(e?.message || "Failed to add author", "error");
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  async function saveEdit(id) {
-    const n = editingName.trim();
+  async function handleUpdateAuthor(e) {
+    e.preventDefault();
+    const n = formData.name.trim();
     if (!n) return;
+    setSubmitting(true);
     try {
-      const res = await fetch(`/api/admin/authors/${id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: n, bio: editingBio }) });
+      const res = await fetch(`/api/admin/authors/${editingAuthor._id}`, { 
+        method: "PUT", 
+        headers: { "content-type": "application/json" }, 
+        body: JSON.stringify({ name: n, bio: formData.bio }) 
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Update failed");
       showToast(`Author "${n}" updated successfully!`, "success");
-      setEditingId(null); setHasUnsavedChanges(false);
+      setEditingAuthor(null);
+      setFormData({ name: "", bio: "" });
+      setHasUnsavedChanges(false);
+      initialFormDataRef.current = null;
       await load();
     } catch (e) { 
       showToast(e?.message || "Failed to update author", "error");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -148,66 +213,70 @@ export default function AdminAuthorsPage() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-  <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} onNavigate={(callback) => {
-    if (hasUnsavedChanges) {
-      setPendingAction(() => callback);
-      setShowUnsavedDialog(true);
-      return false;
-    }
-    callback();
-    return true;
-  }} />
+      <ToastContainer position="top-right" />
+      <DashboardSidebar 
+        heading="LibraAI" 
+        links={navigationLinks} 
+        variant="light" 
+        SignOutComponent={SignOutButton} 
+        onNavigate={(callback) => {
+          if (hasUnsavedChanges) {
+            setPendingCloseAction(() => callback);
+            setShowUnsavedDialog(true);
+            return false;
+          }
+          callback();
+          return true;
+        }} 
+      />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
-        <header className="space-y-4 border-b border-(--stroke) pb-6">
-          <div className="space-y-2">
-            <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Authors</h1>
-            <p className="text-sm text-zinc-600">Create, edit, and delete canonical authors.</p>
-          </div>
-          {!loading && items.length > 0 && (
-            <div className="flex items-center gap-4 text-sm">
-              <div className="inline-flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2">
-                <span className="font-semibold text-zinc-900">{total}</span>
-                <span className="text-zinc-600">{total === 1 ? 'author' : 'authors'}</span>
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-lg bg-blue-100 px-3 py-2">
-                <span className="font-semibold text-blue-900">
-                  {totalBooks}
-                </span>
-                <span className="text-blue-700">total books</span>
-              </div>
+        <header className="space-y-6 border-b border-(--stroke) pb-6">
+          <div className="flex items-end justify-between gap-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Authors</h1>
+              <p className="text-sm text-zinc-600">Create, edit, and delete canonical authors.</p>
             </div>
-          )}
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 transition"
+            >
+              <Plus className="h-4 w-4" />
+              Add Author
+            </button>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search authors by name..."
+              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => setSearchInput("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </header>
-
-        <section className="grid gap-6 sm:grid-cols-2">
-          <form onSubmit={addAuthor} className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
-            <h2 className="text-base font-semibold text-zinc-900">Add author</h2>
-            <label className="grid gap-2 text-sm">
-              <span className="text-zinc-700">Name</span>
-              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => { setName(e.target.value); setHasUnsavedChanges(true); }} placeholder="e.g., Jane Doe" />
-            </label>
-            <label className="grid gap-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-700">Bio (optional)</span>
-                <span className={`text-xs ${bio.length >= 200 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{bio.length}/200</span>
-              </div>
-              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={bio} onChange={(e) => { setBio(e.target.value); setHasUnsavedChanges(true); }} placeholder="Short biography" maxLength={200} />
-            </label>
-            <div className="flex justify-end"><button className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800" type="submit">Add</button></div>
-          </form>
-
-          <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
-            <div className="flex items-end gap-2">
-              <label className="grid flex-1 gap-2 text-sm">
-                <span className="text-zinc-700">Search</span>
-                <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={s} onChange={(e) => setS(e.target.value)} placeholder="Filter by name" />
-              </label>
-              <button onClick={() => { setPage(1); load(); }} className="mt-6 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800">Apply</button>
-            </div>
-          </div>
-        </section>
 
         {loading ? (
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">Loading authors…</div>
@@ -216,7 +285,7 @@ export default function AdminAuthorsPage() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
             <h2 className="text-lg font-semibold text-zinc-900">No authors yet</h2>
-            <p className="text-sm text-zinc-600">Add your first author using the form above.</p>
+            <p className="text-sm text-zinc-600">Click &quot;Add Author&quot; to get started.</p>
           </div>
         ) : (
           <section className="space-y-4">
@@ -231,58 +300,27 @@ export default function AdminAuthorsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((a) => (
-                    <tr key={a._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
+                  {items.map((author) => (
+                    <tr key={author._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
                       <td className="px-4 py-3 font-medium text-zinc-900">
-                        {editingId === a._id ? (
-                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editingName} onChange={(e) => { setEditingName(e.target.value); setHasUnsavedChanges(true); }} />
-                        ) : (
-                          <Link href={`/admin/authors/${encodeURIComponent(a.slug || a._id)}`} className="text-blue-600 hover:text-blue-800 hover:underline">
-                            {a.name}
-                          </Link>
-                        )}
+                        <Link href={`/admin/authors/${encodeURIComponent(author.slug || author._id)}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                          {author.name}
+                        </Link>
                       </td>
                       <td className="px-4 py-3">
-                        {editingId === a._id ? (
-                          "—"
-                        ) : (
-                          <Link href={`/admin/authors/${encodeURIComponent(a.slug || a._id)}`} className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-900 font-medium">
-                            <span className="inline-flex items-center justify-center rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-semibold text-zinc-800">
-                              {a.bookCount ?? 0}
-                            </span>
-                            <span className="text-xs text-zinc-500">{a.bookCount === 1 ? 'book' : 'books'}</span>
-                          </Link>
-                        )}
+                        <Link href={`/admin/authors/${encodeURIComponent(author.slug || author._id)}`} className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-900 font-medium">
+                          <span className="inline-flex items-center justify-center rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-semibold text-zinc-800">
+                            {author.bookCount ?? 0}
+                          </span>
+                          <span className="text-xs text-zinc-500">{author.bookCount === 1 ? 'book' : 'books'}</span>
+                        </Link>
                       </td>
+                      <td className="px-4 py-3">{author.bio || "—"}</td>
                       <td className="px-4 py-3">
-                        {editingId === a._id ? (
-                          <div className="space-y-1">
-                            <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editingBio} onChange={(e) => { setEditingBio(e.target.value); setHasUnsavedChanges(true); }} maxLength={200} />
-                            <div className={`text-xs text-right ${editingBio.length >= 200 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editingBio.length}/200</div>
-                          </div>
-                        ) : (
-                          a.bio || "—"
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {editingId === a._id ? (
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => saveEdit(a._id)} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Save</button>
-                            <button onClick={() => {
-                              if (hasUnsavedChanges) {
-                                setPendingAction(() => () => { setEditingId(null); setHasUnsavedChanges(false); });
-                                setShowUnsavedDialog(true);
-                              } else {
-                                setEditingId(null);
-                              }
-                            }} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Cancel</button>
-                          </div>
-                        ) : (
-                          <RowActions
-                            onEdit={() => { setEditingId(a._id); setEditingName(a.name); setEditingBio(a.bio || ""); }}
-                            onDelete={() => setPendingDelete(a)}
-                          />
-                        )}
+                        <RowActions
+                          onEdit={() => openEditModal(author)}
+                          onDelete={() => setPendingDelete(author)}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -301,7 +339,73 @@ export default function AdminAuthorsPage() {
         )}
       </main>
 
-      <ToastContainer position="top-right" />
+      {/* Add/Edit Modal */}
+      {(showAddModal || editingAuthor) && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-zinc-200 flex items-center justify-between sticky top-0 bg-white">
+              <h2 className="text-xl font-semibold text-zinc-900">
+                {editingAuthor ? "Edit Author" : "Add New Author"}
+              </h2>
+              <button
+                onClick={closeModal}
+                className="p-2 hover:bg-zinc-100 rounded-lg transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={editingAuthor ? handleUpdateAuthor : handleAddAuthor} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  Name <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleFormChange({ name: e.target.value })}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                  placeholder="e.g., Jane Doe"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  <div className="flex items-center justify-between">
+                    <span>Bio</span>
+                    <span className={`text-xs ${formData.bio.length >= 200 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>
+                      {formData.bio.length}/200
+                    </span>
+                  </div>
+                </label>
+                <textarea
+                  value={formData.bio}
+                  onChange={(e) => handleFormChange({ bio: e.target.value })}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 min-h-[120px]"
+                  placeholder="Short biography"
+                  maxLength={200}
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 disabled:opacity-50 transition"
+                >
+                  {submitting ? "Saving..." : editingAuthor ? "Update Author" : "Add Author"}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-4 py-2 border border-zinc-300 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <ConfirmDialog
         open={Boolean(pendingDelete)}
         title="Delete Author"
@@ -325,14 +429,14 @@ export default function AdminAuthorsPage() {
         showDialog={showUnsavedDialog}
         onConfirm={() => {
           setShowUnsavedDialog(false);
-          if (pendingAction) {
-            pendingAction();
-            setPendingAction(null);
+          if (pendingCloseAction) {
+            pendingCloseAction();
+            setPendingCloseAction(null);
           }
         }}
         onCancel={() => {
           setShowUnsavedDialog(false);
-          setPendingAction(null);
+          setPendingCloseAction(null);
         }}
       />
     </div>

@@ -36,20 +36,18 @@ export async function GET(request) {
         orConditions.push({ code: { $regex: filters.shelf, $options: "i" } });
       }
 
-      // Add free text search
+      // Add free text search for code and location
       if (freeText) {
         orConditions.push(
           { code: { $regex: freeText, $options: "i" } },
-          { name: { $regex: freeText, $options: "i" } },
           { location: { $regex: freeText, $options: "i" } }
         );
       }
 
-      // If no specific filters, search all fields
+      // If no specific filters, search code and location fields
       if (orConditions.length === 0 && !freeText && !filters.shelf) {
         orConditions.push(
           { code: { $regex: search, $options: "i" } },
-          { name: { $regex: search, $options: "i" } },
           { location: { $regex: search, $options: "i" } }
         );
       }

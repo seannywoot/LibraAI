@@ -24,7 +24,7 @@ export async function GET(request) {
 
     const query = s ? { $or: [
       { codeLower: { $regex: new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") } },
-      { nameLower: { $regex: new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") } },
+      { location: { $regex: new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") } },
     ] } : {};
 
     const projection = { code: 1, name: 1, slug: 1, location: 1, capacity: 1, notes: 1, createdAt: 1 };
@@ -56,6 +56,7 @@ export async function POST(request) {
     const notes = normalize(body?.notes);
 
     if (!code) return new Response(JSON.stringify({ ok: false, error: "Code is required" }), { status: 400, headers: { "content-type": "application/json" } });
+    if (!location) return new Response(JSON.stringify({ ok: false, error: "Location is required" }), { status: 400, headers: { "content-type": "application/json" } });
 
     let capacity = undefined;
     if (capacityRaw !== undefined && capacityRaw !== null && String(capacityRaw) !== "") {

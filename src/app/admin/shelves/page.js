@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Edit as EditIcon, Trash2 } from "@/components/icons";
+import { Edit as EditIcon, Trash2, Plus, X } from "@/components/icons";
 import { getAdminLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
@@ -30,32 +30,44 @@ export default function AdminShelvesPage() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
-  const [s, setS] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [location, setLocation] = useState("");
-  const [capacity, setCapacity] = useState("");
-  const [notes, setNotes] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingShelf, setEditingShelf] = useState(null);
+  const [formData, setFormData] = useState({
+    code: "",
+    name: "",
+    location: "",
+    capacity: "",
+    notes: ""
+  });
 
-  const [editingId, setEditingId] = useState(null);
-  const [editing, setEditing] = useState({ code: "", name: "", location: "", capacity: "", notes: "" });
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null);
+  const [pendingCloseAction, setPendingCloseAction] = useState(null);
+  const initialFormDataRef = useRef(null);
 
   const navigationLinks = useMemo(() => getAdminLinks(), []);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const load = useCallback(async function load() {
     setLoading(true);
     setError("");
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-      if (s) params.set("s", s);
+      if (searchInput) params.set("s", searchInput);
       const res = await fetch(`/api/admin/shelves?${params.toString()}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load shelves");
@@ -82,39 +94,119 @@ export default function AdminShelvesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, s]);
+  }, [page, pageSize, searchInput]);
 
   useEffect(() => { load(); }, [load]);
 
-  async function addShelf(e) {
+  const openAddModal = () => {
+    const newFormData = { code: "", name: "", location: "", capacity: "", notes: "" };
+    setFormData(newFormData);
+    initialFormDataRef.current = newFormData;
+    setShowAddModal(true);
+    setHasUnsavedChanges(false);
+  };
+
+  const openEditModal = (shelf) => {
+    setEditingShelf(shelf);
+    const newFormData = {
+      code: shelf.code,
+      name: shelf.name || "",
+      location: shelf.location || "",
+      capacity: shelf.capacity ?? "",
+      notes: shelf.notes || ""
+    };
+    setFormData(newFormData);
+    initialFormDataRef.current = newFormData;
+    setHasUnsavedChanges(false);
+  };
+
+  const handleFormChange = (updates) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+    setHasUnsavedChanges(true);
+  };
+
+  const closeModal = () => {
+    if (hasUnsavedChanges) {
+      setPendingCloseAction(() => () => {
+        setShowAddModal(false);
+        setEditingShelf(null);
+        setFormData({ code: "", name: "", location: "", capacity: "", notes: "" });
+        setHasUnsavedChanges(false);
+        initialFormDataRef.current = null;
+      });
+      setShowUnsavedDialog(true);
+    } else {
+      setShowAddModal(false);
+      setEditingShelf(null);
+      setFormData({ code: "", name: "", location: "", capacity: "", notes: "" });
+      initialFormDataRef.current = null;
+    }
+  };
+
+  async function handleAddShelf(e) {
     e.preventDefault();
-    const c = code.trim();
+    const c = formData.code.trim();
+    const loc = formData.location.trim();
     if (!c) return;
+    if (!loc) {
+      showToast("Location is required", "error");
+      return;
+    }
+    setSubmitting(true);
     try {
-      const res = await fetch("/api/admin/shelves", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: c, name, location, capacity: capacity === "" ? null : Number(capacity), notes }) });
+      const res = await fetch("/api/admin/shelves", { 
+        method: "POST", 
+        headers: { "content-type": "application/json" }, 
+        body: JSON.stringify({ 
+          code: c, 
+          name: formData.name, 
+          location: loc, 
+          capacity: formData.capacity === "" ? null : Number(formData.capacity), 
+          notes: formData.notes 
+        }) 
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Create failed");
       showToast(`Shelf "${c}" added successfully!`, "success");
-      setCode(""); setName(""); setLocation(""); setCapacity(""); setNotes(""); setHasUnsavedChanges(false);
+      setShowAddModal(false);
+      setFormData({ code: "", name: "", location: "", capacity: "", notes: "" });
+      setHasUnsavedChanges(false);
+      initialFormDataRef.current = null;
       await load();
     } catch (e) { 
       showToast(e?.message || "Failed to add shelf", "error");
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  async function saveEdit(id) {
-    const c = editing.code.trim();
+  async function handleUpdateShelf(e) {
+    e.preventDefault();
+    const c = formData.code.trim();
     if (!c) return;
+    setSubmitting(true);
     try {
-      const payload = { ...editing, capacity: editing.capacity === "" ? null : Number(editing.capacity) };
-      const res = await fetch(`/api/admin/shelves/${id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+      const payload = { 
+        ...formData, 
+        capacity: formData.capacity === "" ? null : Number(formData.capacity) 
+      };
+      const res = await fetch(`/api/admin/shelves/${editingShelf._id}`, { 
+        method: "PUT", 
+        headers: { "content-type": "application/json" }, 
+        body: JSON.stringify(payload) 
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Update failed");
       showToast(`Shelf "${c}" updated successfully!`, "success");
-      setEditingId(null); setHasUnsavedChanges(false);
+      setEditingShelf(null);
+      setFormData({ code: "", name: "", location: "", capacity: "", notes: "" });
+      setHasUnsavedChanges(false);
+      initialFormDataRef.current = null;
       await load();
     } catch (e) { 
       showToast(e?.message || "Failed to update shelf", "error");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -141,6 +233,7 @@ export default function AdminShelvesPage() {
 
   return (
     <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+      <ToastContainer position="top-right" />
       <DashboardSidebar
         heading="Catalog — Shelves"
         tagline="Admin"
@@ -150,7 +243,7 @@ export default function AdminShelvesPage() {
         SignOutComponent={SignOutButton}
         onNavigate={(callback) => {
           if (hasUnsavedChanges) {
-            setPendingAction(() => callback);
+            setPendingCloseAction(() => callback);
             setShowUnsavedDialog(true);
             return false;
           }
@@ -160,56 +253,52 @@ export default function AdminShelvesPage() {
       />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
-        <header className="space-y-2 border-b border-(--stroke) pb-6">
-          <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Shelves</h1>
-          <p className="text-sm text-zinc-600">Create, edit, and delete shelving locations and codes.</p>
-        </header>
-
-        <section className="grid gap-6 sm:grid-cols-2">
-          <form onSubmit={addShelf} className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
-            <h2 className="text-base font-semibold text-zinc-900">Add shelf</h2>
-            <label className="grid gap-2 text-sm">
-              <span className="text-zinc-700">Code</span>
-              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={code} onChange={(e) => { setCode(e.target.value); setHasUnsavedChanges(true); }} placeholder="e.g., A3" />
-            </label>
-            <label className="grid gap-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-700">Name (optional)</span>
-                <span className={`text-xs ${name.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{name.length}/40</span>
-              </div>
-              <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={name} onChange={(e) => { setName(e.target.value); setHasUnsavedChanges(true); }} placeholder="e.g., Fiction — Science" maxLength={40} />
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="grid gap-2 text-sm">
-                <span className="text-zinc-700">Location (optional)</span>
-                <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={location} onChange={(e) => { setLocation(e.target.value); setHasUnsavedChanges(true); }} placeholder="e.g., 2nd floor" />
-              </label>
-              <label className="grid gap-2 text-sm">
-                <span className="text-zinc-700">Capacity (optional)</span>
-                <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" type="number" min="0" value={capacity} onChange={(e) => { setCapacity(e.target.value); setHasUnsavedChanges(true); }} placeholder="e.g., 120" />
-              </label>
+        <header className="space-y-6 border-b border-(--stroke) pb-6">
+          <div className="flex items-end justify-between gap-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Shelves</h1>
+              <p className="text-sm text-zinc-600">Create, edit, and delete shelving locations and codes.</p>
             </div>
-            <label className="grid gap-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-700">Notes (optional)</span>
-                <span className={`text-xs ${notes.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{notes.length}/40</span>
-              </div>
-              <textarea className="min-h-[72px] rounded-xl border border-zinc-200 bg-white px-4 py-3" value={notes} onChange={(e) => { setNotes(e.target.value); setHasUnsavedChanges(true); }} placeholder="Special handling, maintenance" maxLength={40} />
-            </label>
-            <div className="flex justify-end"><button className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800" type="submit">Add</button></div>
-          </form>
-
-          <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
-            <div className="flex items-end gap-2">
-              <label className="grid flex-1 gap-2 text-sm">
-                <span className="text-zinc-700">Search</span>
-                <input className="rounded-xl border border-zinc-200 bg-white px-4 py-3" value={s} onChange={(e) => setS(e.target.value)} placeholder="Filter by code or name" />
-              </label>
-              <button onClick={() => { setPage(1); load(); }} className="mt-6 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800">Apply</button>
-            </div>
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 transition"
+            >
+              <Plus className="h-4 w-4" />
+              Add Shelf
+            </button>
           </div>
-        </section>
+
+          {/* Search Bar */}
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search shelves by code or location..."
+              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => setSearchInput("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </header>
 
         {loading ? (
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">Loading shelves…</div>
@@ -218,7 +307,7 @@ export default function AdminShelvesPage() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
             <h2 className="text-lg font-semibold text-zinc-900">No shelves yet</h2>
-            <p className="text-sm text-zinc-600">Add your first shelf using the form above.</p>
+            <p className="text-sm text-zinc-600">Click &quot;Add Shelf&quot; to get started.</p>
           </div>
         ) : (
           <section className="space-y-4">
@@ -236,76 +325,31 @@ export default function AdminShelvesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((a) => (
-                    <tr key={a._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
+                  {items.map((shelf) => (
+                    <tr key={shelf._id} className="rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-800">
                       <td className="px-4 py-3 font-medium text-zinc-900">
-                        {editingId === a._id ? (
-                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.code} onChange={(e) => { setEditing((prev) => ({ ...prev, code: e.target.value })); setHasUnsavedChanges(true); }} />
-                        ) : (
-                          <Link href={`/admin/shelves/${encodeURIComponent(a.slug || a.code || a._id)}`} className="text-blue-600 hover:text-blue-800 hover:underline">
-                            {a.code}
-                          </Link>
-                        )}
+                        <Link href={`/admin/shelves/${encodeURIComponent(shelf.slug || shelf.code || shelf._id)}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                          {shelf.code}
+                        </Link>
                       </td>
                       <td className="px-4 py-3">
-                        {editingId === a._id ? (
-                          <div className="space-y-1">
-                            <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.name} onChange={(e) => { setEditing((prev) => ({ ...prev, name: e.target.value })); setHasUnsavedChanges(true); }} maxLength={40} />
-                            <div className={`text-xs text-right ${editing.name.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editing.name.length}/40</div>
-                          </div>
-                        ) : (
-                          a.name && a.name.length > 40 ? `${a.name.substring(0, 40)}...` : a.name || "—"
-                        )}
+                        {shelf.name && shelf.name.length > 40 ? `${shelf.name.substring(0, 40)}...` : shelf.name || "—"}
+                      </td>
+                      <td className="px-4 py-3">{shelf.location || "—"}</td>
+                      <td className="px-4 py-3">
+                        <Link href={`/admin/shelves/${encodeURIComponent(shelf.slug || shelf.code || shelf._id)}`} className="text-zinc-700 hover:text-zinc-900">
+                          {shelf.bookCount ?? 0}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">{shelf.capacity ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        {shelf.notes && shelf.notes.length > 40 ? `${shelf.notes.substring(0, 40)}...` : shelf.notes || "—"}
                       </td>
                       <td className="px-4 py-3">
-                        {editingId === a._id ? (
-                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.location} onChange={(e) => { setEditing((prev) => ({ ...prev, location: e.target.value })); setHasUnsavedChanges(true); }} />
-                        ) : (
-                          a.location || "—"
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {editingId === a._id ? (
-                          "—"
-                        ) : (
-                          <Link href={`/admin/shelves/${encodeURIComponent(a.slug || a.code || a._id)}`} className="text-zinc-700 hover:text-zinc-900">
-                            {a.bookCount ?? 0}
-                          </Link>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {editingId === a._id ? (
-                          <input className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" type="number" min="0" value={editing.capacity ?? ""} onChange={(e) => { setEditing((prev) => ({ ...prev, capacity: e.target.value })); setHasUnsavedChanges(true); }} />
-                        ) : (
-                          a.capacity ?? "—"
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {editingId === a._id ? (
-                          <div className="space-y-1">
-                            <textarea className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2" value={editing.notes} onChange={(e) => { setEditing((prev) => ({ ...prev, notes: e.target.value })); setHasUnsavedChanges(true); }} maxLength={40} />
-                            <div className={`text-xs text-right ${editing.notes.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>{editing.notes.length}/40</div>
-                          </div>
-                        ) : (
-                          a.notes && a.notes.length > 40 ? `${a.notes.substring(0, 40)}...` : a.notes || "—"
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {editingId === a._id ? (
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => saveEdit(a._id)} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Save</button>
-                            <button onClick={() => {
-                              if (hasUnsavedChanges) {
-                                setPendingAction(() => () => { setEditingId(null); setHasUnsavedChanges(false); });
-                                setShowUnsavedDialog(true);
-                              } else {
-                                setEditingId(null);
-                              }
-                            }} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Cancel</button>
-                          </div>
-                        ) : (
-                          <RowActions onEdit={() => { setEditingId(a._id); setEditing({ code: a.code, name: a.name || "", location: a.location || "", capacity: a.capacity ?? "", notes: a.notes || "" }); }} onDelete={() => setPendingDelete(a)} />
-                        )}
+                        <RowActions 
+                          onEdit={() => openEditModal(shelf)} 
+                          onDelete={() => setPendingDelete(shelf)} 
+                        />
                       </td>
                     </tr>
                   ))}
@@ -324,7 +368,117 @@ export default function AdminShelvesPage() {
         )}
       </main>
 
-      <ToastContainer position="top-right" />
+      {/* Add/Edit Modal */}
+      {(showAddModal || editingShelf) && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-zinc-200 flex items-center justify-between sticky top-0 bg-white">
+              <h2 className="text-xl font-semibold text-zinc-900">
+                {editingShelf ? "Edit Shelf" : "Add New Shelf"}
+              </h2>
+              <button
+                onClick={closeModal}
+                className="p-2 hover:bg-zinc-100 rounded-lg transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={editingShelf ? handleUpdateShelf : handleAddShelf} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  Code <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.code}
+                  onChange={(e) => handleFormChange({ code: e.target.value })}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                  placeholder="e.g., A3"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  <div className="flex items-center justify-between">
+                    <span>Name</span>
+                    <span className={`text-xs ${formData.name.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>
+                      {formData.name.length}/40
+                    </span>
+                  </div>
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleFormChange({ name: e.target.value })}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                  placeholder="e.g., Fiction — Science"
+                  maxLength={40}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  Location <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => handleFormChange({ location: e.target.value })}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                  placeholder="e.g., 2nd floor"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  Capacity
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.capacity}
+                  onChange={(e) => handleFormChange({ capacity: e.target.value })}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                  placeholder="e.g., 120"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  <div className="flex items-center justify-between">
+                    <span>Notes</span>
+                    <span className={`text-xs ${formData.notes.length >= 40 ? 'text-rose-600 font-semibold' : 'text-zinc-500'}`}>
+                      {formData.notes.length}/40
+                    </span>
+                  </div>
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => handleFormChange({ notes: e.target.value })}
+                  className="w-full px-4 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 min-h-[80px]"
+                  placeholder="Special handling, maintenance"
+                  maxLength={40}
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 disabled:opacity-50 transition"
+                >
+                  {submitting ? "Saving..." : editingShelf ? "Update Shelf" : "Add Shelf"}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-4 py-2 border border-zinc-300 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <ConfirmDialog
         open={Boolean(pendingDelete)}
         title="Delete Shelf"
@@ -348,14 +502,14 @@ export default function AdminShelvesPage() {
         showDialog={showUnsavedDialog}
         onConfirm={() => {
           setShowUnsavedDialog(false);
-          if (pendingAction) {
-            pendingAction();
-            setPendingAction(null);
+          if (pendingCloseAction) {
+            pendingCloseAction();
+            setPendingCloseAction(null);
           }
         }}
         onCancel={() => {
           setShowUnsavedDialog(false);
-          setPendingAction(null);
+          setPendingCloseAction(null);
         }}
       />
     </div>

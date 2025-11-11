@@ -50,6 +50,7 @@ export async function PUT(request, { params }) {
     const notes = normalize(body?.notes);
 
     if (!code) return new Response(JSON.stringify({ ok: false, error: "Code is required" }), { status: 400, headers: { "content-type": "application/json" } });
+    if (!location) return new Response(JSON.stringify({ ok: false, error: "Location is required" }), { status: 400, headers: { "content-type": "application/json" } });
 
     let capacity = undefined;
     if (capacityRaw !== undefined && capacityRaw !== null && String(capacityRaw) !== "") {
