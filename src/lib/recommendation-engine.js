@@ -486,7 +486,19 @@ function scoreBooks(books, profile) {
       
       const matchedCat = (book.categories || []).find((c) => profile.topCategories.includes(c));
       if (matchedCat) {
-        matchReasons.push(`You like ${matchedCat}`);
+        // Determine if this is a top category (top 3) or exploration category
+        const categoryIndex = profile.topCategories.findIndex(cat => cat === matchedCat);
+        
+        if (categoryIndex === 0) {
+          // #1 favorite category
+          matchReasons.push(`You love ${matchedCat}`);
+        } else if (categoryIndex <= 2) {
+          // Top 3 categories
+          matchReasons.push(`You like ${matchedCat}`);
+        } else {
+          // Lower ranked categories - suggest exploration
+          matchReasons.push(`Try ${matchedCat}`);
+        }
       }
     }
 

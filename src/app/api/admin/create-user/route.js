@@ -40,7 +40,7 @@ export async function POST(request) {
     }
 
     const client = await clientPromise;
-    const db = client.db();
+    const db = client.db(process.env.MONGODB_DB_NAME || "test");
     const users = db.collection("users");
 
     await users.createIndex({ email: 1 }, { unique: true });
