@@ -752,6 +752,36 @@ RESPONSE STYLE:
 
     await chatLogsCollection.insertOne(logEntry);
 
+    // Mark previous similar queries as resolved (user got a satisfactory answer)
+    // If user asks a different question, it means the previous one was answered
+    if (history && history.length > 0) {
+      const unansweredQueriesCollection = db.collection("unanswered_queries");
+      
+      // Get the last user message from history
+      const lastUserMessages = history.filter(m => m.role === 'user');
+      if (lastUserMessages.length > 0) {
+        const lastUserMessage = lastUserMessages[lastUserMessages.length - 1].content;
+        
+        // If current message is different from last message, mark last as resolved
+        if (lastUserMessage.toLowerCase().trim() !== message.toLowerCase().trim()) {
+          await unansweredQueriesCollection.updateMany(
+            {
+              userId: session?.user?.email || "anonymous",
+              query: { $regex: new RegExp(`^${lastUserMessage}$`, 'i') },
+              conversationId: conversationId || null,
+              resolved: false
+            },
+            {
+              $set: {
+                resolved: true,
+                resolvedAt: new Date()
+              }
+            }
+          );
+        }
+      }
+    }
+
     return NextResponse.json({
       message: text,
       success: true,

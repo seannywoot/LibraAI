@@ -79,15 +79,61 @@ export async function GET(request) {
       ]
     };
     
-    // Get total count of unanswered questions (excluding converted ones)
-    const totalUnansweredCount = await chatLogsCollection.countDocuments(unansweredQuery);
+    // Get deduplicated unanswered questions using aggregation
+    const unansweredQuestionsAggregation = await chatLogsCollection.aggregate([
+      { $match: unansweredQuery },
+      {
+        $group: {
+          _id: {
+            userId: '$userId',
+            userMessage: { $toLower: '$userMessage' } // Case-insensitive grouping
+          },
+          count: { $sum: 1 }, // Count duplicates
+          firstAsked: { $min: '$timestamp' },
+          lastAsked: { $max: '$timestamp' },
+          // Keep first occurrence data
+          userMessage: { $first: '$userMessage' },
+          aiResponse: { $first: '$aiResponse' },
+          userId: { $first: '$userId' },
+          userName: { $first: '$userName' },
+          conversationId: { $first: '$conversationId' },
+          _idOriginal: { $first: '$_id' }
+        }
+      },
+      { $sort: { lastAsked: -1 } }, // Sort by most recent
+      { $skip: (queriesPage - 1) * pageSize },
+      { $limit: pageSize }
+    ]).toArray();
     
-    // Get unanswered questions with pagination (5 per page, excluding converted ones)
-    const unansweredQuestions = await chatLogsCollection.find(unansweredQuery)
-    .sort({ timestamp: -1 })
-    .skip((queriesPage - 1) * pageSize)
-    .limit(pageSize)
-    .toArray();
+    // Get total count of unique unanswered questions
+    const uniqueUnansweredCount = await chatLogsCollection.aggregate([
+      { $match: unansweredQuery },
+      {
+        $group: {
+          _id: {
+            userId: '$userId',
+            userMessage: { $toLower: '$userMessage' }
+          }
+        }
+      },
+      { $count: 'total' }
+    ]).toArray();
+    
+    const totalUnansweredCount = uniqueUnansweredCount[0]?.total || 0;
+    
+    // Format the results
+    const unansweredQuestions = unansweredQuestionsAggregation.map(item => ({
+      _id: item._idOriginal,
+      userMessage: item.userMessage,
+      aiResponse: item.aiResponse,
+      userId: item.userId,
+      userName: item.userName,
+      conversationId: item.conversationId,
+      timestamp: item.lastAsked, // Use last asked time
+      askedCount: item.count, // How many times asked
+      firstAsked: item.firstAsked,
+      lastAsked: item.lastAsked
+    }));
     
     // Get FAQ feedback from the feedback collection
     const feedbackCollection = db.collection("faq_feedback");
@@ -151,7 +197,10 @@ export async function GET(request) {
           id: q._id,
           question: q.userMessage,
           timestamp: q.timestamp,
-          user: q.userName || "Anonymous"
+          user: q.userName || "Anonymous",
+          askedCount: q.askedCount, // How many times asked
+          firstAsked: q.firstAsked, // First time asked
+          lastAsked: q.lastAsked // Last time asked
         })),
         unansweredPagination: {
           currentPage: queriesPage,

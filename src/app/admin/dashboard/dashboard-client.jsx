@@ -371,9 +371,18 @@ export default function DashboardClient() {
                 analytics.unansweredQuestions.map((question) => (
                   <div key={question.id} className="p-4 hover:bg-zinc-50 transition-colors">
                     <div className="flex items-start justify-between gap-3 mb-2">
-                      <p className="text-sm font-medium text-zinc-900 flex-1">
-                        {question.question}
-                      </p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-zinc-900">
+                            {question.question}
+                          </p>
+                          {question.askedCount > 1 && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                              ×{question.askedCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={() => handleConvertToFAQ(question)}
@@ -391,9 +400,15 @@ export default function DashboardClient() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-zinc-500">
-                      <span>Asked {new Date(question.timestamp).toLocaleDateString()}</span>
+                      <span>Last asked {new Date(question.timestamp).toLocaleDateString()}</span>
                       <span>•</span>
                       <span>{question.user}</span>
+                      {question.askedCount > 1 && question.firstAsked && (
+                        <>
+                          <span>•</span>
+                          <span>First asked {new Date(question.firstAsked).toLocaleDateString()}</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))
