@@ -56,6 +56,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
   const [hasMigrated, setHasMigrated] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [retryQueue, setRetryQueue] = useState([]);
+  const [recentQueries, setRecentQueries] = useState([]); // Track recent queries
+  const [searchCache, setSearchCache] = useState({}); // Cache search results
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -605,7 +607,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     setIsLoading(false); // Turn off loading when typing starts
     let index = 0;
     
-    const typingSpeed = 10; // milliseconds per character (faster)
+    const typingSpeed = 3; // milliseconds per character (much faster - was 10, now 3)
     
     typingIntervalRef.current = setInterval(() => {
       if (index < fullMessage.length) {
@@ -708,6 +710,29 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     }
   };
 
+  // Helper function to check if query is repetitive
+  const isRepetitiveQuery = (newQuery) => {
+    const normalizedNew = newQuery.toLowerCase().trim();
+    
+    // Check last 3 queries
+    const recentMatches = recentQueries.slice(-3).filter(q => {
+      const normalizedOld = q.query.toLowerCase().trim();
+      
+      // Exact match
+      if (normalizedNew === normalizedOld) return true;
+      
+      // High similarity (>80% of words match)
+      const newWords = normalizedNew.split(/\s+/);
+      const oldWords = normalizedOld.split(/\s+/);
+      const matchingWords = newWords.filter(w => oldWords.includes(w));
+      const similarity = matchingWords.length / Math.max(newWords.length, oldWords.length);
+      
+      return similarity > 0.8;
+    });
+    
+    return recentMatches.length > 0 ? recentMatches[0] : null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if ((!input.trim() && !attachedFile) || isLoading) return;
@@ -717,6 +742,32 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     const fileName = attachedFile?.name;
     const fileType = attachedFile?.type;
     const currentFilePreview = filePreview;
+    
+    // Check for repetitive queries (only for text queries, not file uploads)
+    if (userMessage !== "Uploaded a file") {
+      const repetitiveMatch = isRepetitiveQuery(userMessage);
+      
+      if (repetitiveMatch) {
+        // Show warning for repetitive query
+        const timeSinceLastQuery = Date.now() - repetitiveMatch.timestamp;
+        const secondsAgo = Math.floor(timeSinceLastQuery / 1000);
+        
+        if (secondsAgo < 30) {
+          showToast(
+            `You asked a similar question ${secondsAgo} seconds ago. Please check the previous response or try rephrasing your question.`,
+            'warning',
+            5000
+          );
+          return; // Prevent submission
+        }
+      }
+      
+      // Track this query
+      setRecentQueries(prev => [...prev.slice(-4), { 
+        query: userMessage, 
+        timestamp: Date.now() 
+      }]);
+    }
     
     // Save last user message for up arrow recall
     if (userMessage && userMessage !== "Uploaded a file") {
@@ -1018,6 +1069,18 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
 
       {/* Input Area */}
       <div className="border-t border-zinc-200 p-6">
+        {/* Repetitive Query Warning */}
+        {input.trim() && isRepetitiveQuery(input.trim()) && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <svg className="h-5 w-5 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm text-amber-800">
+              This looks similar to a recent question. Check the previous response or try rephrasing.
+            </p>
+          </div>
+        )}
+        
         {attachedFile && (
           <div className="mb-3 flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
             {filePreview && attachedFile.type.startsWith('image/') && (

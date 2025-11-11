@@ -25,6 +25,10 @@ async function searchBooks(db, query, status) {
     searchQuery.status = status;
   }
 
+  // Get total count of matching books
+  const totalMatches = await booksCollection.countDocuments(searchQuery);
+
+  // Get limited results for display
   const books = await booksCollection
     .find(searchQuery)
     .limit(10)
@@ -46,7 +50,9 @@ async function searchBooks(db, query, status) {
     .toArray();
 
   return {
-    count: books.length,
+    totalMatches, // Total books matching the search
+    displayedCount: books.length, // Books shown (max 10)
+    limitReached: totalMatches > 10, // True if there are more results
     books: books.map((book) => ({
       id: book._id.toString(),
       title: book.title,
@@ -68,6 +74,10 @@ async function searchBooks(db, query, status) {
 
 async function getBooksByCategory(db, shelfCode) {
   const booksCollection = db.collection("books");
+  
+  // Get total count for this shelf
+  const totalInShelf = await booksCollection.countDocuments({ shelf: shelfCode });
+  
   const books = await booksCollection
     .find({ shelf: shelfCode })
     .limit(20)
@@ -88,7 +98,9 @@ async function getBooksByCategory(db, shelfCode) {
 
   return {
     shelfCode,
-    count: books.length,
+    totalInShelf, // Total books on this shelf
+    displayedCount: books.length, // Books shown (max 20)
+    limitReached: totalInShelf > 20,
     books: books.map((book) => ({
       id: book._id.toString(),
       title: book.title,
@@ -132,6 +144,34 @@ async function getAvailableShelves(db) {
   return {
     count: shelvesWithCounts.length,
     shelves: shelvesWithCounts,
+  };
+}
+
+async function getCatalogStats(db) {
+  const booksCollection = db.collection("books");
+  
+  // Get total counts
+  const totalBooks = await booksCollection.countDocuments({});
+  const availableBooks = await booksCollection.countDocuments({ status: "available" });
+  const borrowedBooks = await booksCollection.countDocuments({ status: "borrowed" });
+  const reservedBooks = await booksCollection.countDocuments({ status: "reserved" });
+  
+  // Get category distribution
+  const categoryStats = await booksCollection.aggregate([
+    { $group: { _id: "$category", count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 10 }
+  ]).toArray();
+  
+  return {
+    totalBooks,
+    availableBooks,
+    borrowedBooks,
+    reservedBooks,
+    topCategories: categoryStats.map(cat => ({
+      category: cat._id,
+      count: cat.count
+    }))
   };
 }
 
@@ -254,7 +294,7 @@ export async function POST(request) {
           {
             name: "searchBooks",
             description:
-              "Search for books in the library catalog by title, author, ISBN, publisher, description, or category. Returns books with comprehensive details including description, language, pages, format, and category. Use this to find books matching specific topics, genres, or content. ALWAYS call this function when users ask about books by topic, theme, or subject - don't assume books don't exist without searching first!",
+              "Search for books in the library catalog by title, author, ISBN, publisher, description, or category. Returns up to 10 sample books with comprehensive details, plus the TOTAL count of matching books in the catalog. Use this to find books matching specific topics, genres, or content. ALWAYS call this function when users ask about books by topic, theme, or subject - don't assume books don't exist without searching first!",
             parameters: {
               type: "object",
               properties: {
@@ -276,7 +316,7 @@ export async function POST(request) {
           {
             name: "getBooksByCategory",
             description:
-              "Get books from a specific shelf in the library with full details including descriptions, language, pages, format, and category. Use getAvailableShelves first to get the correct shelf codes. Shelf codes are alphanumeric like A1, B2, C3, etc. Returns comprehensive book information to help users understand book content and make informed choices.",
+              "Get books from a specific shelf in the library with full details including descriptions, language, pages, format, and category. Returns up to 20 sample books plus the TOTAL count on that shelf. Use getAvailableShelves first to get the correct shelf codes. Shelf codes are alphanumeric like A1, B2, C3, etc. Returns comprehensive book information to help users understand book content and make informed choices.",
             parameters: {
               type: "object",
               properties: {
@@ -293,6 +333,15 @@ export async function POST(request) {
             name: "getAvailableShelves",
             description:
               "Get list of all available shelves/categories in the library with their codes, names, locations, and book counts. ALWAYS call this first when users ask about categories or shelves to get the correct shelf codes.",
+            parameters: {
+              type: "object",
+              properties: {},
+            },
+          },
+          {
+            name: "getCatalogStats",
+            description:
+              "Get comprehensive statistics about the entire library catalog including total books, availability status breakdown, and top categories. Use this when users ask general questions like 'what books do you have', 'how many books', or want an overview of the library collection. This provides the big picture before diving into specific searches.",
             parameters: {
               type: "object",
               properties: {},
@@ -349,6 +398,7 @@ export async function POST(request) {
 
 CORE CAPABILITIES:
 You help students with:
+- Providing library catalog overview and statistics (use getCatalogStats function)
 - Finding books by title, author, topic, subject, or content (use searchBooks function)
 - Discovering books based on themes, genres, or descriptions
 - Browsing books by category/shelf with full details (use getBooksByCategory function)
@@ -358,18 +408,43 @@ You help students with:
 - Helping with research and study resources
 - Offering literature recommendations based on interests
 
+CRITICAL: UNDERSTANDING SEARCH RESULTS
+When you call searchBooks or getBooksByCategory, the results include:
+- totalMatches / totalInShelf: The ACTUAL total number of books in the catalog/shelf
+- displayedCount: Number of sample books shown (limited to 10 or 20)
+- limitReached: Boolean indicating if there are more books than shown
+- books: Array of sample books (NOT the complete list)
+
+ALWAYS mention the TOTAL count when presenting results, not just the sample size!
+
+Example responses:
+❌ WRONG: "I found 10 books about habits"
+✅ CORRECT: "I found 45 books about habits in our catalog. Here are 10 recommendations:"
+
+❌ WRONG: "We have 20 fiction books"
+✅ CORRECT: "We have 156 fiction books on shelf A1-A3. Here are 20 popular titles:"
+
 CRITICAL SEARCH BEHAVIOR:
 When users ask about books by topic or theme (not exact title):
 1. ALWAYS use searchBooks with relevant keywords from their query
 2. Search for topic-related terms that might appear in titles, authors, or descriptions
-3. Try multiple search terms if the first doesn't yield results
-4. Examples:
+3. If first search yields no results, try ONE alternative search with different keywords
+4. After TWO failed searches, acknowledge no results and suggest browsing categories
+5. Examples:
    - "books about habits" → searchBooks("habits")
    - "productivity books" → searchBooks("productivity") or searchBooks("effective")
    - "self-improvement" → searchBooks("self-help") or browse Self-Help category
    - "building better routines" → searchBooks("habits") or searchBooks("routine")
 
 NEVER say a book doesn't exist without first calling searchBooks!
+
+HANDLING NO RESULTS:
+If searchBooks returns 0 results:
+1. Try ONE alternative search with synonyms or related terms
+2. If still no results, acknowledge this clearly
+3. Suggest browsing related categories using getAvailableShelves
+4. DO NOT repeatedly call searchBooks with the same or similar terms
+5. Provide helpful alternatives instead of empty responses
 
 ENHANCED SEARCH CAPABILITIES:
 The searchBooks function searches across:
@@ -416,19 +491,27 @@ When users ask for books:
 
 WORKFLOW GUIDELINES:
 
-1. SEARCHING FOR BOOKS:
+1. GENERAL LIBRARY QUESTIONS:
+   - When users ask "what books do you have" or "how many books" → Call getCatalogStats FIRST
+   - This gives you the total catalog size and overview
+   - Then suggest specific searches or categories based on their interests
+   - Example: "We have 1,247 books total. What topics interest you?"
+
+2. SEARCHING FOR BOOKS:
    - Use searchBooks with topic keywords to find relevant books
    - The search covers descriptions, so use subject terms
-   - Example: "machine learning" will find books with ML in title, author, or description
+   - ALWAYS mention totalMatches (the real count) not just displayedCount
+   - Example: "I found 45 books about machine learning. Here are 10 top recommendations:"
    - Always check the description field in results to verify relevance
 
-2. BROWSING CATEGORIES:
+3. BROWSING CATEGORIES:
    - First call getAvailableShelves to get exact shelf codes
    - Then call getBooksByCategory with the correct shelf code
+   - ALWAYS mention totalInShelf (the real count) not just displayedCount
    - Results include full descriptions to help users choose
-   - Example: Fiction books are on shelves A1, A2, A3 (not "FIC")
+   - Example: "We have 156 fiction books on shelves A1-A3. Here are 20 popular titles:"
 
-3. BOOK DETAILS:
+4. BOOK DETAILS:
    - Use getBookDetails when users want comprehensive information
    - Share relevant parts of the description to help decision-making
    - Mention page count, language, and format when helpful
@@ -534,6 +617,7 @@ RESPONSE STYLE:
     // Handle function calls
     const functionCalls = response.functionCalls();
     let borrowLinkResult = null;
+    const executedFunctions = new Set(); // Track executed functions to prevent duplicates
 
     if (functionCalls && functionCalls.length > 0) {
       console.log(
@@ -541,8 +625,22 @@ RESPONSE STYLE:
         functionCalls.map((c) => c.name)
       );
 
+      // Deduplicate function calls
+      const uniqueFunctionCalls = [];
+      const seenCalls = new Set();
+      
+      for (const call of functionCalls) {
+        const callKey = `${call.name}:${JSON.stringify(call.args)}`;
+        if (!seenCalls.has(callKey)) {
+          seenCalls.add(callKey);
+          uniqueFunctionCalls.push(call);
+        } else {
+          console.log(`Skipping duplicate function call: ${callKey}`);
+        }
+      }
+
       const functionResponses = await Promise.all(
-        functionCalls.map(async (call) => {
+        uniqueFunctionCalls.map(async (call) => {
           const functionName = call.name;
           const args = call.args;
 
@@ -553,12 +651,28 @@ RESPONSE STYLE:
             switch (functionName) {
               case "searchBooks":
                 functionResult = await searchBooks(db, args.query, args.status);
+                
+                // Add helpful context if no results
+                if (functionResult.totalMatches === 0) {
+                  functionResult.suggestion = `No books found for "${args.query}". Consider trying:
+- Different keywords or synonyms
+- Broader search terms
+- Checking available categories with getAvailableShelves
+- Browsing related shelves`;
+                }
                 break;
               case "getBooksByCategory":
                 functionResult = await getBooksByCategory(db, args.shelfCode);
+                
+                if (functionResult.totalInShelf === 0) {
+                  functionResult.suggestion = `Shelf "${args.shelfCode}" has no books. Use getAvailableShelves to see available shelves.`;
+                }
                 break;
               case "getAvailableShelves":
                 functionResult = await getAvailableShelves(db);
+                break;
+              case "getCatalogStats":
+                functionResult = await getCatalogStats(db);
                 break;
               case "getBookDetails":
                 functionResult = await getBookDetails(db, args.bookId);
@@ -571,6 +685,8 @@ RESPONSE STYLE:
               default:
                 functionResult = { error: "Unknown function" };
             }
+            
+            executedFunctions.add(functionName);
           } catch (error) {
             console.error(`Error in function ${functionName}:`, error);
             functionResult = { error: error.message };
