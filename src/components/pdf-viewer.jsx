@@ -20,10 +20,10 @@ export default function PDFViewer({ fileUrl }) {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden" style={{ height: "750px" }}>
+    <div className="w-full h-full bg-gray-900">
       {error ? (
-        <div className="p-8 text-center">
-          <p className="text-sm text-red-600">Failed to load PDF: {error}</p>
+        <div className="flex items-center justify-center h-full p-8">
+          <p className="text-sm text-red-400">Failed to load PDF: {error}</p>
         </div>
       ) : (
         <Worker workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}>

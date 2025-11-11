@@ -33,6 +33,7 @@ export default function PersonalBookDetailPage({ params }) {
   const [removing, setRemoving] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [showPDFModal, setShowPDFModal] = useState(false);
 
   const navigationLinks = getStudentLinks();
 
@@ -246,6 +247,16 @@ export default function PersonalBookDetailPage({ params }) {
               )}
 
               <div className="flex flex-wrap items-center gap-3">
+                {book.fileType === "application/pdf" && book.fileUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPDFModal(true)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Open PDF
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleRemove}
@@ -259,14 +270,6 @@ export default function PersonalBookDetailPage({ params }) {
             </div>
           </div>
         </div>
-
-        {/* PDF Viewer Section */}
-        {book.fileType === "application/pdf" && book.fileUrl && (
-          <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Read PDF</h2>
-            <PDFViewer fileUrl={book.fileUrl} />
-          </div>
-        )}
 
         {/* Similar Books / Recommendations Section */}
         <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
@@ -308,6 +311,35 @@ export default function PersonalBookDetailPage({ params }) {
           )}
         </div>
       </main>
+
+      {/* PDF Modal */}
+      {showPDFModal && book.fileType === "application/pdf" && book.fileUrl && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
+          {/* Modal Header */}
+          <div className="flex items-center justify-between px-6 py-4 bg-gray-900 border-b border-gray-700">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold text-white">{book.title}</h2>
+              {book.author && (
+                <span className="text-sm text-gray-400">by {book.author}</span>
+              )}
+            </div>
+            <button
+              onClick={() => setShowPDFModal(false)}
+              className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+              aria-label="Close PDF viewer"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* PDF Viewer */}
+          <div className="flex-1 overflow-hidden">
+            <PDFViewer fileUrl={book.fileUrl} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
