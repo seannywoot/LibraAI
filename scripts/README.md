@@ -41,6 +41,47 @@ node scripts/add-book-descriptions.js
 
 ---
 
+### Chat History
+
+#### `fix-conversation-dates.js`
+Restores accurate dates for chat conversations that were corrupted by the auto-save bug.
+
+**Purpose:** Fixes conversations showing today's date instead of their actual creation date
+
+**Usage:**
+```bash
+node scripts/fix-conversation-dates.js
+```
+
+**Features:**
+- Automatically detects corrupted dates (conversations showing today's date)
+- Restores dates using `createdAt` field or `conversationId` timestamp
+- Safe to run multiple times (only updates corrupted dates)
+- Provides detailed progress reporting
+
+**When to run:**
+- After upgrading to the fixed chat interface
+- If you notice all conversations showing today's date
+- One-time migration after the date bug fix
+
+**Expected output:**
+```
+✅ Connected to MongoDB
+✅ Fixed conversation 1699123456789:
+   Title: Book Recommendations
+   Old date: 2024-11-12T10:30:00.000Z
+   New date: 2024-11-05T14:22:00.000Z
+
+📈 Migration Summary:
+   ✅ Fixed: 15 conversations
+   ⏭️  Skipped: 3 conversations
+   ❌ Errors: 0 conversations
+```
+
+**Note:** After running this script, refresh your browser to see the corrected dates.
+
+---
+
 ### Other Scripts
 
 #### `add-slugs-to-books.js`

@@ -64,6 +64,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
   const typingIntervalRef = useRef(null);
   const saveTimerRef = useRef(null);
   const retryTimerRef = useRef(null);
+  const lastSavedMessagesRef = useRef(null); // Track last saved messages to detect actual changes
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -423,6 +424,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           setMessages(savedMessages);
           setCurrentConversationId(conversationId);
           if (title) setAutoTitle(title);
+          // Set the ref to prevent auto-save from updating lastUpdated on initial load
+          lastSavedMessagesRef.current = savedMessages;
         } catch (e) {
           console.error("Failed to load current chat:", e);
         }
@@ -453,6 +456,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
   useEffect(() => {
     if (messages.length <= 1) return; // Don't save if only greeting exists
 
+    // Check if messages actually changed (not just loading an old conversation)
+    const messagesChanged = JSON.stringify(messages) !== JSON.stringify(lastSavedMessagesRef.current);
+    if (!messagesChanged) return;
+
     // Clear previous timer
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -462,12 +469,20 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       const conversationId = currentConversationId || Date.now();
       const fallback = heuristicTitle(messages);
       const title = autoTitle || fallback;
+      
+      // Find existing conversation to preserve its original lastUpdated if just loading
+      const existingConv = conversationHistory.find(c => c.id === conversationId);
+      
       const conversationData = {
         id: conversationId,
         title,
         messages,
-        lastUpdated: new Date().toISOString()
+        // Only update lastUpdated if this is a new message, not just loading
+        lastUpdated: existingConv && !messagesChanged ? existingConv.lastUpdated : new Date().toISOString()
       };
+
+      // Update the ref to track what we just saved
+      lastSavedMessagesRef.current = messages;
 
       // Update local state
       setConversationHistory(prev => {
@@ -492,7 +507,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         clearTimeout(saveTimerRef.current);
       }
     };
-  }, [messages, currentConversationId, autoTitle, saveConversationToDB]);
+  }, [messages, currentConversationId, autoTitle, saveConversationToDB, conversationHistory]);
 
   // Title generation & drift detection
   useEffect(() => {
@@ -561,6 +576,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     setCurrentConversationId(conversation.id);
     setAutoTitle(conversation.title || null);
     setShowHistory(false);
+    // Update the ref to prevent auto-save from updating lastUpdated when loading
+    lastSavedMessagesRef.current = conversation.messages;
   };
 
   const startNewConversation = () => {
@@ -576,6 +593,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     setShowHistory(false);
     // Clear current chat from localStorage
     localStorage.removeItem("currentChat");
+    // Reset the saved messages ref
+    lastSavedMessagesRef.current = null;
   };
 
   // Stop typing animation
