@@ -10,6 +10,41 @@ import qwenQueue from "@/lib/qwenQueue";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const bytezSDK = new Bytez(process.env.BYTEZ_API_KEY);
 
+// Helper: parse potential function calls returned by GPT-4o when instructed to output JSON
+function parseFunctionCallsFromText(text) {
+  if (!text || typeof text !== "string") return null;
+  const trimmed = text.trim();
+  try {
+    // Try direct JSON parse
+    const obj = JSON.parse(trimmed);
+    if (obj && typeof obj === "object") {
+      if (Array.isArray(obj.call_functions)) return obj.call_functions;
+      if (obj.call_function) return [obj.call_function];
+      if (Array.isArray(obj.tool_calls)) return obj.tool_calls; // alternate key
+      if (obj.name && obj.arguments) return [obj];
+    }
+  } catch (_) {
+    // Try to find JSON block inside text
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && end > start) {
+      const candidate = trimmed.slice(start, end + 1);
+      try {
+        const obj = JSON.parse(candidate);
+        if (obj && typeof obj === "object") {
+          if (Array.isArray(obj.call_functions)) return obj.call_functions;
+          if (obj.call_function) return [obj.call_function];
+          if (Array.isArray(obj.tool_calls)) return obj.tool_calls;
+          if (obj.name && obj.arguments) return [obj];
+        }
+      } catch (_) {
+        // ignore
+      }
+    }
+  }
+  return null;
+}
+
 // Helper function to extract text from PDF using pdfjs-dist (Node.js compatible)
 async function extractTextFromPDF(base64Data) {
   try {
@@ -383,6 +418,14 @@ export async function POST(request) {
     // System instruction for LibraAI context with FAQ database (defined early for use in both AI models)
     const systemContext = `You are LibraAI Assistant, a knowledgeable AI librarian helping students with library services and book recommendations. You provide friendly, helpful responses about books, borrowing, and library policies.
 
+CRITICAL: CONVERSATION FLOW
+- ONLY answer the user's CURRENT question (the most recent message)
+- DO NOT re-answer or revisit previous questions from the conversation history
+- The conversation history is provided for context only, not for you to re-address
+- If the user asks a new question, it means they're satisfied with previous answers
+- Focus exclusively on the latest user message unless they explicitly reference a previous topic
+- Example: If they previously asked about book counts and now ask about hours, ONLY answer about hours
+
 IMPORTANT: SCOPE OF ASSISTANCE
 You are a specialized library assistant. Your purpose is to help with:
 - Library services, policies, and operations
@@ -439,12 +482,14 @@ When you call searchBooks or getBooksByCategory, the results include:
 
 ALWAYS mention the TOTAL count when presenting results, not just the sample size!
 
-Example responses:
+Example response format:
 ❌ WRONG: "I found 10 books about habits"
-✅ CORRECT: "I found 45 books about habits in our catalog. Here are 10 recommendations:"
+✅ CORRECT: "I found [totalMatches] books about habits in our catalog. Here are [displayedCount] recommendations:"
 
 ❌ WRONG: "We have 20 fiction books"
-✅ CORRECT: "We have 156 fiction books on shelf A1-A3. Here are 20 popular titles:"
+✅ CORRECT: "We have [totalInShelf] fiction books on shelf A1-A3. Here are [displayedCount] popular titles:"
+
+IMPORTANT: Use the ACTUAL numbers from the function results, NOT example numbers!
 
 CRITICAL SEARCH BEHAVIOR:
 When users ask about books by topic or theme (not exact title):
@@ -517,14 +562,15 @@ WORKFLOW GUIDELINES:
    - When users ask "what books do you have" or "how many books" → Call getCatalogStats FIRST
    - This gives you the total catalog size and overview
    - Then suggest specific searches or categories based on their interests
-   - Example: "We have 1,247 books total. What topics interest you?"
+   - Example: "We have [X] books total. What topics interest you?" (where X is from getCatalogStats)
 
 2. SEARCHING FOR BOOKS:
    - Use searchBooks with topic keywords to find relevant books
    - The search covers descriptions, so use subject terms
    - ALWAYS mention totalMatches (the real count) not just displayedCount
-   - Example: "I found 45 books about machine learning. Here are 10 top recommendations:"
+   - Example format: "I found [totalMatches] books about [topic]. Here are [displayedCount] top recommendations:"
    - Always check the description field in results to verify relevance
+   - NEVER make up numbers - only use actual values from function results
 
 3. BROWSING CATEGORIES:
    - First call getAvailableShelves to get exact shelf codes
@@ -686,19 +732,21 @@ RESPONSE STYLE:
         parts: [{ text: msg.content }],
       })) || [];
 
-    // Try OpenAI GPT-OSS-20B first, fallback to Gemini
+    // Try GPT-4o via Bytez first (including function calling), fallback to Gemini
     let usingGemini = false;
     let model;
     let chat;
     let result;
     let response;
 
-    try {
-      console.log("🤖 Attempting to use Qwen3-4B-Instruct-2507 via Bytez...");
-      const bytezModel = bytezSDK.model("Qwen/Qwen3-4B-Instruct-2507");
+    if (!usingGemini) {
+      try {
+        console.log("🤖 Attempting to use GPT-4o via Bytez (with tool calling)...");
+        const bytezModel = bytezSDK.model("openai/gpt-4o");
       
       // Build messages for OpenAI format
       let userMessageContent = message;
+      const toolCallingInstruction = `\n\nFUNCTION CALLING INSTRUCTIONS (VERY IMPORTANT)\nIf answering requires library data (search, category, stats, details, borrow):\n- Do NOT fabricate data.\n- Instead, output ONLY a JSON object with one of these shapes:\n  {\n    "call_functions": [ { "name": "<functionName>", "arguments": { ... } } ]\n  }\n  or for a single call:\n  {\n    "call_function": { "name": "<functionName>", "arguments": { ... } }\n  }\nValid function names: searchBooks, getBooksByCategory, getAvailableShelves, getCatalogStats, getBookDetails, generateBorrowLink.\nArguments must follow the provided schemas.\nIf no function is needed, reply normally with text.`;
       
       // Add PDF context if available (for follow-up questions)
       if (!fileData && pdfContext && pdfContext.extractedText) {
@@ -717,8 +765,12 @@ RESPONSE STYLE:
           role: "system",
           content: systemContext
         },
+        {
+          role: "system",
+          content: toolCallingInstruction
+        },
         ...chatHistory.map(msg => ({
-          role: msg.role,
+          role: msg.role === "model" ? "assistant" : (msg.role === "user" ? "user" : "assistant"),
           content: msg.parts[0].text
         })),
         {
@@ -744,21 +796,145 @@ RESPONSE STYLE:
         throw new Error(error);
       }
 
-      console.log("✅ Qwen3-4B-Instruct-2507 responded successfully");
-      
-      // Extract text from output (Bytez returns an object with content property)
-      const responseText = typeof output === 'string' ? output : (output?.content || output);
-      
-      // Create a response-like object for consistency
-      response = {
-        text: () => responseText,
-        functionCalls: () => null // Qwen model doesn't support function calling in this setup
-      };
-      
-    } catch (openaiError) {
-      console.warn("⚠️ Qwen3-4B-Instruct-2507 failed, falling back to Gemini:", openaiError.message);
-      usingGemini = true;
-      
+        console.log("✅ GPT-4o responded successfully");
+        
+        // Extract text from output
+        const responseText = typeof output === 'string' ? output : (output?.content || output);
+
+        // Try to parse tool calls from GPT-4o
+        const gptFunctionCalls = parseFunctionCallsFromText(responseText);
+
+        let finalText = null;
+        let borrowLinkResult = null;
+
+        if (gptFunctionCalls && gptFunctionCalls.length > 0) {
+          console.log(
+            "Function calls (GPT-4o) detected:",
+            gptFunctionCalls.map((c) => c.name)
+          );
+
+          // Deduplicate function calls
+          const uniqueFunctionCalls = [];
+          const seenCalls = new Set();
+          for (const call of gptFunctionCalls) {
+            const name = call.name;
+            const args = call.arguments || call.args || {};
+            const callKey = `${name}:${JSON.stringify(args)}`;
+            if (!seenCalls.has(callKey)) {
+              seenCalls.add(callKey);
+              uniqueFunctionCalls.push({ name, args });
+            }
+          }
+
+          const functionResponses = await Promise.all(
+            uniqueFunctionCalls.map(async (call) => {
+              const functionName = call.name;
+              const args = call.args || {};
+              console.log(`Calling function (GPT-4o): ${functionName} with args:`, args);
+              let functionResult;
+              try {
+                switch (functionName) {
+                  case "searchBooks":
+                    functionResult = await searchBooks(db, args.query, args.status);
+                    if (functionResult.totalMatches === 0) {
+                      functionResult.suggestion = `No books found for "${args.query}". Consider trying:\n- Different keywords or synonyms\n- Broader search terms\n- Checking available categories with getAvailableShelves\n- Browsing related shelves`;
+                    }
+                    break;
+                  case "getBooksByCategory":
+                    functionResult = await getBooksByCategory(db, args.shelfCode);
+                    if (functionResult.totalInShelf === 0) {
+                      functionResult.suggestion = `Shelf "${args.shelfCode}" has no books. Use getAvailableShelves to see available shelves.`;
+                    }
+                    break;
+                  case "getAvailableShelves":
+                    functionResult = await getAvailableShelves(db);
+                    break;
+                  case "getCatalogStats":
+                    functionResult = await getCatalogStats(db);
+                    break;
+                  case "getBookDetails":
+                    functionResult = await getBookDetails(db, args.bookId);
+                    break;
+                  case "generateBorrowLink":
+                    functionResult = await generateBorrowLink(db, args.bookId);
+                    borrowLinkResult = functionResult;
+                    break;
+                  default:
+                    functionResult = { error: "Unknown function" };
+                }
+              } catch (err) {
+                console.error(`Error in function ${functionName}:`, err);
+                functionResult = { error: err.message };
+              }
+
+              return {
+                functionResponse: {
+                  name: functionName,
+                  response: functionResult,
+                },
+              };
+            })
+          );
+
+          // Second round: provide function results back to GPT-4o to compose final message
+          const followUpMessages = [
+            {
+              role: "system",
+              content: systemContext,
+            },
+            {
+              role: "system",
+              content:
+                "You previously requested function calls. Here are the JSON results. Use them to answer the user. Do not include raw JSON in your final reply.",
+            },
+            ...chatHistory.map((msg) => ({
+              role: msg.role === "model" ? "assistant" : (msg.role === "user" ? "user" : "assistant"),
+              content: msg.parts[0].text,
+            })),
+            {
+              role: "assistant",
+              content: `FUNCTION_RESULTS:\n${JSON.stringify(functionResponses, null, 2)}`,
+            },
+            {
+              role: "user",
+              content:
+                "Using the function results above, provide the final answer following all response rules. Do not fabricate counts or details.",
+            },
+          ];
+
+          const { error: fuErr, output: fuOutput } = await qwenQueue.add(async () => {
+            return await bytezModel.run(followUpMessages, { temperature: 0.7 });
+          });
+          if (fuErr) throw new Error(fuErr);
+          finalText = typeof fuOutput === "string" ? fuOutput : (fuOutput?.content || fuOutput);
+
+          // Fallback to borrow message if empty
+          if ((!finalText || finalText.trim().length === 0) && borrowLinkResult) {
+            if (borrowLinkResult.formattedMessage) {
+              finalText = borrowLinkResult.formattedMessage;
+            } else if (borrowLinkResult.error) {
+              finalText = `I encountered an error: ${borrowLinkResult.error}`;
+            }
+          }
+        } else {
+          // No function call requested; treat as final text
+          finalText = responseText;
+        }
+
+        // Create a response-like object for consistency downstream
+        response = {
+          text: () => finalText,
+          functionCalls: () => null,
+        };
+        
+      } catch (openaiError) {
+        console.warn("⚠️ GPT-4o failed or unavailable, falling back to Gemini:", openaiError.message);
+        usingGemini = true;
+      }
+    }
+
+    // Initialize Gemini if needed
+    if (usingGemini) {
       model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
         generationConfig: {
@@ -834,7 +1010,7 @@ RESPONSE STYLE:
       response = result.response;
     }
 
-    // Handle function calls (only for Gemini)
+    // Handle function calls (Gemini native only; GPT-4o handled above)
     const functionCalls = usingGemini ? response.functionCalls() : null;
     let borrowLinkResult = null;
     const executedFunctions = new Set(); // Track executed functions to prevent duplicates
@@ -963,7 +1139,7 @@ RESPONSE STYLE:
       userMessage: message,
       aiResponse: text,
       timestamp: new Date(),
-      model: usingGemini ? "gemini-2.5-flash" : "Qwen/Qwen3-4B-Instruct-2507",
+      model: usingGemini ? "gemini-2.5-flash" : "openai/gpt-4o",
       messageCount: (history?.length || 0) + 2, // +2 for current exchange
       hasAttachment: !!fileData,
       attachmentType: fileData?.mimeType || null,
@@ -1006,7 +1182,7 @@ RESPONSE STYLE:
     const responseData = {
       message: text,
       success: true,
-      model: usingGemini ? "gemini-2.5-flash" : "Qwen/Qwen3-4B-Instruct-2507",
+      model: usingGemini ? "gemini-2.5-flash" : "openai/gpt-4o",
     };
 
     // If PDF was uploaded and extracted, include metadata for frontend

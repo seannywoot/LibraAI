@@ -2,7 +2,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { normalizeModelTitle } from "@/utils/chatTitle";
 
+import Bytez from "bytez.js";
+import qwenQueue from "@/lib/qwenQueue";
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const bytezSDK = new Bytez(process.env.BYTEZ_API_KEY || "");
 
 export async function POST(request) {
   try {
@@ -80,20 +84,52 @@ QUALITY CHECKLIST:
 
 Return ONLY the title, nothing else.`;
 
-    // Use Gemini for title generation (Qwen reserved for chatbot only)
-    console.log("🤖 Generating title with Gemini 2.5 Flash...");
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash', 
-      generationConfig: { 
-        temperature: 0.3, 
-        maxOutputTokens: 20 
-      } 
-    });
+    // Prefer GPT-4o (via Bytez) for title generation, fallback to Gemini
+    let raw;
+    let triedBytez = false;
 
-    const result = await model.generateContent(`${systemInstruction}\n\nCHAT HISTORY:\n${convo}`);
-    const raw = result.response.text();
+    if (process.env.BYTEZ_API_KEY) {
+      try {
+        console.log("🤖 Generating title with GPT-4o via Bytez...");
+        const bytezModel = bytezSDK.model("openai/gpt-4o");
+
+        const messages = [
+          { role: "system", content: systemInstruction },
+          { role: "user", content: `CHAT HISTORY:\n${convo}` },
+        ];
+
+        const { error, output } = await qwenQueue.add(async () => {
+          return await bytezModel.run(messages, { temperature: 0.3 });
+        });
+
+        if (error) throw new Error(error);
+
+        raw = typeof output === "string" ? output : (output?.content || output);
+        triedBytez = true;
+        console.log("✅ GPT-4o (Bytez) generated title successfully");
+      } catch (e) {
+        console.warn("⚠️ GPT-4o title generation failed, will fallback to Gemini:", e.message);
+      }
+    }
+
+    if (!raw) {
+      // Fallback to Gemini
+      console.log("🤖 Generating title with Gemini 2.5 Flash...");
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-pro",
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 20,
+        },
+      });
+
+      const result = await model.generateContent(`${systemInstruction}\n\nCHAT HISTORY:\n${convo}`);
+      raw = result.response.text();
+      console.log("✅ Gemini generated title successfully");
+    }
+
     title = normalizeModelTitle(raw);
-    console.log("✅ Gemini generated title successfully:", title);
+    console.log("Generated title:", title, "(source:", triedBytez ? "gpt-4o" : "gemini", ")");
     
     // Validation: Check for common issues
     const hasObviousTypo = /\b(aer|teh|hte|taht|waht|whta|availble|availabe)\b/i.test(title);
@@ -122,7 +158,7 @@ Return ONLY the title, nothing else.`;
       
       // Try one more time with emphasis using Gemini
       const retryModel = genAI.getGenerativeModel({ 
-        model: 'gemini-2.5-flash', 
+        model: 'gemini-2.0-flash-exp', 
         generationConfig: { 
           temperature: 0.3, 
           maxOutputTokens: 20 
