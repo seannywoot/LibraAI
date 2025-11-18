@@ -4,8 +4,65 @@ import { getDb } from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { ObjectId } from "mongodb";
+import Bytez from "bytez.js";
+import qwenQueue from "@/lib/qwenQueue";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const bytezSDK = new Bytez(process.env.BYTEZ_API_KEY);
+
+// Helper function to extract text from PDF using pdfjs-dist (Node.js compatible)
+async function extractTextFromPDF(base64Data) {
+  try {
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
+
+    // Ensure worker is configured for Node environment
+    if (pdfjs.GlobalWorkerOptions) {
+      pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/build/pdf.worker.js";
+    }
+// Convert base64 to Uint8Array
+    const pdfBytes = Uint8Array.from(Buffer.from(base64Data, "base64"));
+
+    const loadingTask = pdfjs.getDocument({ data: pdfBytes });
+    const doc = await loadingTask.promise;
+
+    const numPages = doc.numPages || 1;
+    const maxPages = 50;
+    const pagesToRead = Math.min(numPages, maxPages);
+
+    let fullText = "";
+
+    for (let pageNum = 1; pageNum <= pagesToRead; pageNum++) {
+      const page = await doc.getPage(pageNum);
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .map((item) => ("str" in item ? item.str : ""))
+        .join(" ");
+      fullText += `\n\n[Page ${pageNum}]\n${pageText}`;
+    }
+
+    fullText = fullText.trim();
+    const wordCount = fullText ? fullText.split(/\s+/).length : 0;
+    
+    let formattedText = fullText;
+    if (numPages > 50) {
+      formattedText += `\n\n[Note: Document has ${numPages} pages. Only first 50 pages were extracted for analysis.]`;
+    }
+    
+    return {
+      success: true,
+      text: formattedText.trim(),
+      pageCount: numPages,
+      pagesExtracted: Math.min(numPages, 50),
+      wordCount: wordCount
+    };
+  } catch (error) {
+    console.error('PDF text extraction error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
 
 // Function implementations for AI to call
 async function searchBooks(db, query, status) {
@@ -245,11 +302,12 @@ async function generateBorrowLink(db, bookId) {
 
 export async function POST(request) {
   try {
+    console.log("📨 Chat API request received");
     const session = await getServerSession(authOptions);
 
     // Check if request has file upload (FormData) or JSON
     const contentType = request.headers.get("content-type");
-    let message, history, conversationId, fileData;
+    let message, history, conversationId, fileData, pdfContext;
 
     if (contentType?.includes("multipart/form-data")) {
       // Handle file upload
@@ -257,17 +315,45 @@ export async function POST(request) {
       message = formData.get("message");
       history = JSON.parse(formData.get("history") || "[]");
       conversationId = formData.get("conversationId") || null;
+      
+      // Get PDF context if available (for follow-up questions)
+      const pdfContextStr = formData.get("pdfContext");
+      if (pdfContextStr) {
+        try {
+          pdfContext = JSON.parse(pdfContextStr);
+          console.log("📄 Using existing PDF context:", pdfContext.name);
+        } catch (e) {
+          console.warn("Failed to parse PDF context:", e);
+        }
+      }
 
       const file = formData.get("file");
       if (file) {
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
+        const base64Data = buffer.toString("base64");
 
         fileData = {
-          data: buffer.toString("base64"),
+          data: base64Data,
           mimeType: file.type,
           name: file.name,
         };
+
+        // Extract text from PDF if it's a PDF file
+        if (file.type === "application/pdf") {
+          console.log("📄 Extracting text from PDF...");
+          const pdfExtraction = await extractTextFromPDF(base64Data);
+          
+          if (pdfExtraction.success) {
+            console.log(`✅ PDF text extracted: ${pdfExtraction.pageCount} pages, ${pdfExtraction.wordCount} words`);
+            fileData.extractedText = pdfExtraction.text;
+            fileData.pageCount = pdfExtraction.pageCount;
+            fileData.wordCount = pdfExtraction.wordCount;
+          } else {
+            console.warn("⚠️ PDF text extraction failed:", pdfExtraction.error);
+            fileData.extractionError = pdfExtraction.error;
+          }
+        }
       }
     } else {
       // Handle regular JSON request
@@ -275,7 +361,14 @@ export async function POST(request) {
       message = body.message;
       history = body.history;
       conversationId = body.conversationId;
+      pdfContext = body.pdfContext; // Get PDF context for follow-up questions
+      
+      if (pdfContext) {
+        console.log("📄 Using existing PDF context from JSON:", pdfContext.name);
+      }
     }
+
+    console.log("📝 Message:", message?.substring(0, 50) + (message?.length > 50 ? "..." : ""));
 
     // Fetch FAQs from database
     const db = await getDb();
@@ -287,114 +380,26 @@ export async function POST(request) {
       .map((faq) => `Q: ${faq.question}\nA: ${faq.answer}`)
       .join("\n\n");
 
-    // Define function tools for the AI to call
-    const tools = [
-      {
-        functionDeclarations: [
-          {
-            name: "searchBooks",
-            description:
-              "Search for books in the library catalog by title, author, ISBN, publisher, description, or category. Returns up to 10 sample books with comprehensive details, plus the TOTAL count of matching books in the catalog. Use this to find books matching specific topics, genres, or content. ALWAYS call this function when users ask about books by topic, theme, or subject - don't assume books don't exist without searching first!",
-            parameters: {
-              type: "object",
-              properties: {
-                query: {
-                  type: "string",
-                  description:
-                    "Search query (title, author, ISBN, publisher, description content, or category). Can search for topics, themes, or subjects within book descriptions. Examples: 'habits', 'productivity', 'artificial intelligence', 'Atomic Habits', 'James Clear'",
-                },
-                status: {
-                  type: "string",
-                  description:
-                    "Optional filter by book status: 'available', 'borrowed', or 'reserved'. Omit to search all books regardless of status.",
-                  enum: ["available", "borrowed", "reserved"],
-                },
-              },
-              required: ["query"],
-            },
-          },
-          {
-            name: "getBooksByCategory",
-            description:
-              "Get books from a specific shelf in the library with full details including descriptions, language, pages, format, and category. Returns up to 20 sample books plus the TOTAL count on that shelf. Use getAvailableShelves first to get the correct shelf codes. Shelf codes are alphanumeric like A1, B2, C3, etc. Returns comprehensive book information to help users understand book content and make informed choices.",
-            parameters: {
-              type: "object",
-              properties: {
-                shelfCode: {
-                  type: "string",
-                  description:
-                    "Exact shelf code from the library system (e.g., 'A1', 'B1', 'C2'). Call getAvailableShelves first to get valid codes.",
-                },
-              },
-              required: ["shelfCode"],
-            },
-          },
-          {
-            name: "getAvailableShelves",
-            description:
-              "Get list of all available shelves/categories in the library with their codes, names, locations, and book counts. ALWAYS call this first when users ask about categories or shelves to get the correct shelf codes.",
-            parameters: {
-              type: "object",
-              properties: {},
-            },
-          },
-          {
-            name: "getCatalogStats",
-            description:
-              "Get comprehensive statistics about the entire library catalog including total books, availability status breakdown, and top categories. Use this when users ask general questions like 'what books do you have', 'how many books', or want an overview of the library collection. This provides the big picture before diving into specific searches.",
-            parameters: {
-              type: "object",
-              properties: {},
-            },
-          },
-          {
-            name: "getBookDetails",
-            description:
-              "Get comprehensive detailed information about a specific book by its ID, including full description, language, page count, format, category, loan policy, and availability status. Use this when users want to know more about a specific book's content, length, or borrowing terms.",
-            parameters: {
-              type: "object",
-              properties: {
-                bookId: {
-                  type: "string",
-                  description: "The MongoDB ObjectId of the book",
-                },
-              },
-              required: ["bookId"],
-            },
-          },
-          {
-            name: "generateBorrowLink",
-            description:
-              "Generate a clickable link for a student to view and borrow a specific book. Use this when a student expresses interest in borrowing a book. The bookId should come from the 'id' field in previous searchBooks or getBookDetails results.",
-            parameters: {
-              type: "object",
-              properties: {
-                bookId: {
-                  type: "string",
-                  description:
-                    "The MongoDB ObjectId of the book (use the 'id' field from searchBooks results)",
-                },
-              },
-              required: ["bookId"],
-            },
-          },
-        ],
-      },
-    ];
+    // System instruction for LibraAI context with FAQ database (defined early for use in both AI models)
+    const systemContext = `You are LibraAI Assistant, a knowledgeable AI librarian helping students with library services and book recommendations. You provide friendly, helpful responses about books, borrowing, and library policies.
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 800, // Reduced from 1024 to limit token usage per prompt
-      },
-      tools,
-    });
+IMPORTANT: SCOPE OF ASSISTANCE
+You are a specialized library assistant. Your purpose is to help with:
+- Library services, policies, and operations
+- Finding and recommending books
+- Borrowing, returns, and library resources
+- Research and study assistance
+- PDF document analysis (when uploaded)
 
-    // System instruction for LibraAI context with FAQ database
-    const systemContext = `You are LibraAI Assistant, a knowledgeable AI librarian with real-time access to the complete library catalog database. You have deep awareness of book content, descriptions, and metadata to help students find exactly what they need.
+For questions OUTSIDE your library scope (general knowledge, personal advice, philosophical questions, trivia, etc.):
+- Politely acknowledge the question
+- Briefly explain you're focused on library services
+- Redirect to library-related help
+- Keep your response SHORT (2-3 sentences max)
+
+Example responses for out-of-scope questions:
+- "That's an interesting question! However, I'm specifically designed to help with library services and book recommendations. Is there a book topic or library service I can help you with today?"
+- "I appreciate your curiosity, but I'm focused on helping with our library catalog and services. Would you like me to help you find books on that topic instead?"
 
 CORE CAPABILITIES:
 You help students with:
@@ -407,6 +412,23 @@ You help students with:
 - Providing information about borrowing, returns, and renewals
 - Helping with research and study resources
 - Offering literature recommendations based on interests
+- Analyzing PDF documents to provide summaries, bullet points, or answer questions about the content
+
+PDF DOCUMENT ANALYSIS:
+When a user uploads a PDF document, you can:
+- Provide comprehensive summaries of the document content
+- Extract key points and create bullet-point lists
+- Answer specific questions about the document
+- Identify main themes, arguments, or topics
+- Highlight important information based on user requests
+- Compare information across multiple sections
+
+When analyzing PDFs, adapt your response based on the user's prompt:
+- If they ask for a "summary", provide a concise overview (2-4 paragraphs)
+- If they ask for "bullet points" or "key points", create a structured list
+- If they ask specific questions, focus on relevant sections
+- If they ask to "explain" or "analyze", provide detailed insights
+- Always reference page numbers when citing specific information
 
 CRITICAL: UNDERSTANDING SEARCH RESULTS
 When you call searchBooks or getBooksByCategory, the results include:
@@ -562,60 +584,258 @@ RESPONSE STYLE:
 - If you don't know something specific, suggest contacting library staff
 - Help users discover books they might not have known to search for`;
 
-    // Build chat history for context
+    // Define function tools for the AI to call
+    const tools = [
+      {
+        functionDeclarations: [
+          {
+            name: "searchBooks",
+            description:
+              "Search for books in the library catalog by title, author, ISBN, publisher, description, or category. Returns up to 10 sample books with comprehensive details, plus the TOTAL count of matching books in the catalog. Use this to find books matching specific topics, genres, or content. ALWAYS call this function when users ask about books by topic, theme, or subject - don't assume books don't exist without searching first!",
+            parameters: {
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description:
+                    "Search query (title, author, ISBN, publisher, description content, or category). Can search for topics, themes, or subjects within book descriptions. Examples: 'habits', 'productivity', 'artificial intelligence', 'Atomic Habits', 'James Clear'",
+                },
+                status: {
+                  type: "string",
+                  description:
+                    "Optional filter by book status: 'available', 'borrowed', or 'reserved'. Omit to search all books regardless of status.",
+                  enum: ["available", "borrowed", "reserved"],
+                },
+              },
+              required: ["query"],
+            },
+          },
+          {
+            name: "getBooksByCategory",
+            description:
+              "Get books from a specific shelf in the library with full details including descriptions, language, pages, format, and category. Returns up to 20 sample books plus the TOTAL count on that shelf. Use getAvailableShelves first to get the correct shelf codes. Shelf codes are alphanumeric like A1, B2, C3, etc. Returns comprehensive book information to help users understand book content and make informed choices.",
+            parameters: {
+              type: "object",
+              properties: {
+                shelfCode: {
+                  type: "string",
+                  description:
+                    "Exact shelf code from the library system (e.g., 'A1', 'B1', 'C2'). Call getAvailableShelves first to get valid codes.",
+                },
+              },
+              required: ["shelfCode"],
+            },
+          },
+          {
+            name: "getAvailableShelves",
+            description:
+              "Get list of all available shelves/categories in the library with their codes, names, locations, and book counts. ALWAYS call this first when users ask about categories or shelves to get the correct shelf codes.",
+            parameters: {
+              type: "object",
+              properties: {},
+            },
+          },
+          {
+            name: "getCatalogStats",
+            description:
+              "Get comprehensive statistics about the entire library catalog including total books, availability status breakdown, and top categories. Use this when users ask general questions like 'what books do you have', 'how many books', or want an overview of the library collection. This provides the big picture before diving into specific searches.",
+            parameters: {
+              type: "object",
+              properties: {},
+            },
+          },
+          {
+            name: "getBookDetails",
+            description:
+              "Get comprehensive detailed information about a specific book by its ID, including full description, language, page count, format, category, loan policy, and availability status. Use this when users want to know more about a specific book's content, length, or borrowing terms.",
+            parameters: {
+              type: "object",
+              properties: {
+                bookId: {
+                  type: "string",
+                  description: "The MongoDB ObjectId of the book",
+                },
+              },
+              required: ["bookId"],
+            },
+          },
+          {
+            name: "generateBorrowLink",
+            description:
+              "Generate a clickable link for a student to view and borrow a specific book. Use this when a student expresses interest in borrowing a book. The bookId should come from the 'id' field in previous searchBooks or getBookDetails results.",
+            parameters: {
+              type: "object",
+              properties: {
+                bookId: {
+                  type: "string",
+                  description:
+                    "The MongoDB ObjectId of the book (use the 'id' field from searchBooks results)",
+                },
+              },
+              required: ["bookId"],
+            },
+          },
+        ],
+      },
+    ];
+
+    // Build chat history for context (needed for both AI models)
     const chatHistory =
       history?.map((msg) => ({
         role: msg.role === "user" ? "user" : "model",
         parts: [{ text: msg.content }],
       })) || [];
 
-    const chat = model.startChat({
-      history: [
+    // Try OpenAI GPT-OSS-20B first, fallback to Gemini
+    let usingGemini = false;
+    let model;
+    let chat;
+    let result;
+    let response;
+
+    try {
+      console.log("🤖 Attempting to use Qwen3-4B-Instruct-2507 via Bytez...");
+      const bytezModel = bytezSDK.model("Qwen/Qwen3-4B-Instruct-2507");
+      
+      // Build messages for OpenAI format
+      let userMessageContent = message;
+      
+      // Add PDF context if available (for follow-up questions)
+      if (!fileData && pdfContext && pdfContext.extractedText) {
+        const pdfInfo = `\n\n[Context: User previously uploaded a PDF file: ${pdfContext.name} (${pdfContext.pageCount} pages, ${pdfContext.wordCount} words)]\n\nPDF Content:\n${pdfContext.extractedText}`;
+        userMessageContent = `${message}${pdfInfo}\n\nPlease answer the user's question based on the PDF content above.`;
+        console.log("📄 Including PDF context in Qwen follow-up question");
+      }
+      // Add new PDF data if uploaded
+      else if (fileData && fileData.mimeType === "application/pdf" && fileData.extractedText) {
+        const pdfInfo = `\n\n[User uploaded a PDF file: ${fileData.name} (${fileData.pageCount} pages, ${fileData.wordCount} words)]\n\nExtracted PDF Content:\n${fileData.extractedText}`;
+        userMessageContent = `${message}${pdfInfo}\n\nPlease analyze this PDF document and respond to the user's request. If they asked for a summary, provide a concise overview. If they asked for bullet points, create a structured list of key points.`;
+      }
+      
+      const openaiMessages = [
+        {
+          role: "system",
+          content: systemContext
+        },
+        ...chatHistory.map(msg => ({
+          role: msg.role,
+          content: msg.parts[0].text
+        })),
         {
           role: "user",
-          parts: [{ text: systemContext }],
-        },
-        {
-          role: "model",
-          parts: [
-            {
-              text: "Understood. I'm LibraAI Assistant, ready to help students with library services, book recommendations, and literature questions.",
-            },
-          ],
-        },
-        ...chatHistory,
-      ],
-    });
+          content: userMessageContent
+        }
+      ];
 
-    // Prepare message parts
-    let messageParts = [{ text: message }];
-
-    // Add file data if present
-    if (fileData) {
-      if (fileData.mimeType === "application/pdf") {
-        messageParts.push({
-          inlineData: {
-            data: fileData.data,
-            mimeType: fileData.mimeType,
-          },
-        });
-        messageParts[0].text = `${message}\n\n[User uploaded a PDF file: ${fileData.name}. Please analyze the document and help answer their question.]`;
-      } else if (fileData.mimeType.startsWith("image/")) {
-        messageParts.push({
-          inlineData: {
-            data: fileData.data,
-            mimeType: fileData.mimeType,
-          },
-        });
-        messageParts[0].text = `${message}\n\n[User uploaded an image: ${fileData.name}. Please analyze the image and help answer their question.]`;
+      // Use queue to handle concurrency limit of 1
+      const queueLength = qwenQueue.getQueueLength();
+      if (queueLength > 0) {
+        console.log(`⏳ Qwen queue has ${queueLength} pending requests, waiting...`);
       }
+      
+      const { error, output } = await qwenQueue.add(async () => {
+        return await bytezModel.run(openaiMessages, {
+          temperature: 0.7,
+          // Note: max_tokens not supported by this model on Bytez
+        });
+      });
+      
+      if (error) {
+        throw new Error(error);
+      }
+
+      console.log("✅ Qwen3-4B-Instruct-2507 responded successfully");
+      
+      // Extract text from output (Bytez returns an object with content property)
+      const responseText = typeof output === 'string' ? output : (output?.content || output);
+      
+      // Create a response-like object for consistency
+      response = {
+        text: () => responseText,
+        functionCalls: () => null // Qwen model doesn't support function calling in this setup
+      };
+      
+    } catch (openaiError) {
+      console.warn("⚠️ Qwen3-4B-Instruct-2507 failed, falling back to Gemini:", openaiError.message);
+      usingGemini = true;
+      
+      model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 4096, // Increased for PDF analysis and detailed responses
+        },
+        tools,
+      });
     }
 
-    let result = await chat.sendMessage(messageParts);
-    let response = result.response;
+    // Only use Gemini if OpenAI failed
+    if (usingGemini) {
+      console.log("🔄 Using Gemini 2.5 Flash as fallback");
+      
+      chat = model.startChat({
+        history: [
+          {
+            role: "user",
+            parts: [{ text: systemContext }],
+          },
+          {
+            role: "model",
+            parts: [
+              {
+                text: "Understood. I'm LibraAI Assistant, ready to help students with library services, book recommendations, and literature questions.",
+              },
+            ],
+          },
+          ...chatHistory,
+        ],
+      });
 
-    // Handle function calls
-    const functionCalls = response.functionCalls();
+      // Prepare message parts
+      let messageParts = [{ text: message }];
+
+      // Add file data if present (new upload)
+      if (fileData) {
+        if (fileData.mimeType === "application/pdf") {
+          // Include extracted text if available
+          if (fileData.extractedText) {
+            const pdfInfo = `\n\n[User uploaded a PDF file: ${fileData.name} (${fileData.pageCount} pages, ${fileData.wordCount} words)]\n\nExtracted PDF Content:\n${fileData.extractedText}`;
+            messageParts[0].text = `${message}${pdfInfo}\n\nPlease analyze this PDF document and respond to the user's request. If they asked for a summary, provide a concise overview. If they asked for bullet points, create a structured list of key points.`;
+          } else {
+            // Fallback to sending PDF as binary if text extraction failed
+            messageParts.push({
+              inlineData: {
+                data: fileData.data,
+                mimeType: fileData.mimeType,
+              },
+            });
+            messageParts[0].text = `${message}\n\n[User uploaded a PDF file: ${fileData.name}. Text extraction failed: ${fileData.extractionError || 'Unknown error'}. Attempting to analyze the PDF directly.]`;
+          }
+        } else if (fileData.mimeType.startsWith("image/")) {
+          messageParts.push({
+            inlineData: {
+              data: fileData.data,
+              mimeType: fileData.mimeType,
+            },
+          });
+          messageParts[0].text = `${message}\n\n[User uploaded an image: ${fileData.name}. Please analyze the image and help answer their question.]`;
+        }
+      }
+      // If no new file but PDF context exists (follow-up question), include it
+      else if (pdfContext && pdfContext.extractedText) {
+        const pdfInfo = `\n\n[Context: User previously uploaded a PDF file: ${pdfContext.name} (${pdfContext.pageCount} pages, ${pdfContext.wordCount} words)]\n\nPDF Content:\n${pdfContext.extractedText}`;
+        messageParts[0].text = `${message}${pdfInfo}\n\nPlease answer the user's question based on the PDF content above.`;
+        console.log("📄 Including PDF context in follow-up question");
+      }
+
+      result = await chat.sendMessage(messageParts);
+      response = result.response;
+    }
+
+    // Handle function calls (only for Gemini)
+    const functionCalls = usingGemini ? response.functionCalls() : null;
     let borrowLinkResult = null;
     const executedFunctions = new Set(); // Track executed functions to prevent duplicates
 
@@ -743,7 +963,7 @@ RESPONSE STYLE:
       userMessage: message,
       aiResponse: text,
       timestamp: new Date(),
-      model: "gemini-2.5-flash",
+      model: usingGemini ? "gemini-2.5-flash" : "Qwen/Qwen3-4B-Instruct-2507",
       messageCount: (history?.length || 0) + 2, // +2 for current exchange
       hasAttachment: !!fileData,
       attachmentType: fileData?.mimeType || null,
@@ -782,18 +1002,39 @@ RESPONSE STYLE:
       }
     }
 
-    return NextResponse.json({
+    // Include PDF metadata in response if a PDF was processed
+    const responseData = {
       message: text,
       success: true,
-    });
+      model: usingGemini ? "gemini-2.5-flash" : "Qwen/Qwen3-4B-Instruct-2507",
+    };
+
+    // If PDF was uploaded and extracted, include metadata for frontend
+    if (fileData && fileData.mimeType === "application/pdf" && fileData.extractedText) {
+      responseData.pdfMetadata = {
+        name: fileData.name,
+        pageCount: fileData.pageCount,
+        wordCount: fileData.wordCount,
+        extractedText: fileData.extractedText // Include full text for follow-up questions
+      };
+    }
+
+    return NextResponse.json(responseData);
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("❌ Chat API Error:", error);
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return NextResponse.json(
       {
         error: "Failed to get response from AI",
         message:
           "I'm having trouble connecting right now. Please try again in a moment.",
         success: false,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       },
       { status: 500 }
     );

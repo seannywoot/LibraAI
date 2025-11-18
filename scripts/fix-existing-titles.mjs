@@ -1,5 +1,6 @@
 import { MongoClient } from 'mongodb';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import Bytez from "bytez.js";
 import { normalizeModelTitle } from '../src/utils/chatTitle.js';
 import { readFileSync } from 'fs';
 
@@ -30,6 +31,7 @@ function loadEnv() {
 const env = loadEnv();
 const MONGODB_URI = env.MONGODB_URI;
 const GEMINI_API_KEY = env.GEMINI_API_KEY;
+const BYTEZ_API_KEY = env.BYTEZ_API_KEY;
 
 if (!MONGODB_URI) {
   console.error('❌ MONGODB_URI not found in environment variables');
@@ -41,7 +43,13 @@ if (!GEMINI_API_KEY) {
   process.exit(1);
 }
 
+if (!BYTEZ_API_KEY) {
+  console.error('❌ BYTEZ_API_KEY not found in environment variables');
+  process.exit(1);
+}
+
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const bytezSDK = new Bytez(BYTEZ_API_KEY);
 
 async function generateTitle(messages) {
   try {
@@ -80,17 +88,48 @@ Double-check your title for:
 
 Return ONLY the title, nothing else.`;
 
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash', 
-      generationConfig: { 
-        temperature: 0.3, 
-        maxOutputTokens: 20 
-      } 
-    });
+    let title;
+    let usingGemini = false;
 
-    const result = await model.generateContent(`${systemInstruction}\n\nCHAT HISTORY:\n${convo}`);
-    const raw = result.response.text();
-    let title = normalizeModelTitle(raw);
+    // Try OpenAI first
+    try {
+      console.log('  🤖 Using Qwen3-4B-Instruct-2507...');
+      const bytezModel = bytezSDK.model("Qwen/Qwen3-4B-Instruct-2507");
+      
+      const { error, output } = await bytezModel.run([
+        {
+          role: "system",
+          content: systemInstruction
+        },
+        {
+          role: "user",
+          content: `CHAT HISTORY:\n${convo}`
+        }
+      ]);
+
+      if (error) {
+        throw new Error(error);
+      }
+
+      title = normalizeModelTitle(output);
+      console.log('  ✅ Qwen generated title');
+      
+    } catch (openaiError) {
+      console.log('  ⚠️  Qwen failed, using Gemini fallback');
+      usingGemini = true;
+      
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-2.5-flash', 
+        generationConfig: { 
+          temperature: 0.3, 
+          maxOutputTokens: 20 
+        } 
+      });
+
+      const result = await model.generateContent(`${systemInstruction}\n\nCHAT HISTORY:\n${convo}`);
+      const raw = result.response.text();
+      title = normalizeModelTitle(raw);
+    }
     
     // Validation: Check for common issues
     const hasObviousTypo = /\b(aer|teh|hte|taht|waht|whta|availble|availabe)\b/i.test(title);
@@ -98,11 +137,38 @@ Return ONLY the title, nothing else.`;
     
     if (hasObviousTypo || hasIncompletePhrase) {
       console.log(`  ⚠️  Title has issues, regenerating: "${title}"`);
-      const retryResult = await model.generateContent(
-        `${systemInstruction}\n\nIMPORTANT: The previous attempt had spelling or grammar errors. Please generate a PERFECT title with correct spelling and complete grammar.\n\nCHAT HISTORY:\n${convo}`
-      );
-      const retryRaw = retryResult.response.text();
-      title = normalizeModelTitle(retryRaw);
+      
+      if (usingGemini) {
+        const model = genAI.getGenerativeModel({ 
+          model: 'gemini-2.5-flash', 
+          generationConfig: { 
+            temperature: 0.3, 
+            maxOutputTokens: 20 
+          } 
+        });
+        
+        const retryResult = await model.generateContent(
+          `${systemInstruction}\n\nIMPORTANT: The previous attempt had spelling or grammar errors. Please generate a PERFECT title with correct spelling and complete grammar.\n\nCHAT HISTORY:\n${convo}`
+        );
+        const retryRaw = retryResult.response.text();
+        title = normalizeModelTitle(retryRaw);
+      } else {
+        const bytezModel = bytezSDK.model("Qwen/Qwen3-4B-Instruct-2507");
+        const { error, output } = await bytezModel.run([
+          {
+            role: "system",
+            content: `${systemInstruction}\n\nIMPORTANT: The previous attempt had spelling or grammar errors. Generate a PERFECT title.`
+          },
+          {
+            role: "user",
+            content: `CHAT HISTORY:\n${convo}`
+          }
+        ]);
+        
+        if (!error) {
+          title = normalizeModelTitle(output);
+        }
+      }
     }
     
     return title;

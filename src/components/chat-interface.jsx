@@ -5,35 +5,149 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { shouldRegenerateTitle, heuristicTitle, buildTitleRequestPayload } from "@/utils/chatTitle";
 import { MessageCircle, Send, Paperclip, History, X, Trash2 } from "@/components/icons";
 
-// Helper function to render message content with clickable links
+// Helper function to render message content with markdown formatting and clickable links
 const renderMessageContent = (content) => {
-  // Regex to match URLs (including /student/books/... paths)
-  const urlRegex = /(https?:\/\/[^\s]+|\/student\/books\/[a-zA-Z0-9]+)/g;
-  const parts = content.split(urlRegex);
+  if (!content) return null;
   
-  return parts.map((part, index) => {
-    if (part.match(urlRegex)) {
-      return (
-        <a
-          key={index}
-          href={part}
-          className="text-blue-600 hover:text-blue-800 underline font-medium"
-          target={part.startsWith('http') ? '_blank' : '_self'}
-          rel={part.startsWith('http') ? 'noopener noreferrer' : undefined}
-        >
-          {part}
-        </a>
+  const lines = content.split('\n');
+  const elements = [];
+  let inCodeBlock = false;
+  let codeBlockContent = [];
+  let codeBlockLang = '';
+  
+  lines.forEach((line, lineIndex) => {
+    // Check for code block markers
+    if (line.trim().startsWith('```')) {
+      if (!inCodeBlock) {
+        // Starting code block
+        inCodeBlock = true;
+        codeBlockLang = line.trim().substring(3).trim();
+        codeBlockContent = [];
+      } else {
+        // Ending code block
+        inCodeBlock = false;
+        elements.push(
+          <pre key={`code-${lineIndex}`} className="bg-zinc-100 rounded p-3 my-2 overflow-x-auto">
+            <code className="text-sm font-mono text-zinc-800">
+              {codeBlockContent.join('\n')}
+            </code>
+          </pre>
+        );
+        codeBlockContent = [];
+        codeBlockLang = '';
+      }
+      return;
+    }
+    
+    if (inCodeBlock) {
+      codeBlockContent.push(line);
+      return;
+    }
+    
+    // Process inline markdown
+    let processedLine = line;
+    const segments = [];
+    let lastIndex = 0;
+    
+    // Combined regex for bold, italic, inline code, and links
+    const markdownRegex = /(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|(`([^`]+)`)|(\[([^\]]+)\]\(([^)]+)\))|(https?:\/\/[^\s]+)|(\/student\/books\/[a-zA-Z0-9]+)/g;
+    
+    let match;
+    while ((match = markdownRegex.exec(processedLine)) !== null) {
+      // Add text before match
+      if (match.index > lastIndex) {
+        segments.push(processedLine.substring(lastIndex, match.index));
+      }
+      
+      if (match[1]) {
+        // Bold **text**
+        segments.push(<strong key={`bold-${lineIndex}-${match.index}`} className="font-semibold">{match[2]}</strong>);
+      } else if (match[3]) {
+        // Italic *text*
+        segments.push(<em key={`italic-${lineIndex}-${match.index}`} className="italic">{match[4]}</em>);
+      } else if (match[5]) {
+        // Inline code `text`
+        segments.push(
+          <code key={`code-${lineIndex}-${match.index}`} className="bg-zinc-100 px-1.5 py-0.5 rounded text-sm font-mono text-zinc-800">
+            {match[6]}
+          </code>
+        );
+      } else if (match[7]) {
+        // Markdown link [text](url)
+        segments.push(
+          <a
+            key={`link-${lineIndex}-${match.index}`}
+            href={match[9]}
+            className="text-blue-600 hover:text-blue-800 underline font-medium"
+            target={match[9].startsWith('http') ? '_blank' : '_self'}
+            rel={match[9].startsWith('http') ? 'noopener noreferrer' : undefined}
+          >
+            {match[8]}
+          </a>
+        );
+      } else if (match[10] || match[11]) {
+        // Plain URL
+        const url = match[10] || match[11];
+        segments.push(
+          <a
+            key={`url-${lineIndex}-${match.index}`}
+            href={url}
+            className="text-blue-600 hover:text-blue-800 underline font-medium"
+            target={url.startsWith('http') ? '_blank' : '_self'}
+            rel={url.startsWith('http') ? 'noopener noreferrer' : undefined}
+          >
+            {url}
+          </a>
+        );
+      }
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < processedLine.length) {
+      segments.push(processedLine.substring(lastIndex));
+    }
+    
+    // Handle list items
+    if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+      elements.push(
+        <div key={`line-${lineIndex}`} className="flex gap-2 my-1">
+          <span className="text-zinc-600 select-none">•</span>
+          <span>{segments.length > 0 ? segments : line.substring(line.indexOf(' ') + 1)}</span>
+        </div>
+      );
+    } else if (line.trim().match(/^\d+\.\s/)) {
+      // Numbered list
+      const number = line.trim().match(/^(\d+)\./)[1];
+      elements.push(
+        <div key={`line-${lineIndex}`} className="flex gap-2 my-1">
+          <span className="text-zinc-600 select-none min-w-[1.5rem]">{number}.</span>
+          <span>{segments.length > 0 ? segments : line.substring(line.indexOf(' ') + 1)}</span>
+        </div>
+      );
+    } else if (line.trim() === '') {
+      // Empty line - add spacing
+      elements.push(<br key={`br-${lineIndex}`} />);
+    } else {
+      // Regular line
+      elements.push(
+        <span key={`line-${lineIndex}`}>
+          {segments.length > 0 ? segments : line}
+          {lineIndex < lines.length - 1 && '\n'}
+        </span>
       );
     }
-    return part;
   });
+  
+  return elements;
 };
 
 export default function ChatInterface({ userName, showHistorySidebar = false }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Hello! I'm here to help you find books and answer questions about literature. What can I help you with today?",
+      content: "Hello! I'm here to help you find books and answer questions about literature.\n\nI can also analyze PDF documents - just upload one and ask me to:\n• Summarize the content\n• Create bullet points of key information\n• Answer specific questions about the document\n\nWhat can I help you with today?",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -58,6 +172,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
   const [retryQueue, setRetryQueue] = useState([]);
   const [recentQueries, setRecentQueries] = useState([]); // Track recent queries
   const [searchCache, setSearchCache] = useState({}); // Cache search results
+  const [pdfContext, setPdfContext] = useState(null); // Store PDF context for follow-up questions
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -73,6 +188,13 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-scroll during typing animation
+  useEffect(() => {
+    if (isTyping && typingMessage) {
+      scrollToBottom();
+    }
+  }, [typingMessage, isTyping]);
 
   // Toast notification system
   const showToast = useCallback((message, type = 'info', duration = 5000) => {
@@ -576,6 +698,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     setCurrentConversationId(conversation.id);
     setAutoTitle(conversation.title || null);
     setShowHistory(false);
+    setPdfContext(null); // Clear PDF context when loading different conversation
     // Update the ref to prevent auto-save from updating lastUpdated when loading
     lastSavedMessagesRef.current = conversation.messages;
   };
@@ -584,13 +707,14 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     setMessages([
       {
         role: "assistant",
-        content: "Hello! I'm here to help you find books and answer questions about literature. What can I help you with today?",
+        content: "Hello! I'm here to help you find books and answer questions about literature.\n\nI can also analyze PDF documents - just upload one and ask me to:\n• Summarize the content\n• Create bullet points of key information\n• Answer specific questions about the document\n\nWhat can I help you with today?",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
     setCurrentConversationId(null);
     setAutoTitle(null);
     setShowHistory(false);
+    setPdfContext(null); // Clear PDF context for new conversation
     // Clear current chat from localStorage
     localStorage.removeItem("currentChat");
     // Reset the saved messages ref
@@ -619,19 +743,22 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     setIsLoading(false);
   }, [typingMessage]);
 
-  // Typing animation effect
+  // Typing animation effect - optimized for faster display
   const typeMessage = useCallback((fullMessage, callback) => {
     setIsTyping(true);
     setTypingMessage("");
     setIsLoading(false); // Turn off loading when typing starts
     let index = 0;
     
-    const typingSpeed = 3; // milliseconds per character (much faster - was 10, now 3)
+    const typingSpeed = 1; // milliseconds per batch (reduced from 3ms)
+    const charsPerBatch = 3; // Type 3 characters at once for faster display
     
     typingIntervalRef.current = setInterval(() => {
       if (index < fullMessage.length) {
-        setTypingMessage(fullMessage.substring(0, index + 1));
-        index++;
+        // Type multiple characters at once for smoother, faster animation
+        const nextIndex = Math.min(index + charsPerBatch, fullMessage.length);
+        setTypingMessage(fullMessage.substring(0, nextIndex));
+        index = nextIndex;
       } else {
         clearInterval(typingIntervalRef.current);
         typingIntervalRef.current = null;
@@ -697,7 +824,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     // Validate file type
     const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      alert('Please upload a PDF or image file (JPG, PNG, GIF, WebP)');
+      alert('Please upload a PDF or image file (JPG, PNG, GIF, WebP).\n\nFor PDFs: I can read and analyze the document to provide summaries, bullet points, or answer questions about the content.');
       return;
     }
 
@@ -716,6 +843,15 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         setFilePreview(reader.result);
       };
       reader.readAsDataURL(file);
+    } else if (file.type === 'application/pdf') {
+      // Show PDF icon/indicator
+      setFilePreview('pdf');
+      // Show helpful toast for PDF uploads
+      showToast(
+        'PDF attached! Ask me to summarize it, create bullet points, or answer questions about its content.',
+        'info',
+        5000
+      );
     } else {
       setFilePreview(null);
     }
@@ -847,6 +983,9 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     };
     setMessages(prev => [...prev, newUserMessage]);
     setIsLoading(true);
+    
+    // Scroll to show user message and loading indicator
+    setTimeout(scrollToBottom, 100);
 
     try {
       let requestBody;
@@ -859,6 +998,12 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         formData.append('file', fileToUpload);
         formData.append('history', JSON.stringify(messages.slice(1)));
         formData.append('conversationId', currentConversationId || '');
+        
+        // Include PDF context if available
+        if (pdfContext) {
+          formData.append('pdfContext', JSON.stringify(pdfContext));
+        }
+        
         requestBody = formData;
       } else {
         // Send as JSON if no file
@@ -866,7 +1011,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         requestBody = JSON.stringify({
           message: userMessage,
           history: messages.slice(1),
-          conversationId: currentConversationId
+          conversationId: currentConversationId,
+          pdfContext: pdfContext // Include PDF context for follow-up questions
         });
       }
 
@@ -879,8 +1025,19 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
 
       const data = await response.json();
       console.log("AI Response:", data);
+      
+      // Log which model was used
+      if (data.model) {
+        console.log(`🤖 Model Used: ${data.model}`);
+      }
 
       if (data.success && data.message) {
+        // Store PDF metadata if present for follow-up questions
+        if (data.pdfMetadata) {
+          console.log('📄 PDF processed:', data.pdfMetadata.name, `(${data.pdfMetadata.pageCount} pages)`);
+          setPdfContext(data.pdfMetadata);
+        }
+        
         // Use typing animation for AI response
         typeMessage(data.message, () => {
           const aiMessage = {
@@ -1040,7 +1197,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
             }`}>
               {msg.hasFile && (
                 <div className="mb-2">
-                  {msg.filePreview && msg.fileType?.startsWith('image/') ? (
+                  {msg.filePreview && msg.filePreview !== 'pdf' && msg.fileType?.startsWith('image/') ? (
                     <div className="mb-2">
                       <img 
                         src={msg.filePreview} 
@@ -1052,6 +1209,30 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                       }`}>
                         <Paperclip className="h-3 w-3" />
                         <span>{msg.fileName}</span>
+                      </div>
+                    </div>
+                  ) : msg.fileType === 'application/pdf' ? (
+                    <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                      msg.role === "user" ? "bg-zinc-800" : "bg-white border border-zinc-200"
+                    }`}>
+                      <div className={`h-10 w-10 rounded flex items-center justify-center ${
+                        msg.role === "user" ? "bg-zinc-700" : "bg-red-100"
+                      }`}>
+                        <svg className={`h-6 w-6 ${msg.role === "user" ? "text-red-400" : "text-red-600"}`} fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-xs font-medium truncate ${
+                          msg.role === "user" ? "text-zinc-200" : "text-zinc-900"
+                        }`}>
+                          {msg.fileName}
+                        </div>
+                        <div className={`text-xs ${
+                          msg.role === "user" ? "text-zinc-400" : "text-zinc-500"
+                        }`}>
+                          PDF Document
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -1124,12 +1305,19 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       <div className="border-t border-zinc-200 p-6">
         {attachedFile && (
           <div className="mb-3 flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-            {filePreview && attachedFile.type.startsWith('image/') && (
+            {filePreview && filePreview !== 'pdf' && attachedFile.type.startsWith('image/') && (
               <img 
                 src={filePreview} 
                 alt="Preview"
                 className="h-16 w-16 rounded object-cover border border-zinc-300"
               />
+            )}
+            {filePreview === 'pdf' && (
+              <div className="h-16 w-16 rounded bg-red-100 border border-red-300 flex items-center justify-center">
+                <svg className="h-8 w-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                </svg>
+              </div>
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-zinc-900 truncate">
@@ -1137,7 +1325,13 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
               </p>
               <p className="text-xs text-zinc-500">
                 {(attachedFile.size / 1024).toFixed(1)} KB
+                {attachedFile.type === 'application/pdf' && ' • PDF Document'}
               </p>
+              {attachedFile.type === 'application/pdf' && (
+                <p className="text-xs text-blue-600 mt-1">
+                  💡 Try: "Summarize this", "Create bullet points&quot;, or ask questions
+                </p>
+              )}
             </div>
             <button
               type="button"
@@ -1169,7 +1363,13 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           <div className="flex-1 flex items-center">
             <textarea
               ref={textareaRef}
-              placeholder={attachedFile ? "Add a message (optional)..." : "Type your message..."}
+              placeholder={
+                attachedFile?.type === 'application/pdf' 
+                  ? "Ask me to summarize, create bullet points, or answer questions..." 
+                  : attachedFile 
+                  ? "Add a message (optional)..." 
+                  : "Type your message or upload a PDF..."
+              }
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}

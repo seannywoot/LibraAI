@@ -38,44 +38,60 @@ function jaccard(aArr, bArr) {
 export function shouldRegenerateTitle(messages, currentTitle) {
   if (!currentTitle || currentTitle === 'Conversation') return false; // no title yet -> handled elsewhere
   const userMessages = messages.filter(m=>m.role==='user');
-  if (userMessages.length < 3) return false; // need at least 3 messages to detect drift
+  if (userMessages.length < 2) return false; // need at least 2 messages to detect drift
   
   const recent = userMessages.slice(-1)[0];
   const recentContent = recent.content.toLowerCase();
   
-  // Get baseline from first 2 messages only (not including the recent one)
-  const firstTwo = userMessages.slice(0, 2).map(m=>extractKeywords(m.content));
-  const baselineKeywords = [...new Set(firstTwo.flat())];
+  // Get baseline from earlier messages (not including the recent one)
+  const earlier = userMessages.slice(0, -1);
+  const earlierKeywords = [...new Set(earlier.flatMap(m => extractKeywords(m.content)))];
   const recentKeywords = extractKeywords(recent.content);
   
   // Calculate similarity
-  const similarity = jaccard(baselineKeywords, recentKeywords);
+  const similarity = jaccard(earlierKeywords, recentKeywords);
   
   // Check if recent message is substantial enough to warrant drift detection
   const recentTokens = tokenize(recent.content);
-  if (recentTokens.length < 8) return false; // too short to be a topic shift
+  const meaningfulTokens = recentTokens.filter(t => !STOPWORDS.has(t));
+  
+  // Even short messages can indicate drift if they're completely different topics
+  if (recentTokens.length < 3) return false; // too short (e.g., "yes", "ok")
   
   // Strong indicators of topic shift
   const topicShiftPhrases = [
     'switching topic', 'change topic', 'different question', 
     'new question', 'moving on', 'instead', 'actually',
-    'change of topic', 'different topic', 'new topic'
+    'change of topic', 'different topic', 'new topic',
+    'by the way', 'also', 'another question'
   ];
   const hasExplicitShift = topicShiftPhrases.some(phrase => 
     recentContent.includes(phrase.toLowerCase())
   );
   
-  if (hasExplicitShift && similarity < 0.4) return true;
+  // More aggressive drift detection
+  if (hasExplicitShift) return true; // Always regenerate on explicit shift
   
-  // Very low similarity + long message indicates drift
-  if (similarity < 0.15 && recentTokens.length > 10) return true;
+  // Low similarity indicates drift (more aggressive threshold)
+  if (similarity < 0.25 && meaningfulTokens.length >= 2) return true;
   
-  // Check if current title words are completely absent from recent message
+  // Check if current title words are mostly absent from recent message
   const titleTokens = tokenize(currentTitle).filter(t=>!STOPWORDS.has(t));
-  const overlap = titleTokens.some(t => recentKeywords.includes(t));
+  const titleOverlap = titleTokens.filter(t => recentKeywords.includes(t)).length;
+  const titleOverlapRatio = titleTokens.length > 0 ? titleOverlap / titleTokens.length : 0;
   
-  // Only regenerate if NO overlap AND very low similarity
-  if (!overlap && similarity < 0.25 && recentTokens.length > 10) return true;
+  // Regenerate if less than 40% of title words appear in recent message (more aggressive)
+  if (titleOverlapRatio < 0.4 && similarity < 0.35 && meaningfulTokens.length >= 2) return true;
+  
+  // Check for completely different question types
+  const earlierHasQuestion = earlier.some(m => /\b(who|what|when|where|why|how|which)\b/i.test(m.content));
+  const recentHasQuestion = /\b(who|what|when|where|why|how|which)\b/i.test(recentContent);
+  
+  // If switching from statements to questions or vice versa with low similarity
+  if (earlierHasQuestion !== recentHasQuestion && similarity < 0.25) return true;
+  
+  // Regenerate every 5 messages if similarity is consistently low
+  if (userMessages.length % 5 === 0 && similarity < 0.3) return true;
   
   return false;
 }
@@ -85,9 +101,10 @@ export function heuristicTitle(messages) {
   const userMessages = messages.filter(m=>m.role==='user');
   if (!userMessages.length) return 'Conversation';
   
-  // Get first user message for context
-  const firstMessage = userMessages[0].content;
-  const tokens = tokenize(firstMessage);
+  // Prioritize recent messages for title (last 2 messages)
+  const recentMessages = userMessages.slice(-2);
+  const allText = recentMessages.map(m => m.content).join(' ').toLowerCase();
+  const tokens = tokenize(allText);
   
   // Extract meaningful keywords (non-stopwords, length > 2)
   const keywords = tokens.filter(t => !STOPWORDS.has(t) && t.length > 2);
@@ -95,42 +112,64 @@ export function heuristicTitle(messages) {
   if (!keywords.length) return 'Conversation';
   
   // Detect common patterns and add necessary grammar words
-  const text = firstMessage.toLowerCase();
   let titleWords = [];
   
-  // Pattern: "what/which books..." → "Available Books To Borrow"
-  if (text.includes('available') && text.includes('borrow')) {
+  // Pattern: Random questions (mythology, philosophy, etc.) - CHECK THIS FIRST
+  if (allText.match(/\b(icarus|mythology|greek|god|goddess)\b/)) {
+    titleWords = ['greek', 'mythology', 'questions'];
+  }
+  else if (allText.match(/\b(love|philosophy)\b/) && allText.match(/\bwhat\s+is\b/)) {
+    const topic = keywords.filter(k => !['what', 'is'].includes(k)).slice(0, 2);
+    titleWords = [...topic, 'discussion'];
+  }
+  // Pattern: Library-related questions
+  else if (allText.includes('available') && allText.includes('borrow')) {
     titleWords = ['available', 'books', 'to', 'borrow'];
   }
+  else if (allText.match(/\b(book|books)\b/) && allText.match(/\b(find|search|looking)\b/)) {
+    const topicKeywords = keywords.filter(k => !['book', 'books', 'find', 'search', 'looking'].includes(k));
+    titleWords = ['finding', ...topicKeywords.slice(0, 2), 'books'];
+  }
   // Pattern: "how to..." → "Guide To [Topic]"
-  else if (text.match(/how\s+to\s+(\w+)/)) {
-    const verb = text.match(/how\s+to\s+(\w+)/)[1];
+  else if (allText.match(/how\s+to\s+(\w+)/)) {
+    const verb = allText.match(/how\s+to\s+(\w+)/)[1];
     titleWords = ['guide', 'to', verb, ...keywords.filter(k => k !== verb).slice(0, 2)];
   }
+  // Pattern: "who are you" → Only if it's the ONLY topic
+  else if (allText.match(/\b(who\s+are\s+you|introduce|yourself)\b/) && userMessages.length === 1) {
+    titleWords = ['introduction', 'chat'];
+  }
+  // Pattern: General "what is..." → "[Topic] Discussion"
+  else if (allText.match(/what\s+is\s+(\w+)/)) {
+    const topic = keywords.filter(k => !['what', 'is'].includes(k)).slice(0, 2);
+    titleWords = [...topic, 'discussion'];
+  }
   // Pattern: "find/search..." → "Finding [Topic]"
-  else if (text.match(/\b(find|search|look|get)\b/)) {
+  else if (allText.match(/\b(find|search|look|get)\b/)) {
     const filteredKeywords = keywords.filter(k => !['find', 'search', 'look', 'get'].includes(k));
     titleWords = ['finding', ...filteredKeywords.slice(0, 3)];
   }
-  // Default: Take first 4-6 keywords and add grammar if needed
+  // Default: Take top keywords and add context
   else {
-    titleWords = keywords.slice(0, 6);
+    titleWords = keywords.slice(0, 4);
     
-    // If we have "available" + noun, add "to" or "for"
-    const availableIndex = titleWords.findIndex(w => w === 'available');
-    if (availableIndex >= 0 && availableIndex < titleWords.length - 1) {
-      // Check if next word is a verb (common verbs)
-      const nextWord = titleWords[availableIndex + 1];
-      if (['borrow', 'rent', 'use', 'read', 'check'].includes(nextWord)) {
-        titleWords.splice(availableIndex + 1, 0, 'to');
-      }
+    // Add "discussion" or "questions" if it seems like a Q&A
+    if (allText.match(/\b(what|why|how|when|where|which)\b/)) {
+      titleWords = [...titleWords.slice(0, 3), 'questions'];
+    } else {
+      titleWords = [...titleWords.slice(0, 3), 'discussion'];
     }
   }
   
   // Ensure we have 3-6 words
   titleWords = titleWords.slice(0, 6);
   if (titleWords.length < 3) {
-    titleWords = keywords.slice(0, 3);
+    // Fallback to generic but complete title
+    if (keywords.length >= 2) {
+      titleWords = [...keywords.slice(0, 2), 'chat'];
+    } else {
+      titleWords = ['general', 'conversation'];
+    }
   }
   
   // Clean up common incomplete patterns
@@ -141,6 +180,11 @@ export function heuristicTitle(messages) {
   
   // Remove leading question words
   title = title.replace(/^(what|which|how|when|where|why)\s+/i, '');
+  
+  // Ensure title doesn't end with incomplete phrase
+  if (title.split(/\s+/).length < 2) {
+    title = title + ' Discussion';
+  }
   
   return toTitleCase(title);
 }
@@ -191,10 +235,29 @@ export function normalizeModelTitle(raw='', fallback='Conversation') {
 // Prepare payload for title generation API
 export function buildTitleRequestPayload(messages) {
   const userAndAssistant = messages.filter(m=> m.role==='user' || m.role==='assistant');
-  const limited = userAndAssistant.slice(0,8); // first context section
-  const recent = userAndAssistant.slice(-4); // recent messages for drift
-  const merged = [...new Set([...limited, ...recent])];
-  return merged.map(m=> ({ role: m.role, content: m.content }));
+  
+  // If conversation is short, send everything
+  if (userAndAssistant.length <= 8) {
+    return userAndAssistant.map(m=> ({ role: m.role, content: m.content }));
+  }
+  
+  // For longer conversations, prioritize recent messages (last 6) + first 2 for context
+  const first = userAndAssistant.slice(0, 2); // initial context
+  const recent = userAndAssistant.slice(-6); // recent conversation (most important)
+  
+  // Merge without duplicates, preserving order
+  const seen = new Set();
+  const merged = [];
+  
+  for (const msg of [...first, ...recent]) {
+    const key = `${msg.role}:${msg.content}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push({ role: msg.role, content: msg.content });
+    }
+  }
+  
+  return merged;
 }
 
 const ChatTitleUtils = {

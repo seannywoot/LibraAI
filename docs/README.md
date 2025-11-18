@@ -141,6 +141,38 @@ npm start
 
 For more details, see Next.js deployment docs.
 
+## AI Chatbot Features
+
+### PDF Document Analysis (NEW!)
+
+The LibraAI chatbot can now read and analyze PDF documents. Users can upload PDFs and ask the AI to:
+- **Summarize** the entire document or specific sections
+- **Create bullet points** of key information
+- **Answer questions** about the document content
+- **Extract information** based on specific queries
+
+**Quick Start:**
+1. Click the 📎 (paperclip) icon in the chat
+2. Upload a PDF file (max 10MB)
+3. Ask: "Summarize this", "Create bullet points", or ask specific questions
+
+**Example prompts:**
+- "Summarize this research paper"
+- "List the key findings in bullet points"
+- "What methodology was used?"
+- "What does page 5 say about [topic]?"
+
+**Documentation:**
+- Quick Start: `PDF_ANALYSIS_QUICK_START.md`
+- Full Guide: `docs/CHATBOT_PDF_ANALYSIS.md`
+- Examples: `docs/PDF_ANALYSIS_EXAMPLES.md`
+
+**Technical Details:**
+- Uses `pdfjs-dist` for text extraction
+- Processes up to 50 pages per document
+- Works with both Gemini and Qwen AI models
+- Supports text-based PDFs (scanned PDFs may have limited support)
+
 ## Chat persistence database setup
 
 LibraAI stores chat conversations in MongoDB for cross-device access and data persistence. Before using the chat feature, you need to initialize the database indexes.

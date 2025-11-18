@@ -20,7 +20,16 @@ export async function POST(request) {
     // Concatenate for prompt
     const convo = messages.map(m=> `${m.role.toUpperCase()}: ${m.content}` ).join('\n');
 
+    let usingGemini = false;
+    let title;
+
     const systemInstruction = `You are a professional editor creating a concise, descriptive title (3-6 words) for this conversation.
+
+ANALYZE THE CONVERSATION:
+1. Identify the MAIN TOPIC or PRIMARY QUESTION being discussed
+2. If the conversation shifts topics, focus on the MOST RECENT or DOMINANT theme
+3. Capture the essence of what the user is asking about or interested in
+4. Ignore greetings, small talk, and off-topic tangents
 
 CRITICAL GRAMMAR RULES:
 1. MUST be a complete, grammatically correct phrase
@@ -28,37 +37,51 @@ CRITICAL GRAMMAR RULES:
 3. MUST use proper verb forms (not fragments like "books available borrow")
 4. MUST sound natural when read aloud
 5. NO articles (the, a, an) at the START, but use them internally if needed for grammar
+6. NEVER end with a preposition (to, for, about, from, etc.)
 
 STRUCTURE PATTERNS (choose the most appropriate):
 - "[Adjective] [Noun] [Preposition] [Verb]" → "Available Books To Borrow"
 - "[Noun] [Noun] [Noun]" → "Python Programming Guide"  
 - "[Verb+ing] [Noun] [Noun]" → "Baking Sourdough Bread"
 - "[Noun] [Preposition] [Noun]" → "Guide To Python"
+- "[Topic] [Noun]" → "Greek Mythology Questions"
+
+HANDLING RANDOM/OFF-TOPIC QUESTIONS:
+If the conversation is about random general knowledge (not library-related):
+✓ "Greek Mythology Discussion" (for questions about Icarus, gods, etc.)
+✓ "Philosophy and Love Questions" (for abstract questions)
+✓ "General Knowledge Chat" (for trivia or random questions)
+✓ "Random Questions Session" (for multiple unrelated questions)
 
 GOOD EXAMPLES (grammatically complete):
 ✓ "Available Books To Borrow" (has preposition + verb)
 ✓ "Books Available For Borrowing" (has preposition + gerund)
 ✓ "Finding Available Fiction Books" (has verb + adjective + noun)
-✓ "Sourdough Bread Baking Tips" (noun phrase)
-✓ "Python List Comprehension Guide" (noun phrase)
-✓ "Planning Tokyo Travel Itinerary" (gerund + noun phrase)
+✓ "Greek Mythology Questions" (topic + noun)
+✓ "Python Programming Guide" (noun phrase)
+✓ "Planning Tokyo Travel" (gerund + noun phrase)
 
 BAD EXAMPLES (grammatically broken):
+✗ "The Sun Did Not Go To" (ends with preposition, incomplete)
 ✗ "What Books Available Borrow" (missing articles/prepositions, broken grammar)
 ✗ "Books Available Borrow" (missing "to" or "for", incomplete)
 ✗ "Help With Baking" (too generic)
-✗ "Question About Python" (too generic)
+✗ "Question About" (incomplete, ends with preposition)
 ✗ "Available Books" (too short, incomplete thought)
 
 QUALITY CHECKLIST:
 1. Read it aloud - does it sound natural?
 2. Is it grammatically complete?
 3. Are all necessary small words (to, for, a, an) included?
-4. Would a native English speaker say this phrase?
-5. Is it specific to the conversation topic?
+4. Does it NOT end with a preposition?
+5. Would a native English speaker say this phrase?
+6. Is it specific to the conversation topic?
+7. Does it capture the MAIN or MOST RECENT topic?
 
 Return ONLY the title, nothing else.`;
 
+    // Use Gemini for title generation (Qwen reserved for chatbot only)
+    console.log("🤖 Generating title with Gemini 2.5 Flash...");
     const model = genAI.getGenerativeModel({ 
       model: 'gemini-2.5-flash', 
       generationConfig: { 
@@ -69,7 +92,8 @@ Return ONLY the title, nothing else.`;
 
     const result = await model.generateContent(`${systemInstruction}\n\nCHAT HISTORY:\n${convo}`);
     const raw = result.response.text();
-    let title = normalizeModelTitle(raw);
+    title = normalizeModelTitle(raw);
+    console.log("✅ Gemini generated title successfully:", title);
     
     // Validation: Check for common issues
     const hasObviousTypo = /\b(aer|teh|hte|taht|waht|whta|availble|availabe)\b/i.test(title);
@@ -96,8 +120,16 @@ Return ONLY the title, nothing else.`;
         tooShort: isTooShort
       });
       
-      // Try one more time with emphasis
-      const retryResult = await model.generateContent(
+      // Try one more time with emphasis using Gemini
+      const retryModel = genAI.getGenerativeModel({ 
+        model: 'gemini-2.5-flash', 
+        generationConfig: { 
+          temperature: 0.3, 
+          maxOutputTokens: 20 
+        } 
+      });
+      
+      const retryResult = await retryModel.generateContent(
         `${systemInstruction}\n\nIMPORTANT: The previous attempt "${title}" had grammar issues. 
 
 Common mistakes to avoid:
