@@ -122,7 +122,7 @@ const renderMessageContent = (content) => {
       const number = line.trim().match(/^(\d+)\./)[1];
       elements.push(
         <div key={`line-${lineIndex}`} className="flex gap-2 my-1">
-          <span className="text-zinc-600 select-none min-w-[1.5rem]">{number}.</span>
+          <span className="text-zinc-600 select-none min-w-6">{number}.</span>
           <span>{segments.length > 0 ? segments : line.substring(line.indexOf(' ') + 1)}</span>
         </div>
       );
@@ -703,6 +703,43 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     lastSavedMessagesRef.current = conversation.messages;
   };
 
+  // Group conversations into Today / Yesterday / Last 7 Days / 30 Days sections
+  const groupedConversations = (() => {
+    if (!conversationHistory || conversationHistory.length === 0) return {};
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+    const startOfLast7 = new Date(startOfToday);
+    startOfLast7.setDate(startOfLast7.getDate() - 7);
+    const startOfLast30 = new Date(startOfToday);
+    startOfLast30.setDate(startOfLast30.getDate() - 30);
+
+    const groups = {
+      today: [],
+      yesterday: [],
+      last7: [],
+      last30: [],
+    };
+
+    for (const conv of conversationHistory) {
+      const updated = new Date(conv.lastUpdated || conv.createdAt || now);
+
+      if (updated >= startOfToday) {
+        groups.today.push(conv);
+      } else if (updated >= startOfYesterday && updated < startOfToday) {
+        groups.yesterday.push(conv);
+      } else if (updated >= startOfLast7) {
+        groups.last7.push(conv);
+      } else if (updated >= startOfLast30) {
+        groups.last30.push(conv);
+      }
+    }
+
+    return groups;
+  })();
+
   const startNewConversation = () => {
     setMessages([
       {
@@ -1142,37 +1179,148 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                   </button>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {conversationHistory.length === 0 ? (
                   <p className="text-sm text-zinc-500 text-center py-8">No conversation history yet</p>
                 ) : (
-                  conversationHistory.map((conv) => (
-                    <div
-                      key={conv.id}
-                      onClick={() => loadConversation(conv)}
-                      className={`group p-3 rounded-lg border cursor-pointer transition ${
-                        currentConversationId === conv.id
-                          ? "border-zinc-900 bg-zinc-50"
-                          : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
-                          <p className="text-xs text-zinc-500 mt-1">
-                            {new Date(conv.lastUpdated).toLocaleDateString()} • {conv.messages.length} messages
-                          </p>
+                  <>
+                    {groupedConversations.today.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Today</p>
+                        <div className="space-y-2">
+                          {groupedConversations.today.map((conv) => (
+                            <div
+                              key={conv.id}
+                              onClick={() => loadConversation(conv)}
+                              className={`group p-3 rounded-lg border cursor-pointer transition ${
+                                currentConversationId === conv.id
+                                  ? "border-zinc-900 bg-zinc-50"
+                                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                                  <p className="text-xs text-zinc-500 mt-1">
+                                    {new Date(conv.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {conv.messages.length} messages
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={(e) => openDeleteModal(conv, e)}
+                                  className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
+                                  aria-label="Delete conversation"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <button
-                          onClick={(e) => openDeleteModal(conv, e)}
-                          className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
-                          aria-label="Delete conversation"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
                       </div>
-                    </div>
-                  ))
+                    )}
+                    {groupedConversations.yesterday.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Yesterday</p>
+                        <div className="space-y-2">
+                          {groupedConversations.yesterday.map((conv) => (
+                            <div
+                              key={conv.id}
+                              onClick={() => loadConversation(conv)}
+                              className={`group p-3 rounded-lg border cursor-pointer transition ${
+                                currentConversationId === conv.id
+                                  ? "border-zinc-900 bg-zinc-50"
+                                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                                  <p className="text-xs text-zinc-500 mt-1">
+                                    {new Date(conv.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {conv.messages.length} messages
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={(e) => openDeleteModal(conv, e)}
+                                  className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
+                                  aria-label="Delete conversation"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {groupedConversations.last7.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">7 Days</p>
+                        <div className="space-y-2">
+                          {groupedConversations.last7.map((conv) => (
+                            <div
+                              key={conv.id}
+                              onClick={() => loadConversation(conv)}
+                              className={`group p-3 rounded-lg border cursor-pointer transition ${
+                                currentConversationId === conv.id
+                                  ? "border-zinc-900 bg-zinc-50"
+                                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                                  <p className="text-xs text-zinc-500 mt-1">
+                                    {new Date(conv.lastUpdated).toLocaleDateString()} • {conv.messages.length} messages
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={(e) => openDeleteModal(conv, e)}
+                                  className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
+                                  aria-label="Delete conversation"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {groupedConversations.last30.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">30 Days</p>
+                        <div className="space-y-2">
+                          {groupedConversations.last30.map((conv) => (
+                            <div
+                              key={conv.id}
+                              onClick={() => loadConversation(conv)}
+                              className={`group p-3 rounded-lg border cursor-pointer transition ${
+                                currentConversationId === conv.id
+                                  ? "border-zinc-900 bg-zinc-50"
+                                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                                  <p className="text-xs text-zinc-500 mt-1">
+                                    {new Date(conv.lastUpdated).toLocaleDateString()} • {conv.messages.length} messages
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={(e) => openDeleteModal(conv, e)}
+                                  className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
+                                  aria-label="Delete conversation"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -1412,37 +1560,148 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           <div className="border-b border-zinc-200 p-4">
             <h2 className="text-lg font-semibold text-zinc-900">Chat History</h2>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {conversationHistory.length === 0 ? (
               <p className="text-sm text-zinc-500 text-center py-8">No conversation history yet</p>
             ) : (
-              conversationHistory.map((conv) => (
-                <div
-                  key={conv.id}
-                  onClick={() => loadConversation(conv)}
-                  className={`group p-3 rounded-lg border cursor-pointer transition ${
-                    currentConversationId === conv.id
-                      ? "border-zinc-900 bg-white shadow-sm"
-                      : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
-                      <p className="text-xs text-zinc-500 mt-1">
-                        {new Date(conv.lastUpdated).toLocaleDateString()} • {conv.messages.length} messages
-                      </p>
+              <>
+                {groupedConversations.today.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Today</p>
+                    <div className="space-y-2">
+                      {groupedConversations.today.map((conv) => (
+                        <div
+                          key={conv.id}
+                          onClick={() => loadConversation(conv)}
+                          className={`group p-3 rounded-lg border cursor-pointer transition ${
+                            currentConversationId === conv.id
+                              ? "border-zinc-900 bg-white shadow-sm"
+                              : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                              <p className="text-xs text-zinc-500 mt-1">
+                                {new Date(conv.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {conv.messages.length} messages
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => openDeleteModal(conv, e)}
+                              className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
+                              aria-label="Delete conversation"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <button
-                      onClick={(e) => openDeleteModal(conv, e)}
-                      className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
-                      aria-label="Delete conversation"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
                   </div>
-                </div>
-              ))
+                )}
+                {groupedConversations.yesterday.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Yesterday</p>
+                    <div className="space-y-2">
+                      {groupedConversations.yesterday.map((conv) => (
+                        <div
+                          key={conv.id}
+                          onClick={() => loadConversation(conv)}
+                          className={`group p-3 rounded-lg border cursor-pointer transition ${
+                            currentConversationId === conv.id
+                              ? "border-zinc-900 bg-white shadow-sm"
+                              : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                              <p className="text-xs text-zinc-500 mt-1">
+                                {new Date(conv.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {conv.messages.length} messages
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => openDeleteModal(conv, e)}
+                              className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
+                              aria-label="Delete conversation"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {groupedConversations.last7.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">7 Days</p>
+                    <div className="space-y-2">
+                      {groupedConversations.last7.map((conv) => (
+                        <div
+                          key={conv.id}
+                          onClick={() => loadConversation(conv)}
+                          className={`group p-3 rounded-lg border cursor-pointer transition ${
+                            currentConversationId === conv.id
+                              ? "border-zinc-900 bg-white shadow-sm"
+                              : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                              <p className="text-xs text-zinc-500 mt-1">
+                                {new Date(conv.lastUpdated).toLocaleDateString()} • {conv.messages.length} messages
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => openDeleteModal(conv, e)}
+                              className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
+                              aria-label="Delete conversation"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {groupedConversations.last30.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">30 Days</p>
+                    <div className="space-y-2">
+                      {groupedConversations.last30.map((conv) => (
+                        <div
+                          key={conv.id}
+                          onClick={() => loadConversation(conv)}
+                          className={`group p-3 rounded-lg border cursor-pointer transition ${
+                            currentConversationId === conv.id
+                              ? "border-zinc-900 bg-white shadow-sm"
+                              : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-medium text-zinc-900 truncate">{conv.title}</h3>
+                              <p className="text-xs text-zinc-500 mt-1">
+                                {new Date(conv.lastUpdated).toLocaleDateString()} • {conv.messages.length} messages
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => openDeleteModal(conv, e)}
+                              className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition"
+                              aria-label="Delete conversation"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1512,22 +1771,22 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
             <div className="flex-1">
               <div className="flex items-start gap-2">
                 {toast.type === 'success' && (
-                  <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="h-5 w-5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 )}
                 {toast.type === 'error' && (
-                  <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="h-5 w-5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                 )}
                 {toast.type === 'warning' && (
-                  <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="h-5 w-5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                 )}
                 {toast.type === 'info' && (
-                  <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="h-5 w-5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                   </svg>
                 )}
