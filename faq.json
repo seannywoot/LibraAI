@@ -1,6 +1,6 @@
 {
   "General Overview": {
-    "What is LibraAI?": "LibraAI is an AI-powered Smart Library Assistant that helps users search, recommend, and manage books through intelligent chat-based interaction. It’s designed to make research faster, smarter, and more personalized.",
+    "What is LibraAI?": "LibraAI is an AI-powered Smart Library Assistant that helps users search, recommend, and manage books through intelligent chat-based interaction. It's designed to make research faster, smarter, and more personalized.",
     "Why was LibraAI created?": "It was developed to address common library challenges — such as time-consuming manual searches, lack of personalization, and limited accessibility — by using modern AI technology to improve how students and librarians interact with library systems.",
     "Who can access LibraAI?": "Anyone! LibraAI is available to students, librarians, and faculty members within a specific institution. You just need to create your library and share it with others. Guest access may be added in future updates.",
     "Is LibraAI available on mobile devices?": "Yes! LibraAI is fully responsive — it works on laptops, tablets, and smartphones without needing any installation.",
@@ -39,16 +39,16 @@
     "Can LibraAI detect plagiarism?": "In later updates, LibraAI will include a plagiarism detection module using API integration to help students ensure originality in reports or theses."
   },
   "Troubleshooting & Support": {
-    "The chatbot isn’t responding — what should I do?": "Check your internet connection and refresh the page. If the issue continues, contact support at support@libraai.edu.ph.",
-    "My uploaded file didn’t process. Why?": "Ensure your file is in PDF, DOCX, or TXT format and under the 50MB limit. Cloudinary might reject larger uploads.",
-    "The dashboard isn’t loading properly.": "Clear your browser cache or try using Google Chrome or Edge. The system is optimized for modern browsers.",
+    "The chatbot isn't responding — what should I do?": "Check your internet connection and refresh the page. If the issue continues, contact support at support@libraai.edu.ph.",
+    "My uploaded file didn't process. Why?": "Ensure your file is in PDF, DOCX, or TXT format and under the file size limit. The system might reject files that are too large or in unsupported formats.",
+    "The dashboard isn't loading properly.": "Clear your browser cache or try using Google Chrome or Edge. The system is optimized for modern browsers.",
     "Who do I contact for technical issues?": "You can email the development team or librarian support through the 'Email Us' button inside the system.",
     "Can LibraAI recommend books by academic course?": "Yes! Future updates will allow course-based filtering.",
     "Will AI voice assistant be added?": "Voice search and read-aloud features are planned for accessibility in future versions."
   },
   "Library Hours & Facilities": {
-    "What are the library’s operating hours?": "The library is open from 8:00 AM to 6:00 PM, Monday through Friday. Weekend hours may vary depending on academic schedules or special events.",
-    "Is the library open during holidays?": "No. The library is closed on official holidays and campus breaks. However, LibraAI’s online catalog and chatbot remain available 24/7.",
+    "What are the library's operating hours?": "The library is open from 8:00 AM to 6:00 PM, Monday through Friday. Weekend hours may vary depending on academic schedules or special events.",
+    "Is the library open during holidays?": "No. The library is closed on official holidays and campus breaks. However, LibraAI's online catalog and chatbot remain available 24/7.",
     "Can I access the library facilities without a library card?": "Yes, you may enter the library to browse. However, a valid library card or student ID is required to borrow books.",
     "What facilities are available in the library?": [
       "Quiet study areas and reading zones",
@@ -58,7 +58,7 @@
   },
   "Borrowing & Returns": {
     "How many books can I borrow at once?": "Students can borrow up to 5 books at a time for 7 days. Faculty members may borrow up to 10 books for 14 days.",
-    "What happens if I return a book late?": "Late returns are subject to a fine of ₱5.00 per day per item. You won’t be able to borrow new books until fines are cleared.",
+    "What happens if I return a book late?": "Late returns are subject to a fine of ₱5.00 per day per item. You won't be able to borrow new books until fines are cleared.",
     "How do I renew borrowed books?": "Go to 'My Borrowed Books' in LibraAI and click 'Renew' next to the title. Renewals are allowed once, provided there are no holds from other users.",
     "What if the book I borrowed is damaged or lost?": "Report it immediately to the librarian. You may be asked to replace the book or pay the current market value plus processing fees.",
     "Can I borrow reference or reserved books?": "Reference and reserved materials are for in-library use only, but some may be borrowed for short-term use with librarian approval."

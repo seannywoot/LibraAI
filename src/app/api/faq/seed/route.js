@@ -137,7 +137,7 @@ export async function POST() {
       },
       {
         question: "My uploaded file didn't process. Why?",
-        answer: "Ensure your file is in PDF, DOCX, or TXT format and under the 50MB limit. Cloudinary might reject larger uploads.",
+        answer: "Ensure your file is in PDF, DOCX, or TXT format and under the file size limit. The system might reject files that are too large or in unsupported formats.",
         category: "support",
         keywords: ["upload", "file", "error", "format", "size"],
       },
