@@ -25,6 +25,7 @@ export {
   Paperclip,
   Camera,
   Upload,
+  Download,
   X,
   ScanLine as Scan,
   Clock,

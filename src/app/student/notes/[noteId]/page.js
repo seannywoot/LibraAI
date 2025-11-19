@@ -6,7 +6,9 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import NotionEditor from "@/components/notion-editor";
-import { ArrowLeft, Trash2 } from "@/components/icons";
+import { ArrowLeft, Trash2, Download } from "@/components/icons";
+import { generateNotePDF } from "@/utils/pdfExport";
+import PDFPreviewModal from "@/components/pdf-preview-modal";
 
 export default function NoteEditorPage() {
   const router = useRouter();
@@ -17,6 +19,7 @@ export default function NoteEditorPage() {
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [pdfPreview, setPdfPreview] = useState({ isOpen: false, blob: null, fileName: "" });
   const saveTimeoutRef = useRef(null);
   const isLoadingRef = useRef(false);
   const savingRef = useRef(false);
@@ -138,6 +141,16 @@ export default function NoteEditorPage() {
     }
   }
 
+  async function handleExportPDF() {
+    try {
+      const { blob, fileName } = await generateNotePDF({ ...note, title, content });
+      setPdfPreview({ isOpen: true, blob, fileName });
+    } catch (error) {
+      console.error("Failed to generate PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
@@ -181,6 +194,13 @@ export default function NoteEditorPage() {
               </span>
             )}
             <button
+              onClick={handleExportPDF}
+              className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              title="Export to PDF"
+            >
+              <Download className="h-5 w-5" />
+            </button>
+            <button
               onClick={deleteNote}
               className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
               title="Delete note"
@@ -205,6 +225,13 @@ export default function NoteEditorPage() {
           />
         </div>
       </main>
+
+      <PDFPreviewModal
+        isOpen={pdfPreview.isOpen}
+        onClose={() => setPdfPreview({ isOpen: false, blob: null, fileName: "" })}
+        pdfBlob={pdfPreview.blob}
+        fileName={pdfPreview.fileName}
+      />
     </div>
   );
 }

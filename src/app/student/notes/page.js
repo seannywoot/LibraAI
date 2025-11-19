@@ -6,13 +6,16 @@ import { useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
-import { Plus, FileText, Search, Trash2, Edit } from "@/components/icons";
+import { Plus, FileText, Search, Trash2, Edit, Download } from "@/components/icons";
+import { generateAllNotesPDF } from "@/utils/pdfExport";
+import PDFPreviewModal from "@/components/pdf-preview-modal";
 
 export default function NotesPage() {
   const router = useRouter();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [pdfPreview, setPdfPreview] = useState({ isOpen: false, blob: null, fileName: "" });
   const navigationLinks = getStudentLinks();
 
   useEffect(() => {
@@ -92,6 +95,16 @@ export default function NotesPage() {
     return text.substring(0, 150) + (text.length > 150 ? "..." : "");
   }
 
+  async function handleExportAll() {
+    try {
+      const { blob, fileName } = await generateAllNotesPDF(notes);
+      setPdfPreview({ isOpen: true, blob, fileName });
+    } catch (error) {
+      console.error("Failed to generate PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
       <DashboardSidebar
@@ -110,13 +123,25 @@ export default function NotesPage() {
               </p>
               <h1 className="text-4xl font-bold text-gray-900 mt-1">My Notes</h1>
             </div>
-            <button
-              onClick={createNewNote}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              New Note
-            </button>
+            <div className="flex items-center gap-3">
+              {notes.length > 0 && (
+                <button
+                  onClick={handleExportAll}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  title="Export all notes to PDF"
+                >
+                  <Download className="h-4 w-4" />
+                  Export All
+                </button>
+              )}
+              <button
+                onClick={createNewNote}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                New Note
+              </button>
+            </div>
           </div>
 
           <div className="relative">
@@ -192,6 +217,13 @@ export default function NotesPage() {
           </div>
         )}
       </main>
+
+      <PDFPreviewModal
+        isOpen={pdfPreview.isOpen}
+        onClose={() => setPdfPreview({ isOpen: false, blob: null, fileName: "" })}
+        pdfBlob={pdfPreview.blob}
+        fileName={pdfPreview.fileName}
+      />
     </div>
   );
 }
