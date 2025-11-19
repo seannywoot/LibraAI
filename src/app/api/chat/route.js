@@ -585,12 +585,16 @@ WORKFLOW GUIDELINES:
    - Mention page count, language, and format when helpful
 
 4. BORROWING WORKFLOW:
-   When a student wants to borrow a book:
-   a. Identify the specific book from previous search results
-   b. Call generateBorrowLink with the book's ID
-   c. ALWAYS provide a text response using the formattedMessage
-   d. The link /student/books/[id] will become clickable
-   e. Never leave response empty after calling generateBorrowLink
+  When a student wants to borrow or access a specific book:
+  a. Identify the exact book from previous search results or details.
+  b. Call generateBorrowLink with the book's ID (do NOT just say you will call it).
+  c. AFTER calling generateBorrowLink, you MUST send a final message that:
+    - Clearly states whether the book can be borrowed or only viewed.
+    - Includes the clickable link /student/books/[id] in the message.
+    - Uses the formattedMessage from generateBorrowLink as the backbone of your reply.
+  d. Never stop after saying things like "Let me generate the borrowing link".
+    Always follow through and return the final answer with the actual link.
+  e. Never leave the response empty or incomplete after calling generateBorrowLink.
 
 Book Status Meanings:
 - "available" = On shelf, ready to borrow
@@ -785,11 +789,23 @@ RESPONSE STYLE:
         console.log(`⏳ Qwen queue has ${queueLength} pending requests, waiting...`);
       }
       
+      // Prepare functions array in the OpenAI schema if possible
+      const functionsForBytez = (Array.isArray(tools) ? tools.flatMap(t => t.functionDeclarations || []) : []);
+      console.log(`Prepared ${functionsForBytez.length} function declarations for Bytez`);
       const { error, output } = await qwenQueue.add(async () => {
-        return await bytezModel.run(openaiMessages, {
-          temperature: 0.7,
-          // Note: max_tokens not supported by this model on Bytez
-        });
+        try {
+          console.log("Calling bytezModel.run with functions/tools to test function-calling support");
+          return await bytezModel.run(openaiMessages, {
+            temperature: 0.7,
+            // Pass the flattened functions declarations (OpenAI-style)
+            functions: functionsForBytez,
+            function_call: "auto",
+          });
+        } catch (e) {
+          console.warn("bytezModel.run rejected functions param, falling back to previous call:", e?.message || e);
+          // Fallback to original call without functions param
+          return await bytezModel.run(openaiMessages, { temperature: 0.7 });
+        }
       });
       
       if (error) {
@@ -903,17 +919,30 @@ RESPONSE STYLE:
           ];
 
           const { error: fuErr, output: fuOutput } = await qwenQueue.add(async () => {
-            return await bytezModel.run(followUpMessages, { temperature: 0.7 });
+            try {
+              console.log("Calling bytezModel.run for follow-up with functions/tools to test function-calling support");
+              return await bytezModel.run(followUpMessages, { temperature: 0.7, functions: functionsForBytez, function_call: "auto" });
+            } catch (e) {
+              console.warn("bytezModel.run (follow-up) rejected functions param, falling back:", e?.message || e);
+              return await bytezModel.run(followUpMessages, { temperature: 0.7 });
+            }
           });
           if (fuErr) throw new Error(fuErr);
           finalText = typeof fuOutput === "string" ? fuOutput : (fuOutput?.content || fuOutput);
 
-          // Fallback to borrow message if empty
-          if ((!finalText || finalText.trim().length === 0) && borrowLinkResult) {
-            if (borrowLinkResult.formattedMessage) {
-              finalText = borrowLinkResult.formattedMessage;
-            } else if (borrowLinkResult.error) {
-              finalText = `I encountered an error: ${borrowLinkResult.error}`;
+          // Fallback / correction for borrow link responses:
+          // If generateBorrowLink was called but the model failed to surface a
+          // clickable /student/books/[id] link, replace the text with the
+          // deterministic formattedMessage so the frontend always has a
+          // complete borrow/access answer.
+          if (borrowLinkResult) {
+            const hasBorrowPath = typeof finalText === "string" && /\/student\/books\/[a-zA-Z0-9]+/.test(finalText);
+            if (!hasBorrowPath) {
+              if (borrowLinkResult.formattedMessage) {
+                finalText = borrowLinkResult.formattedMessage;
+              } else if (borrowLinkResult.error) {
+                finalText = `I encountered an error: ${borrowLinkResult.error}`;
+              }
             }
           }
         } else {

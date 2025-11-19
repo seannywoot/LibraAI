@@ -7,7 +7,7 @@ import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import NotionEditor from "@/components/notion-editor";
 import { ArrowLeft, Trash2, Download } from "@/components/icons";
-import { generateNotePDF } from "@/utils/pdfExport";
+import { generateNotePDF, generateNotePDFFromElement } from "@/utils/pdfExport";
 import PDFPreviewModal from "@/components/pdf-preview-modal";
 
 export default function NoteEditorPage() {
@@ -20,6 +20,7 @@ export default function NoteEditorPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [pdfPreview, setPdfPreview] = useState({ isOpen: false, blob: null, fileName: "" });
+  const editorWrapRef = useRef(null);
   const saveTimeoutRef = useRef(null);
   const isLoadingRef = useRef(false);
   const savingRef = useRef(false);
@@ -143,7 +144,19 @@ export default function NoteEditorPage() {
 
   async function handleExportPDF() {
     try {
-      const { blob, fileName } = await generateNotePDF({ ...note, title, content });
+      // Prefer WYSIWYG export from the rendered editor content when available
+      const editorEl = editorWrapRef.current?.querySelector('[contenteditable]');
+      let blob, fileName;
+      if (editorEl) {
+        const result = await generateNotePDFFromElement(editorEl, { title, updatedAt: note?.updatedAt });
+        blob = result.blob;
+        fileName = result.fileName;
+      } else {
+        // Fallback to text-based export
+        const result = await generateNotePDF({ ...note, title, content });
+        blob = result.blob;
+        fileName = result.fileName;
+      }
       setPdfPreview({ isOpen: true, blob, fileName });
     } catch (error) {
       console.error("Failed to generate PDF:", error);
@@ -210,7 +223,7 @@ export default function NoteEditorPage() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4" ref={editorWrapRef}>
           <input
             type="text"
             value={title}

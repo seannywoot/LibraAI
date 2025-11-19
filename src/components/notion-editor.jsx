@@ -96,22 +96,25 @@ export default function NotionEditor({ content, onChange }) {
     if (!selection.rangeCount) return;
     const range = selection.getRangeAt(0);
     
+    // Get selected text
+    const selectedText = range.toString();
+    
     let element;
     switch (type) {
       case "h1":
         element = document.createElement("h1");
         element.className = "text-3xl font-bold text-gray-900 mb-4";
-        element.textContent = "Heading 1";
+        element.textContent = selectedText || "Heading 1";
         break;
       case "h2":
         element = document.createElement("h2");
         element.className = "text-2xl font-bold text-gray-900 mb-3";
-        element.textContent = "Heading 2";
+        element.textContent = selectedText || "Heading 2";
         break;
       case "h3":
         element = document.createElement("h3");
         element.className = "text-xl font-bold text-gray-900 mb-2";
-        element.textContent = "Heading 3";
+        element.textContent = selectedText || "Heading 3";
         break;
       case "ul":
         execCommand("insertUnorderedList");
@@ -122,13 +125,13 @@ export default function NotionEditor({ content, onChange }) {
       case "quote":
         element = document.createElement("blockquote");
         element.className = "border-l-4 border-gray-300 pl-4 py-2 my-4 text-gray-700 italic";
-        element.textContent = "Quote";
+        element.textContent = selectedText || "Quote";
         break;
       case "code":
         element = document.createElement("pre");
         element.className = "bg-gray-100 rounded-lg p-4 my-4 overflow-x-auto";
         const code = document.createElement("code");
-        code.textContent = "// Code block";
+        code.textContent = selectedText || "// Code block";
         element.appendChild(code);
         break;
       default:
@@ -137,6 +140,8 @@ export default function NotionEditor({ content, onChange }) {
 
     range.deleteContents();
     range.insertNode(element);
+    
+    // Place cursor at the end of the inserted element
     range.setStartAfter(element);
     range.collapse(true);
     selection.removeAllRanges();
