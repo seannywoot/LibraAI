@@ -8,13 +8,13 @@ import { MessageCircle, Send, Paperclip, History, X, Trash2 } from "@/components
 // Helper function to render message content with markdown formatting and clickable links
 const renderMessageContent = (content) => {
   if (!content) return null;
-  
+
   const lines = content.split('\n');
   const elements = [];
   let inCodeBlock = false;
   let codeBlockContent = [];
   let codeBlockLang = '';
-  
+
   lines.forEach((line, lineIndex) => {
     // Check for code block markers
     if (line.trim().startsWith('```')) {
@@ -38,27 +38,27 @@ const renderMessageContent = (content) => {
       }
       return;
     }
-    
+
     if (inCodeBlock) {
       codeBlockContent.push(line);
       return;
     }
-    
+
     // Process inline markdown
     let processedLine = line;
     const segments = [];
     let lastIndex = 0;
-    
+
     // Combined regex for bold, italic, inline code, and links
     const markdownRegex = /(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|(`([^`]+)`)|(\[([^\]]+)\]\(([^)]+)\))|(https?:\/\/[^\s]+)|(\/student\/books\/[a-zA-Z0-9]+)/g;
-    
+
     let match;
     while ((match = markdownRegex.exec(processedLine)) !== null) {
       // Add text before match
       if (match.index > lastIndex) {
         segments.push(processedLine.substring(lastIndex, match.index));
       }
-      
+
       if (match[1]) {
         // Bold **text**
         segments.push(<strong key={`bold-${lineIndex}-${match.index}`} className="font-semibold">{match[2]}</strong>);
@@ -100,15 +100,15 @@ const renderMessageContent = (content) => {
           </a>
         );
       }
-      
+
       lastIndex = match.index + match[0].length;
     }
-    
+
     // Add remaining text
     if (lastIndex < processedLine.length) {
       segments.push(processedLine.substring(lastIndex));
     }
-    
+
     // Handle list items
     if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
       elements.push(
@@ -139,7 +139,7 @@ const renderMessageContent = (content) => {
       );
     }
   });
-  
+
   return elements;
 };
 
@@ -201,13 +201,13 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     const id = Date.now();
     const toast = { id, message, type };
     setToasts(prev => [...prev, toast]);
-    
+
     if (duration > 0) {
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== id));
       }, duration);
     }
-    
+
     return id;
   }, []);
 
@@ -225,7 +225,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     try {
       setIsSyncing(true);
       setSyncError(null);
-      
+
       const response = await fetch('/api/chat/conversations', {
         method: 'GET',
         headers: {
@@ -243,10 +243,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       }
 
       const data = await response.json();
-      
+
       if (data.success && data.conversations) {
         // Sort conversations by lastUpdated (most recent first)
-        const sortedConversations = data.conversations.sort((a, b) => 
+        const sortedConversations = data.conversations.sort((a, b) =>
           new Date(b.lastUpdated) - new Date(a.lastUpdated)
         );
         setConversationHistory(sortedConversations);
@@ -263,7 +263,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         try {
           const conversations = JSON.parse(saved);
           // Sort conversations by lastUpdated (most recent first)
-          const sortedConversations = conversations.sort((a, b) => 
+          const sortedConversations = conversations.sort((a, b) =>
             new Date(b.lastUpdated) - new Date(a.lastUpdated)
           );
           setConversationHistory(sortedConversations);
@@ -305,7 +305,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Update localStorage cache after successful save
         const updated = [conversationData, ...conversationHistory.filter(c => c.id !== conversationData.id)].slice(0, 20);
@@ -315,10 +315,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       console.error('Error saving conversation to DB:', error);
       setSyncError('Failed to sync conversation to server');
       showToast('Failed to sync conversation. Saved locally and will retry.', 'error', 5000);
-      
+
       // Add to retry queue
       addToRetryQueue('save', conversationData);
-      
+
       // Still save to localStorage as fallback
       const updated = [conversationData, ...conversationHistory.filter(c => c.id !== conversationData.id)].slice(0, 20);
       localStorage.setItem('chatHistory', JSON.stringify(updated));
@@ -362,7 +362,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       console.error('Error deleting conversation from DB:', error);
       setSyncError('Failed to delete conversation from server');
       showToast('Failed to delete from server. Will retry.', 'error', 5000);
-      
+
       // Add to retry queue
       addToRetryQueue('delete', conversationId);
       throw error;
@@ -377,10 +377,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
 
     const item = retryQueue[0];
     const timeSinceFailure = Date.now() - item.timestamp;
-    
+
     // Exponential backoff: wait 5s, 15s, 45s before retries
     const retryDelay = Math.min(5000 * Math.pow(3, item.retryCount || 0), 45000);
-    
+
     if (timeSinceFailure < retryDelay) return;
 
     try {
@@ -396,7 +396,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     } catch (error) {
       // Increment retry count
       const updatedItem = { ...item, retryCount: (item.retryCount || 0) + 1 };
-      
+
       // Remove if max retries (3) reached
       if (updatedItem.retryCount >= 3) {
         setRetryQueue(prev => prev.filter(i => i !== item));
@@ -427,7 +427,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
   const migrateLocalStorageConversations = useCallback(async () => {
     const migrationKey = 'chatMigrationComplete';
     const migrationComplete = localStorage.getItem(migrationKey);
-    
+
     if (migrationComplete === 'true') {
       setHasMigrated(true);
       return;
@@ -449,7 +449,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       }
 
       console.log(`Migrating ${conversations.length} conversations to database...`);
-      
+
       // Show migration progress notification
       const migrationToastId = showToast(
         `Migrating ${conversations.length} conversations to database...`,
@@ -496,10 +496,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       }
 
       console.log(`Migration complete: ${successCount} succeeded, ${failCount} failed`);
-      
+
       // Dismiss progress toast
       dismissToast(migrationToastId);
-      
+
       // Show completion message
       if (successCount > 0 && failCount === 0) {
         showToast(
@@ -537,7 +537,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     const initializeConversations = async () => {
       // Load from database first
       await loadConversationsFromDB();
-      
+
       // Load current conversation from localStorage
       const currentChat = localStorage.getItem("currentChat");
       if (currentChat) {
@@ -552,15 +552,15 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           console.error("Failed to load current chat:", e);
         }
       }
-      
+
       // Trigger migration if localStorage conversations exist
       if (!hasMigrated) {
         await migrateLocalStorageConversations();
       }
     };
-    
+
     initializeConversations();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save current conversation to localStorage whenever it changes
@@ -591,10 +591,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       const conversationId = currentConversationId || Date.now();
       const fallback = heuristicTitle(messages);
       const title = autoTitle || fallback;
-      
+
       // Find existing conversation to preserve its original lastUpdated if just loading
       const existingConv = conversationHistory.find(c => c.id === conversationId);
-      
+
       const conversationData = {
         id: conversationId,
         title,
@@ -611,7 +611,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         const filtered = prev.filter(c => c.id !== conversationData.id);
         const updated = [conversationData, ...filtered].slice(0, 20);
         // Sort by lastUpdated (most recent first)
-        return updated.sort((a, b) => 
+        return updated.sort((a, b) =>
           new Date(b.lastUpdated) - new Date(a.lastUpdated)
         );
       });
@@ -633,42 +633,42 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
 
   // Title generation & drift detection
   useEffect(() => {
-    const userMessages = messages.filter(m=>m.role==='user');
+    const userMessages = messages.filter(m => m.role === 'user');
     if (userMessages.length === 0) return;
 
     const shouldGenerateInitial = !autoTitle && userMessages.length >= 2 && messages.length >= 4;
-    const lastMessage = messages[messages.length-1];
+    const lastMessage = messages[messages.length - 1];
     const lastIsUser = lastMessage?.role === 'user';
     const drift = autoTitle && lastIsUser && shouldRegenerateTitle(messages, autoTitle);
-    
+
     if ((!shouldGenerateInitial && !drift) || generatingTitleRef.current) return;
 
     (async () => {
       try {
         generatingTitleRef.current = true;
         const payload = buildTitleRequestPayload(messages);
-        
-        console.log('Generating title...', { 
-          shouldGenerateInitial, 
-          drift, 
+
+        console.log('Generating title...', {
+          shouldGenerateInitial,
+          drift,
           currentTitle: autoTitle,
-          messageCount: messages.length 
+          messageCount: messages.length
         });
-        
+
         const res = await fetch('/api/chat/title', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: payload })
         });
-        
+
         if (!res.ok) {
           const errorText = await res.text();
           console.warn('Title API error:', res.status, errorText);
           throw new Error(`Title request failed: ${res.status}`);
         }
-        
+
         const data = await res.json();
-        
+
         // Check if we should use fallback (rate limited or no title)
         if (data.rateLimited || data.useFallback || !data.title || data.title === 'Conversation') {
           if (data.rateLimited) {
@@ -690,7 +690,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         generatingTitleRef.current = false;
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
   const loadConversation = (conversation) => {
@@ -764,7 +764,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       clearInterval(typingIntervalRef.current);
       typingIntervalRef.current = null;
     }
-    
+
     // Add a message showing the response was stopped
     const partialContent = typingMessage || "...";
     const stoppedMessage = {
@@ -774,7 +774,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       stopped: true,
     };
     setMessages(prev => [...prev, stoppedMessage]);
-    
+
     setIsTyping(false);
     setTypingMessage("");
     setIsLoading(false);
@@ -786,10 +786,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     setTypingMessage("");
     setIsLoading(false); // Turn off loading when typing starts
     let index = 0;
-    
+
     const typingSpeed = 1; // milliseconds per batch (reduced from 3ms)
     const charsPerBatch = 3; // Type 3 characters at once for faster display
-    
+
     typingIntervalRef.current = setInterval(() => {
       if (index < fullMessage.length) {
         // Type multiple characters at once for smoother, faster animation
@@ -817,14 +817,14 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       try {
         // Call API to delete from database
         await deleteConversationFromDB(conversationToDelete.id);
-        
+
         // Only update UI state after successful API response
         setConversationHistory(prev => {
           const updated = prev.filter(c => c.id !== conversationToDelete.id);
           localStorage.setItem("chatHistory", JSON.stringify(updated));
           return updated;
         });
-        
+
         if (currentConversationId === conversationToDelete.id) {
           startNewConversation();
         }
@@ -832,14 +832,14 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         // Show error notification but still allow local deletion
         console.error('Failed to delete from database:', error);
         setSyncError('Failed to delete from server, removed locally');
-        
+
         // Still remove from local state
         setConversationHistory(prev => {
           const updated = prev.filter(c => c.id !== conversationToDelete.id);
           localStorage.setItem("chatHistory", JSON.stringify(updated));
           return updated;
         });
-        
+
         if (currentConversationId === conversationToDelete.id) {
           startNewConversation();
         }
@@ -872,7 +872,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     }
 
     setAttachedFile(file);
-    
+
     // Create preview for images
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -905,23 +905,23 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
   // Helper function to check if query is repetitive
   const isRepetitiveQuery = (newQuery) => {
     const normalizedNew = newQuery.toLowerCase().trim();
-    
+
     // Check last 3 queries
     const recentMatches = recentQueries.slice(-3).filter(q => {
       const normalizedOld = q.query.toLowerCase().trim();
-      
+
       // Exact match
       if (normalizedNew === normalizedOld) return true;
-      
+
       // High similarity (>80% of words match)
       const newWords = normalizedNew.split(/\s+/);
       const oldWords = normalizedOld.split(/\s+/);
       const matchingWords = newWords.filter(w => oldWords.includes(w));
       const similarity = matchingWords.length / Math.max(newWords.length, oldWords.length);
-      
+
       return similarity > 0.8;
     });
-    
+
     return recentMatches.length > 0 ? recentMatches[0] : null;
   };
 
@@ -947,21 +947,21 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     const fileName = attachedFile?.name;
     const fileType = attachedFile?.type;
     const currentFilePreview = filePreview;
-    
+
     // Check for repetitive queries (only for text queries, not file uploads)
     let isRepetitive = false;
     let attemptNumber = 1;
-    
+
     if (userMessage !== "Uploaded a file") {
       const repetitiveMatch = isRepetitiveQuery(userMessage);
-      
+
       if (repetitiveMatch) {
         isRepetitive = true;
         attemptNumber = (repetitiveMatch.attempts || 1) + 1;
-        
+
         const timeSinceLastQuery = Date.now() - repetitiveMatch.timestamp;
         const secondsAgo = Math.floor(timeSinceLastQuery / 1000);
-        
+
         // Log as unanswered query (user not satisfied with previous response)
         logUnansweredQuery({
           query: userMessage,
@@ -970,7 +970,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           timeSinceLastAttempt: secondsAgo,
           previousResponseIndex: messages.length - 1
         });
-        
+
         // Show info toast (not blocking, just informative)
         showToast(
           `I'll try to give you a better answer this time.`,
@@ -978,7 +978,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           3000
         );
       }
-      
+
       // Track this query with attempt count
       setRecentQueries(prev => {
         const filtered = prev.filter(q => {
@@ -986,20 +986,20 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           const normalizedNew = userMessage.toLowerCase().trim();
           return normalizedOld !== normalizedNew;
         });
-        
-        return [...filtered.slice(-4), { 
-          query: userMessage, 
+
+        return [...filtered.slice(-4), {
+          query: userMessage,
           timestamp: Date.now(),
           attempts: attemptNumber
         }];
       });
     }
-    
+
     // Save last user message for up arrow recall
     if (userMessage && userMessage !== "Uploaded a file") {
       setLastUserMessage(userMessage);
     }
-    
+
     setInput("");
     const fileToUpload = attachedFile;
     setAttachedFile(null);
@@ -1007,7 +1007,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    
+
     // Add user message
     const newUserMessage = {
       role: "user",
@@ -1020,7 +1020,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     };
     setMessages(prev => [...prev, newUserMessage]);
     setIsLoading(true);
-    
+
     // Scroll to show user message and loading indicator
     setTimeout(scrollToBottom, 100);
 
@@ -1035,12 +1035,12 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         formData.append('file', fileToUpload);
         formData.append('history', JSON.stringify(messages.slice(1)));
         formData.append('conversationId', currentConversationId || '');
-        
+
         // Include PDF context if available
         if (pdfContext) {
           formData.append('pdfContext', JSON.stringify(pdfContext));
         }
-        
+
         requestBody = formData;
       } else {
         // Send as JSON if no file
@@ -1062,7 +1062,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
 
       const data = await response.json();
       console.log("AI Response:", data);
-      
+
       // Log which model was used
       if (data.model) {
         console.log(`🤖 Model Used: ${data.model}`);
@@ -1074,7 +1074,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           console.log('📄 PDF processed:', data.pdfMetadata.name, `(${data.pdfMetadata.pageCount} pages)`);
           setPdfContext(data.pdfMetadata);
         }
-        
+
         // Use typing animation for AI response
         typeMessage(data.message, () => {
           const aiMessage = {
@@ -1163,7 +1163,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         {/* History Sidebar Overlay (only when not using persistent sidebar) */}
         {!showHistorySidebar && showHistory && (
           <>
-            <div 
+            <div
               className="fixed inset-0 bg-black/20 z-40"
               onClick={() => setShowHistory(false)}
             />
@@ -1192,11 +1192,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                             <div
                               key={conv.id}
                               onClick={() => loadConversation(conv)}
-                              className={`group p-3 rounded-lg border cursor-pointer transition ${
-                                currentConversationId === conv.id
+                              className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
                                   ? "border-zinc-900 bg-zinc-50"
                                   : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-                              }`}
+                                }`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
@@ -1226,11 +1225,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                             <div
                               key={conv.id}
                               onClick={() => loadConversation(conv)}
-                              className={`group p-3 rounded-lg border cursor-pointer transition ${
-                                currentConversationId === conv.id
+                              className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
                                   ? "border-zinc-900 bg-zinc-50"
                                   : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-                              }`}
+                                }`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
@@ -1254,17 +1252,16 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                     )}
                     {groupedConversations.last7.length > 0 && (
                       <div>
-                        <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">7 Days</p>
+                        <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Last 7 Days</p>
                         <div className="space-y-2">
                           {groupedConversations.last7.map((conv) => (
                             <div
                               key={conv.id}
                               onClick={() => loadConversation(conv)}
-                              className={`group p-3 rounded-lg border cursor-pointer transition ${
-                                currentConversationId === conv.id
+                              className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
                                   ? "border-zinc-900 bg-zinc-50"
                                   : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-                              }`}
+                                }`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
@@ -1294,11 +1291,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                             <div
                               key={conv.id}
                               onClick={() => loadConversation(conv)}
-                              className={`group p-3 rounded-lg border cursor-pointer transition ${
-                                currentConversationId === conv.id
+                              className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
                                   ? "border-zinc-900 bg-zinc-50"
                                   : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-                              }`}
+                                }`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
@@ -1327,231 +1323,223 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           </>
         )}
 
-      {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
-            {msg.role === "assistant" && (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
-                <MessageCircle className="h-4 w-4" />
-              </div>
-            )}
-            <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-              msg.role === "user" 
-                ? "bg-zinc-900 text-white" 
-                : msg.stopped
-                ? "bg-amber-50 border border-amber-200 text-zinc-800"
-                : "bg-zinc-100 text-zinc-800"
-            }`}>
-              {msg.hasFile && (
-                <div className="mb-2">
-                  {msg.filePreview && msg.filePreview !== 'pdf' && msg.fileType?.startsWith('image/') ? (
-                    <div className="mb-2">
-                      <img 
-                        src={msg.filePreview} 
-                        alt={msg.fileName}
-                        className="max-w-full h-auto rounded-lg border border-zinc-300 max-h-64 object-contain"
-                      />
-                      <div className={`mt-1 flex items-center gap-2 text-xs ${
-                        msg.role === "user" ? "text-zinc-300" : "text-zinc-600"
-                      }`}>
+        {/* Messages Container */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
+              {msg.role === "assistant" && (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
+                  <MessageCircle className="h-4 w-4" />
+                </div>
+              )}
+              <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.role === "user"
+                  ? "bg-zinc-900 text-white"
+                  : msg.stopped
+                    ? "bg-amber-50 border border-amber-200 text-zinc-800"
+                    : "bg-zinc-100 text-zinc-800"
+                }`}>
+                {msg.hasFile && (
+                  <div className="mb-2">
+                    {msg.filePreview && msg.filePreview !== 'pdf' && msg.fileType?.startsWith('image/') ? (
+                      <div className="mb-2">
+                        <img
+                          src={msg.filePreview}
+                          alt={msg.fileName}
+                          className="max-w-full h-auto rounded-lg border border-zinc-300 max-h-64 object-contain"
+                        />
+                        <div className={`mt-1 flex items-center gap-2 text-xs ${msg.role === "user" ? "text-zinc-300" : "text-zinc-600"
+                          }`}>
+                          <Paperclip className="h-3 w-3" />
+                          <span>{msg.fileName}</span>
+                        </div>
+                      </div>
+                    ) : msg.fileType === 'application/pdf' ? (
+                      <div className={`flex items-center gap-2 p-2 rounded-lg ${msg.role === "user" ? "bg-zinc-800" : "bg-white border border-zinc-200"
+                        }`}>
+                        <div className={`h-10 w-10 rounded flex items-center justify-center ${msg.role === "user" ? "bg-zinc-700" : "bg-red-100"
+                          }`}>
+                          <svg className={`h-6 w-6 ${msg.role === "user" ? "text-red-400" : "text-red-600"}`} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-medium truncate ${msg.role === "user" ? "text-zinc-200" : "text-zinc-900"
+                            }`}>
+                            {msg.fileName}
+                          </div>
+                          <div className={`text-xs ${msg.role === "user" ? "text-zinc-400" : "text-zinc-500"
+                            }`}>
+                            PDF Document
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`flex items-center gap-2 text-xs ${msg.role === "user" ? "text-zinc-300" : "text-zinc-600"
+                        }`}>
                         <Paperclip className="h-3 w-3" />
                         <span>{msg.fileName}</span>
                       </div>
-                    </div>
-                  ) : msg.fileType === 'application/pdf' ? (
-                    <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                      msg.role === "user" ? "bg-zinc-800" : "bg-white border border-zinc-200"
-                    }`}>
-                      <div className={`h-10 w-10 rounded flex items-center justify-center ${
-                        msg.role === "user" ? "bg-zinc-700" : "bg-red-100"
-                      }`}>
-                        <svg className={`h-6 w-6 ${msg.role === "user" ? "text-red-400" : "text-red-600"}`} fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className={`text-xs font-medium truncate ${
-                          msg.role === "user" ? "text-zinc-200" : "text-zinc-900"
-                        }`}>
-                          {msg.fileName}
-                        </div>
-                        <div className={`text-xs ${
-                          msg.role === "user" ? "text-zinc-400" : "text-zinc-500"
-                        }`}>
-                          PDF Document
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`flex items-center gap-2 text-xs ${
-                      msg.role === "user" ? "text-zinc-300" : "text-zinc-600"
-                    }`}>
-                      <Paperclip className="h-3 w-3" />
-                      <span>{msg.fileName}</span>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                )}
+                <div className="text-sm whitespace-pre-wrap">
+                  {renderMessageContent(msg.content)}
+                </div>
+                {msg.stopped && (
+                  <div className="mt-2 pt-2 border-t border-amber-300">
+                    <p className="text-xs text-amber-700 italic flex items-center gap-1">
+                      <X className="h-3 w-3" />
+                      Response stopped by user
+                    </p>
+                  </div>
+                )}
+                <span className={`mt-1 block text-xs ${msg.role === "user" ? "text-zinc-400" : msg.stopped ? "text-amber-600" : "text-zinc-500"
+                  }`}>
+                  {msg.timestamp}
+                </span>
+              </div>
+              {msg.role === "user" && (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-700">
+                  <span className="text-xs font-semibold">{userName?.[0] || "U"}</span>
                 </div>
               )}
-              <div className="text-sm whitespace-pre-wrap">
-                {renderMessageContent(msg.content)}
+            </div>
+          ))}
+          {isTyping && (
+            <div className="flex gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
+                <MessageCircle className="h-4 w-4" />
               </div>
-              {msg.stopped && (
-                <div className="mt-2 pt-2 border-t border-amber-300">
-                  <p className="text-xs text-amber-700 italic flex items-center gap-1">
-                    <X className="h-3 w-3" />
-                    Response stopped by user
-                  </p>
+              <div className="max-w-[70%] rounded-2xl bg-zinc-100 px-4 py-3">
+                <div className="flex items-start">
+                  <div className="text-sm whitespace-pre-wrap inline">
+                    {renderMessageContent(typingMessage)}
+                  </div>
+                  <span className="inline-block w-0.5 h-4 bg-zinc-800 animate-pulse ml-0.5 mt-0.5"></span>
                 </div>
-              )}
-              <span className={`mt-1 block text-xs ${
-                msg.role === "user" ? "text-zinc-400" : msg.stopped ? "text-amber-600" : "text-zinc-500"
-              }`}>
-                {msg.timestamp}
-              </span>
-            </div>
-            {msg.role === "user" && (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-700">
-                <span className="text-xs font-semibold">{userName?.[0] || "U"}</span>
-              </div>
-            )}
-          </div>
-        ))}
-        {isTyping && (
-          <div className="flex gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
-              <MessageCircle className="h-4 w-4" />
-            </div>
-            <div className="max-w-[70%] rounded-2xl bg-zinc-100 px-4 py-3">
-              <div className="flex items-start">
-                <div className="text-sm whitespace-pre-wrap inline">
-                  {renderMessageContent(typingMessage)}
-                </div>
-                <span className="inline-block w-0.5 h-4 bg-zinc-800 animate-pulse ml-0.5 mt-0.5"></span>
               </div>
             </div>
-          </div>
-        )}
-        {isLoading && !isTyping && (
-          <div className="flex gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
-              <MessageCircle className="h-4 w-4" />
-            </div>
-            <div className="max-w-[70%] rounded-2xl bg-zinc-100 px-4 py-3">
-              <div className="flex gap-1">
-                <div className="h-2 w-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                <div className="h-2 w-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                <div className="h-2 w-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Area */}
-      <div className="border-t border-zinc-200 p-6">
-        {attachedFile && (
-          <div className="mb-3 flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-            {filePreview && filePreview !== 'pdf' && attachedFile.type.startsWith('image/') && (
-              <img 
-                src={filePreview} 
-                alt="Preview"
-                className="h-16 w-16 rounded object-cover border border-zinc-300"
-              />
-            )}
-            {filePreview === 'pdf' && (
-              <div className="h-16 w-16 rounded bg-red-100 border border-red-300 flex items-center justify-center">
-                <svg className="h-8 w-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                </svg>
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-zinc-900 truncate">
-                {attachedFile.name}
-              </p>
-              <p className="text-xs text-zinc-500">
-                {(attachedFile.size / 1024).toFixed(1)} KB
-                {attachedFile.type === 'application/pdf' && ' • PDF Document'}
-              </p>
-              {attachedFile.type === 'application/pdf' && (
-                <p className="text-xs text-blue-600 mt-1">
-                  💡 Try: "Summarize this", "Create bullet points&quot;, or ask questions
-                </p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={removeAttachment}
-              className="text-zinc-400 hover:text-red-600 transition"
-              aria-label="Remove attachment"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="flex items-end gap-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,image/*,application/pdf"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading || isTyping}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Attach file"
-          >
-            <Paperclip className="h-5 w-5" />
-          </button>
-          <div className="flex-1 flex items-center">
-            <textarea
-              ref={textareaRef}
-              placeholder={
-                attachedFile?.type === 'application/pdf' 
-                  ? "Ask me to summarize, create bullet points, or answer questions..." 
-                  : attachedFile 
-                  ? "Add a message (optional)..." 
-                  : "Type your message or upload a PDF..."
-              }
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              rows={1}
-              disabled={isLoading || isTyping}
-              className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 disabled:opacity-50 min-h-10 max-h-[120px]"
-              style={{ height: 'auto' }}
-              onInput={(e) => {
-                e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-              }}
-            />
-          </div>
-          {(isLoading || isTyping) ? (
-            <button
-              type="button"
-              onClick={stopTyping}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white transition hover:bg-red-700"
-              aria-label="Stop generating"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={(!input.trim() && !attachedFile)}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white transition hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Send message"
-            >
-              <Send className="h-5 w-5" />
-            </button>
           )}
-        </form>
-      </div>
+          {isLoading && !isTyping && (
+            <div className="flex gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
+                <MessageCircle className="h-4 w-4" />
+              </div>
+              <div className="max-w-[70%] rounded-2xl bg-zinc-100 px-4 py-3">
+                <div className="flex gap-1">
+                  <div className="h-2 w-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                  <div className="h-2 w-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                  <div className="h-2 w-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Area */}
+        <div className="border-t border-zinc-200 p-6">
+          {attachedFile && (
+            <div className="mb-3 flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+              {filePreview && filePreview !== 'pdf' && attachedFile.type.startsWith('image/') && (
+                <img
+                  src={filePreview}
+                  alt="Preview"
+                  className="h-16 w-16 rounded object-cover border border-zinc-300"
+                />
+              )}
+              {filePreview === 'pdf' && (
+                <div className="h-16 w-16 rounded bg-red-100 border border-red-300 flex items-center justify-center">
+                  <svg className="h-8 w-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-zinc-900 truncate">
+                  {attachedFile.name}
+                </p>
+                <p className="text-xs text-zinc-500">
+                  {(attachedFile.size / 1024).toFixed(1)} KB
+                  {attachedFile.type === 'application/pdf' && ' • PDF Document'}
+                </p>
+                {attachedFile.type === 'application/pdf' && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    💡 Try: "Summarize this", "Create bullet points&quot;, or ask questions
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={removeAttachment}
+                className="text-zinc-400 hover:text-red-600 transition"
+                aria-label="Remove attachment"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="flex items-end gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,image/*,application/pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || isTyping}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Attach file"
+            >
+              <Paperclip className="h-5 w-5" />
+            </button>
+            <div className="flex-1 flex items-center">
+              <textarea
+                ref={textareaRef}
+                placeholder={
+                  attachedFile?.type === 'application/pdf'
+                    ? "Ask me to summarize, create bullet points, or answer questions..."
+                    : attachedFile
+                      ? "Add a message (optional)..."
+                      : "Type your message or upload a PDF..."
+                }
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                rows={1}
+                disabled={isLoading || isTyping}
+                className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 disabled:opacity-50 min-h-10 max-h-[120px]"
+                style={{ height: 'auto' }}
+                onInput={(e) => {
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                }}
+              />
+            </div>
+            {(isLoading || isTyping) ? (
+              <button
+                type="button"
+                onClick={stopTyping}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white transition hover:bg-red-700"
+                aria-label="Stop generating"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={(!input.trim() && !attachedFile)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white transition hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Send message"
+              >
+                <Send className="h-5 w-5" />
+              </button>
+            )}
+          </form>
+        </div>
       </div>
 
       {/* Persistent History Sidebar */}
@@ -1573,11 +1561,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                         <div
                           key={conv.id}
                           onClick={() => loadConversation(conv)}
-                          className={`group p-3 rounded-lg border cursor-pointer transition ${
-                            currentConversationId === conv.id
+                          className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
                               ? "border-zinc-900 bg-white shadow-sm"
                               : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
@@ -1607,11 +1594,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                         <div
                           key={conv.id}
                           onClick={() => loadConversation(conv)}
-                          className={`group p-3 rounded-lg border cursor-pointer transition ${
-                            currentConversationId === conv.id
+                          className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
                               ? "border-zinc-900 bg-white shadow-sm"
                               : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
@@ -1635,17 +1621,16 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                 )}
                 {groupedConversations.last7.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">7 Days</p>
+                    <p className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Last 7 Days</p>
                     <div className="space-y-2">
                       {groupedConversations.last7.map((conv) => (
                         <div
                           key={conv.id}
                           onClick={() => loadConversation(conv)}
-                          className={`group p-3 rounded-lg border cursor-pointer transition ${
-                            currentConversationId === conv.id
+                          className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
                               ? "border-zinc-900 bg-white shadow-sm"
                               : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
@@ -1675,11 +1660,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                         <div
                           key={conv.id}
                           onClick={() => loadConversation(conv)}
-                          className={`group p-3 rounded-lg border cursor-pointer transition ${
-                            currentConversationId === conv.id
+                          className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
                               ? "border-zinc-900 bg-white shadow-sm"
                               : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
@@ -1710,11 +1694,11 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
         <>
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
             onClick={cancelDelete}
           >
-            <div 
+            <div
               className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
               onClick={(e) => e.stopPropagation()}
             >
@@ -1758,15 +1742,14 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-start gap-3 p-4 rounded-xl shadow-lg border animate-slide-in ${
-              toast.type === 'success'
+            className={`flex items-start gap-3 p-4 rounded-xl shadow-lg border animate-slide-in ${toast.type === 'success'
                 ? 'bg-green-50 border-green-200 text-green-800'
                 : toast.type === 'error'
-                ? 'bg-red-50 border-red-200 text-red-800'
-                : toast.type === 'warning'
-                ? 'bg-amber-50 border-amber-200 text-amber-800'
-                : 'bg-blue-50 border-blue-200 text-blue-800'
-            }`}
+                  ? 'bg-red-50 border-red-200 text-red-800'
+                  : toast.type === 'warning'
+                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-blue-50 border-blue-200 text-blue-800'
+              }`}
           >
             <div className="flex-1">
               <div className="flex items-start gap-2">
