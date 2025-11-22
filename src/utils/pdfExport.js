@@ -89,19 +89,30 @@ function parseContent(html) {
 
     switch (tag) {
       case 'h1':
-        blocks.push({ type: 'h1', segments: parseInlineFormatting(node) });
+        const h1Segments = parseInlineFormatting(node);
+        blocks.push({ type: 'h1', segments: h1Segments });
         break;
       case 'h2':
-        blocks.push({ type: 'h2', segments: parseInlineFormatting(node) });
+        const h2Segments = parseInlineFormatting(node);
+        blocks.push({ type: 'h2', segments: h2Segments });
         break;
       case 'h3':
-        blocks.push({ type: 'h3', segments: parseInlineFormatting(node) });
+        const h3Segments = parseInlineFormatting(node);
+        blocks.push({ type: 'h3', segments: h3Segments });
         break;
       case 'p':
       case 'div':  // Handle div tags like paragraphs
         const pSegments = parseInlineFormatting(node);
         if (pSegments.length > 0 && pSegments.some(s => s.text.trim())) {
-          blocks.push({ type: 'p', segments: pSegments });
+          // Check if this paragraph/div contains a heading that should be parsed
+          const hasHeading = node.querySelector('h1, h2, h3');
+          const hasCode = node.querySelector('pre, code');
+          if (hasHeading || hasCode) {
+            // Process children separately to catch nested headings/code
+            Array.from(node.childNodes).forEach(child => processNode(child));
+          } else {
+            blocks.push({ type: 'p', segments: pSegments });
+          }
         }
         break;
       case 'blockquote':
@@ -111,12 +122,37 @@ function parseContent(html) {
         }
         break;
       case 'pre':
+        // Pre tags should contain code - preserve all whitespace and newlines
+        // Clone the node to avoid modifying the original DOM
+        const preClone = node.cloneNode(true);
+        // Replace all <br> tags with actual newlines
+        const brTags = preClone.querySelectorAll('br');
+        brTags.forEach(br => {
+          br.replaceWith(document.createTextNode('\n'));
+        });
+        const preText = preClone.textContent;
+        if (preText) {
+          // Debug: show what we're getting including newlines
+          console.log('CODE BLOCK RAW:', JSON.stringify(preText));
+          console.log('CODE BLOCK LENGTH:', preText.length);
+          console.log('CODE BLOCK LINES:', preText.split('\n').length);
+          // Don't trim! Preserve exact formatting
+          blocks.push({ type: 'code', segments: [{ text: sanitizeText(preText), bold: false, italic: false, underline: false }] });
+        }
+        break;
       case 'code':
-        const codeText = node.textContent?.trim();
-        if (codeText && !node.closest('pre')) {
-          blocks.push({ type: 'code', segments: [{ text: sanitizeText(codeText), bold: false, italic: false, underline: false }] });
-        } else if (codeText && tag === 'pre') {
-          blocks.push({ type: 'code', segments: [{ text: sanitizeText(codeText), bold: false, italic: false, underline: false }] });
+        // Only parse standalone code tags, not those inside pre
+        if (!node.closest('pre')) {
+          // Clone and replace br tags with newlines
+          const codeClone = node.cloneNode(true);
+          const brTags = codeClone.querySelectorAll('br');
+          brTags.forEach(br => {
+            br.replaceWith(document.createTextNode('\n'));
+          });
+          const codeText = codeClone.textContent;
+          if (codeText) {
+            blocks.push({ type: 'code', segments: [{ text: sanitizeText(codeText), bold: false, italic: false, underline: false }] });
+          }
         }
         break;
       case 'ul':
@@ -259,25 +295,32 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
       case 'h1':
         checkPageBreak(15);
         doc.setFontSize(20);
+        doc.setFont("helvetica", "bold");
         doc.setTextColor(17, 17, 17);
-        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 10);
-        y += 15;
+        // Render headings with bold font by default
+        const h1Segments = block.segments.map(s => ({ ...s, bold: true }));
+        y = renderStyledText(doc, h1Segments, margin, y, maxWidth, 8);
+        y += 8;
         break;
 
       case 'h2':
         checkPageBreak(12);
         doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
         doc.setTextColor(17, 17, 17);
-        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 8);
-        y += 12;
+        const h2Segments = block.segments.map(s => ({ ...s, bold: true }));
+        y = renderStyledText(doc, h2Segments, margin, y, maxWidth, 7);
+        y += 6;
         break;
 
       case 'h3':
         checkPageBreak(10);
         doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
         doc.setTextColor(17, 17, 17);
-        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 7);
-        y += 10;
+        const h3Segments = block.segments.map(s => ({ ...s, bold: true }));
+        y = renderStyledText(doc, h3Segments, margin, y, maxWidth, 6);
+        y += 5;
         break;
 
       case 'p':
@@ -285,50 +328,61 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         checkPageBreak(7);
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
-        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 7);
-        y += 10;
+        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 6);
+        y += 6;
         break;
 
       case 'quote':
         checkPageBreak(10);
         doc.setFontSize(11);
-        doc.setTextColor(85, 85, 85);
-        doc.setDrawColor(200, 200, 200);
+        doc.setTextColor(55, 65, 81); // Darker gray for better readability
+        doc.setDrawColor(209, 213, 219); // Light gray border
         doc.setLineWidth(2);
         const quoteStartY = y;
-        y = renderStyledText(doc, block.segments, margin + 15, y, maxWidth - 15, 7);
-        doc.line(margin + 5, quoteStartY - 3, margin + 5, y + 3);
-        y += 10;
+        // Make quote text italic by default
+        const quoteSegments = block.segments.map(s => ({ ...s, italic: true }));
+        y = renderStyledText(doc, quoteSegments, margin + 10, y, maxWidth - 10, 6);
+        // Draw left border for blockquote (thicker and more visible)
+        doc.line(margin + 3, quoteStartY - 1, margin + 3, y + 1);
+        y += 6;
         break;
 
       case 'code':
         checkPageBreak(10);
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setTextColor(0, 0, 0);
-        doc.setFillColor(245, 245, 245);
+        // Light gray background like in the editor
+        doc.setFillColor(243, 244, 246);
 
         // Combine all segments into plain text for code blocks
         const codeText = block.segments.map(s => s.text).join('');
-        const codeLines = doc.splitTextToSize(codeText, maxWidth - 10);
-        const codeHeight = codeLines.length * 6 + 6;
+        // Use courier font for measuring
+        doc.setFont("courier", "normal");
+
+        // Split on actual newlines to preserve formatting
+        const codeLines = codeText.split('\n');
+        const codeHeight = codeLines.length * 5 + 8;
         checkPageBreak(codeHeight);
 
-        doc.rect(margin, y - 3, maxWidth, codeHeight, "F");
-        doc.setFont("courier", "normal");
-        codeLines.forEach(line => {
-          doc.text(line, margin + 5, y + 3);
-          y += 6;
+        // Draw background rectangle with padding
+        doc.rect(margin, y - 2, maxWidth, codeHeight, "F");
+
+        // Draw each line exactly as it appears, preserving indentation
+        codeLines.forEach((line, idx) => {
+          // Don't trim - preserve exact spacing and indentation
+          doc.text(line, margin + 4, y + 3 + (idx * 5));
         });
-        y += 6;
+        y += codeHeight + 2;
         break;
 
       case 'bullet':
         checkPageBreak(7);
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
-        doc.circle(margin + 2, y - 1.5, 1, "F");
-        y = renderStyledText(doc, block.segments, margin + 8, y, maxWidth - 10, 7);
-        y += 7;
+        // Draw bullet with proper indentation (smaller bullet size)
+        doc.circle(margin + 5, y - 1.5, 0.75, "F");
+        y = renderStyledText(doc, block.segments, margin + 12, y, maxWidth - 12, 6);
+        y += 5;
         break;
 
       case 'numbered':
@@ -336,9 +390,10 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
-        doc.text(`${block.number}.`, margin + 2, y);
-        y = renderStyledText(doc, block.segments, margin + 12, y, maxWidth - 12, 7);
-        y += 7;
+        // Draw number with proper indentation
+        doc.text(`${block.number}.`, margin + 5, y);
+        y = renderStyledText(doc, block.segments, margin + 15, y, maxWidth - 15, 6);
+        y += 5;
         break;
 
       case 'break':
@@ -379,7 +434,7 @@ export async function generateNotePDF(note) {
       doc.text(line, margin, y);
       y += 12;
     });
-    y += 5;
+    y += 2;
 
     // Date
     doc.setFontSize(10);
@@ -393,7 +448,7 @@ export async function generateNotePDF(note) {
       minute: "2-digit",
     })}`;
     doc.text(dateStr, margin, y);
-    y += 10;
+    y += 6;
 
     // Separator
     doc.setDrawColor(221, 221, 221);

@@ -95,10 +95,10 @@ export default function NotionEditor({ content, onChange }) {
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
     const range = selection.getRangeAt(0);
-    
+
     // Get selected text
     const selectedText = range.toString();
-    
+
     let element;
     switch (type) {
       case "h1":
@@ -140,13 +140,13 @@ export default function NotionEditor({ content, onChange }) {
 
     range.deleteContents();
     range.insertNode(element);
-    
+
     // Place cursor at the end of the inserted element
     range.setStartAfter(element);
     range.collapse(true);
     selection.removeAllRanges();
     selection.addRange(range);
-    
+
     handleInput();
   }
 
@@ -297,6 +297,16 @@ export default function NotionEditor({ content, onChange }) {
         [contenteditable] ol {
           margin-left: 1.5rem;
           margin-bottom: 1rem;
+        }
+        
+        [contenteditable] ul {
+          list-style-type: disc;
+          padding-left: 1.5rem;
+        }
+        
+        [contenteditable] ol {
+          list-style-type: decimal;
+          padding-left: 1.5rem;
         }
         
         [contenteditable] li {
