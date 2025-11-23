@@ -97,14 +97,13 @@ export async function POST(request) {
         try {
             const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
 
-            // Disable worker for serverless environment - parse synchronously
-            // Workers require separate files that don't bundle correctly in Vercel
+            // Use CDN for worker file - local paths don't work in serverless
+            if (pdfjs.GlobalWorkerOptions) {
+                pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+            }
+
             const pdfBytes = new Uint8Array(buffer);
-            const loadingTask = pdfjs.getDocument({
-                data: pdfBytes,
-                isEvalSupported: false,
-                useWorkerFetch: false
-            });
+            const loadingTask = pdfjs.getDocument({ data: pdfBytes });
             const doc = await loadingTask.promise;
 
             const numPages = doc.numPages || 1;
