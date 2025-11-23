@@ -83,8 +83,8 @@ export const authOptions = {
 
         // We'll resolve a user object here and only return after verifying any expected role
         let resolvedUser = null;
-  let dbUserExists = false;
-  let dbLookupFailed = false;
+        let dbUserExists = false;
+        let dbLookupFailed = false;
 
         // 1) Try database-backed users first
         try {
@@ -141,23 +141,23 @@ export const authOptions = {
 
         if (!resolvedUser) {
           console.log('[AUTH] No user resolved, recording failed attempt');
-          
+
           // Track failed login for spike detection
           trackFailedLogin({
             email,
             ipAddress: credentials?.ipAddress || 'unknown',
             timestamp: Date.now(),
           });
-          
+
           const accountExists = dbUserExists || attemptedDemoAccount;
           const failureReason = dbLookupFailed ? 'unknown' : (accountExists ? 'invalid-credentials' : 'account-not-found');
-          
+
           // Record failed attempt
           const attemptResult = recordFailedAttempt(email, { reasonCode: failureReason });
-          
+
           if (attemptResult.locked) {
             const minutes = Math.ceil(attemptResult.remainingTime / 60);
-            
+
             // Send lockout notification to admins (async, don't wait)
             notifyAccountLockout({
               lockedEmail: email,
@@ -166,17 +166,17 @@ export const authOptions = {
               lockWindowMinutes: minutes,
               reason: failureReason,
             }).catch(err => console.error('[AUTH] Failed to send lockout notification:', err));
-            
+
             throw new Error(
               `AccountLocked:${minutes}:${failureReason}:Too many failed login attempts. Account locked for ${minutes} minute${minutes !== 1 ? 's' : ''}.`
             );
           }
-          
+
           // Add progressive delay if configured
           if (attemptResult.delay > 0) {
             await new Promise(resolve => setTimeout(resolve, attemptResult.delay));
           }
-          
+
           const remaining = attemptResult.remainingAttempts;
           throw new Error(
             `InvalidCredentials:${remaining}:${failureReason}:Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`
@@ -199,7 +199,7 @@ export const authOptions = {
         if (resolvedUser.role === 'admin') {
           const userAgent = credentials?.userAgent || 'Unknown';
           const ipAddress = credentials?.ipAddress || 'unknown';
-          
+
           // Check if new device (async, don't block login)
           isNewAdminDevice({
             email,
@@ -230,7 +230,7 @@ export const authOptions = {
   },
   cookies: {
     sessionToken: {
-      name: process.env.NODE_ENV === 'production' 
+      name: process.env.NODE_ENV === 'production'
         ? '__Secure-next-auth.session-token'
         : 'next-auth.session-token',
       options: {
@@ -247,8 +247,9 @@ export const authOptions = {
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // On sign-in, copy role and name from user and set issued time
+      // On sign-in, copy id, role and name from user and set issued time
       if (user) {
+        token.id = user.id; // Add user ID to token
         token.role = user.role;
         if (user.name) token.name = user.name;
         if (user.theme === "dark" || user.theme === "light") {
@@ -280,6 +281,7 @@ export const authOptions = {
       }
 
       const nextSession = { ...session, user: { ...(session.user || {}) } };
+      nextSession.user.id = token.id; // Add user ID to session
       nextSession.user.role = token.role;
       if (token.name) nextSession.user.name = token.name;
       if (token.theme === "dark" || token.theme === "light") {

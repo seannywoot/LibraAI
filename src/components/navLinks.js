@@ -1,4 +1,4 @@
-import { Home, Book, BookOpen, Plus, Users, Library as LibraryIcon, User, Settings, History, MessageCircle, Scan, FileText } from "@/components/icons";
+import { Home, Book, BookOpen, Plus, Users, Library as LibraryIcon, User, Settings, History, MessageCircle, Scan, FileText, Brain } from "@/components/icons";
 import { HelpCircle } from "lucide-react";
 
 // Centralized navigation link builders for consistent sidebars
@@ -11,6 +11,7 @@ export function getStudentLinks() {
     { key: "student-library", label: "My Library", href: "/student/library", exact: true, icon: <BookOpen className="h-4 w-4" /> },
     { key: "student-shelves", label: "Shelves", href: "/student/shelves", exact: true, icon: <LibraryIcon className="h-4 w-4" /> },
     { key: "student-authors", label: "Authors", href: "/student/authors", exact: true, icon: <Users className="h-4 w-4" /> },
+    { key: "student-quizzes", label: "Quizzes", href: "/student/quizzes", exact: true, icon: <Brain className="h-4 w-4" /> },
     { key: "student-notes", label: "Notes", href: "/student/notes", exact: true, icon: <FileText className="h-4 w-4" /> },
     { key: "student-chat", label: "Chat", href: "/student/chat", exact: true, icon: <MessageCircle className="h-4 w-4" /> },
     { key: "student-faq", label: "FAQ", href: "/student/faq", exact: true, icon: <HelpCircle className="h-4 w-4" /> },

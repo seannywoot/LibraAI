@@ -18,6 +18,7 @@ export {
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
+  ArrowRight,
   History,
   Archive,
   MessageCircle,
@@ -44,6 +45,9 @@ export {
   Heading3,
   Bookmark,
   Heart,
+  Brain,
+  CheckCircle,
+  Loader2,
 } from "lucide-react";
 
 // Optional wrapper for consistent sizing in nav/buttons
