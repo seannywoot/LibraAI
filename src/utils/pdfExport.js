@@ -280,6 +280,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
   const pageHeight = doc.internal.pageSize.getHeight();
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = startY;
+  let previousBlockType = null;
 
   const checkPageBreak = (requiredSpace = 10) => {
     if (y + requiredSpace > pageHeight - margin) {
@@ -290,7 +291,16 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
     return false;
   };
 
-  blocks.forEach(block => {
+  blocks.forEach((block, index) => {
+    // Check if we're transitioning from a list item to a non-list block
+    const isListBlock = block.type === 'bullet' || block.type === 'numbered';
+    const wasListBlock = previousBlockType === 'bullet' || previousBlockType === 'numbered';
+
+    // Add extra spacing after a list ends (when transitioning from list to non-list)
+    if (wasListBlock && !isListBlock && previousBlockType !== null) {
+      y += 8; // Add extra spacing to simulate list margin-bottom
+    }
+
     switch (block.type) {
       case 'h1':
         checkPageBreak(15);
@@ -300,7 +310,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         // Render headings with bold font by default
         const h1Segments = block.segments.map(s => ({ ...s, bold: true }));
         y = renderStyledText(doc, h1Segments, margin, y, maxWidth, 8);
-        y += 8;
+        y += 10; // Increased from 8 to match 1rem spacing
         break;
 
       case 'h2':
@@ -310,7 +320,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         doc.setTextColor(17, 17, 17);
         const h2Segments = block.segments.map(s => ({ ...s, bold: true }));
         y = renderStyledText(doc, h2Segments, margin, y, maxWidth, 7);
-        y += 6;
+        y += 8; // Increased from 6 to match 0.75rem spacing
         break;
 
       case 'h3':
@@ -320,7 +330,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         doc.setTextColor(17, 17, 17);
         const h3Segments = block.segments.map(s => ({ ...s, bold: true }));
         y = renderStyledText(doc, h3Segments, margin, y, maxWidth, 6);
-        y += 5;
+        y += 6; // Increased from 5 to match 0.5rem spacing
         break;
 
       case 'p':
@@ -329,7 +339,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
         y = renderStyledText(doc, block.segments, margin, y, maxWidth, 6);
-        y += 6;
+        y += 10; // Increased from 6 to match 1rem spacing
         break;
 
       case 'quote':
@@ -344,15 +354,14 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         y = renderStyledText(doc, quoteSegments, margin + 10, y, maxWidth - 10, 6);
         // Draw left border for blockquote (thicker and more visible)
         doc.line(margin + 3, quoteStartY - 1, margin + 3, y + 1);
-        y += 6;
+        y += 10; // Increased from 6 to match 1rem spacing
+        // Reset text color for subsequent blocks
+        doc.setTextColor(0, 0, 0);
         break;
 
       case 'code':
         checkPageBreak(10);
         doc.setFontSize(9);
-        doc.setTextColor(0, 0, 0);
-        // Light gray background like in the editor
-        doc.setFillColor(243, 244, 246);
 
         // Combine all segments into plain text for code blocks
         const codeText = block.segments.map(s => s.text).join('');
@@ -364,15 +373,22 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         const codeHeight = codeLines.length * 5 + 8;
         checkPageBreak(codeHeight);
 
+        // Set colors for the code block background
+        doc.setFillColor(243, 244, 246); // Light gray background
+        doc.setDrawColor(243, 244, 246); // Same color for border (no visible border)
+
         // Draw background rectangle with padding
         doc.rect(margin, y - 2, maxWidth, codeHeight, "F");
+
+        // Set text color to black for the code text
+        doc.setTextColor(0, 0, 0);
 
         // Draw each line exactly as it appears, preserving indentation
         codeLines.forEach((line, idx) => {
           // Don't trim - preserve exact spacing and indentation
           doc.text(line, margin + 4, y + 3 + (idx * 5));
         });
-        y += codeHeight + 2;
+        y += codeHeight + 10; // Increased from +2 to match 1rem spacing
         break;
 
       case 'bullet':
@@ -382,7 +398,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         // Draw bullet with proper indentation (smaller bullet size)
         doc.circle(margin + 5, y - 1.5, 0.75, "F");
         y = renderStyledText(doc, block.segments, margin + 12, y, maxWidth - 12, 6);
-        y += 5;
+        y += 4; // Spacing between list items
         break;
 
       case 'numbered':
@@ -393,13 +409,15 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         // Draw number with proper indentation
         doc.text(`${block.number}.`, margin + 5, y);
         y = renderStyledText(doc, block.segments, margin + 15, y, maxWidth - 15, 6);
-        y += 5;
+        y += 4; // Spacing between list items
         break;
 
       case 'break':
         y += 5;
         break;
     }
+
+    previousBlockType = block.type;
   });
 
   return y;

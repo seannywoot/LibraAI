@@ -7,7 +7,7 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { Plus, FileText, Search, Trash2, Edit, Download } from "@/components/icons";
-import { generateAllNotesPDF } from "@/utils/pdfExport";
+import { generateNotePDF } from "@/utils/pdfExport";
 import PDFPreviewModal from "@/components/pdf-preview-modal";
 
 export default function NotesPage() {
@@ -16,6 +16,8 @@ export default function NotesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [pdfPreview, setPdfPreview] = useState({ isOpen: false, blob: null, fileName: "" });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState(null);
   const navigationLinks = getStudentLinks();
 
   useEffect(() => {
@@ -56,22 +58,33 @@ export default function NotesPage() {
     }
   }
 
-  async function deleteNote(noteId, e) {
+  function openDeleteModal(note, e) {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (!confirm("Are you sure you want to delete this note?")) return;
+    setNoteToDelete(note);
+    setDeleteModalOpen(true);
+  }
 
-    try {
-      const res = await fetch(`/api/student/notes/${noteId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setNotes(notes.filter((n) => n._id !== noteId));
+  function cancelDelete() {
+    setDeleteModalOpen(false);
+    setNoteToDelete(null);
+  }
+
+  async function confirmDelete() {
+    if (noteToDelete) {
+      try {
+        const res = await fetch(`/api/student/notes/${noteToDelete._id}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          setNotes(notes.filter((n) => n._id !== noteToDelete._id));
+        }
+      } catch (e) {
+        console.error("Failed to delete note:", e);
       }
-    } catch (e) {
-      console.error("Failed to delete note:", e);
     }
+    setDeleteModalOpen(false);
+    setNoteToDelete(null);
   }
 
   const filteredNotes = notes.filter(
@@ -91,18 +104,20 @@ export default function NotesPage() {
   }
 
   function getPreview(content) {
-    const text = content.replace(/<[^>]*>/g, "").trim();
-    return text.substring(0, 150) + (text.length > 150 ? "..." : "");
-  }
+    if (!content) return "";
 
-  async function handleExportAll() {
-    try {
-      const { blob, fileName } = await generateAllNotesPDF(notes);
-      setPdfPreview({ isOpen: true, blob, fileName });
-    } catch (error) {
-      console.error("Failed to generate PDF:", error);
-      alert("Failed to generate PDF. Please try again.");
-    }
+    // Create a temporary DOM element to properly parse HTML and decode entities
+    const temp = document.createElement("div");
+    temp.innerHTML = content;
+
+    // Get the text content, which automatically decodes HTML entities
+    let text = temp.textContent || temp.innerText || "";
+
+    // Clean up excessive whitespace
+    text = text.replace(/\s+/g, " ").trim();
+
+    // Return truncated preview
+    return text.substring(0, 150) + (text.length > 150 ? "..." : "");
   }
 
   return (
@@ -124,16 +139,6 @@ export default function NotesPage() {
               <h1 className="text-4xl font-bold text-gray-900 mt-1">My Notes</h1>
             </div>
             <div className="flex items-center gap-3">
-              {notes.length > 0 && (
-                <button
-                  onClick={handleExportAll}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  title="Export all notes to PDF"
-                >
-                  <Download className="h-4 w-4" />
-                  Export All
-                </button>
-              )}
               <button
                 onClick={createNewNote}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -194,14 +199,14 @@ export default function NotesPage() {
                     {note.title || "Untitled"}
                   </h3>
                   <button
-                    onClick={(e) => deleteNote(note._id, e)}
+                    onClick={(e) => openDeleteModal(note, e)}
                     className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-opacity"
                     title="Delete note"
                   >
                     <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-600" />
                   </button>
                 </div>
-                
+
                 {note.content && (
                   <p className="text-sm text-gray-600 line-clamp-3 mb-3">
                     {getPreview(note.content)}
@@ -218,12 +223,59 @@ export default function NotesPage() {
         )}
       </main>
 
+
       <PDFPreviewModal
         isOpen={pdfPreview.isOpen}
         onClose={() => setPdfPreview({ isOpen: false, blob: null, fileName: "" })}
         pdfBlob={pdfPreview.blob}
         fileName={pdfPreview.fileName}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+            onClick={cancelDelete}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Delete Note?
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  Are you sure you want to delete this note?
+                </p>
+                {noteToDelete && (
+                  <p className="text-sm font-medium text-gray-900 mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    {noteToDelete.title || "Untitled"}
+                  </p>
+                )}
+                <p className="text-sm text-gray-500 mt-3">
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={cancelDelete}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -8,7 +8,6 @@ import {
   List,
   ListOrdered,
   Code,
-  Quote,
   Heading1,
   Heading2,
   Heading3,
@@ -219,13 +218,7 @@ export default function NotionEditor({ content, onChange }) {
 
         <div className="w-px h-6 bg-gray-300 mx-1" />
 
-        <button
-          onClick={() => insertBlock("quote")}
-          className="p-2 hover:bg-gray-100 rounded transition-colors"
-          title="Quote"
-        >
-          <Quote className="h-4 w-4 text-gray-700" />
-        </button>
+
         <button
           onClick={() => insertBlock("code")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"

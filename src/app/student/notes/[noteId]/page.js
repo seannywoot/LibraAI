@@ -20,6 +20,7 @@ export default function NoteEditorPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [pdfPreview, setPdfPreview] = useState({ isOpen: false, blob: null, fileName: "" });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const editorWrapRef = useRef(null);
   const saveTimeoutRef = useRef(null);
   const isLoadingRef = useRef(false);
@@ -64,7 +65,7 @@ export default function NoteEditorPage() {
       console.error("Cannot save: noteId is missing");
       return;
     }
-    
+
     savingRef.current = true;
     setSaving(true);
     try {
@@ -127,9 +128,15 @@ export default function NoteEditorPage() {
     };
   }, []);
 
-  async function deleteNote() {
-    if (!confirm("Are you sure you want to delete this note?")) return;
+  function openDeleteModal() {
+    setDeleteModalOpen(true);
+  }
 
+  function cancelDelete() {
+    setDeleteModalOpen(false);
+  }
+
+  async function confirmDelete() {
     try {
       const res = await fetch(`/api/student/notes/${noteId}`, {
         method: "DELETE",
@@ -140,6 +147,7 @@ export default function NoteEditorPage() {
     } catch (e) {
       console.error("Failed to delete note:", e);
     }
+    setDeleteModalOpen(false);
   }
 
   async function handleExportPDF() {
@@ -214,7 +222,7 @@ export default function NoteEditorPage() {
               <Download className="h-5 w-5" />
             </button>
             <button
-              onClick={deleteNote}
+              onClick={openDeleteModal}
               className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
               title="Delete note"
             >
@@ -245,6 +253,50 @@ export default function NoteEditorPage() {
         pdfBlob={pdfPreview.blob}
         fileName={pdfPreview.fileName}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+            onClick={cancelDelete}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Delete Note?
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  Are you sure you want to delete this note?
+                </p>
+                <p className="text-sm font-medium text-gray-900 mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                  {title || "Untitled"}
+                </p>
+                <p className="text-sm text-gray-500 mt-3">
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={cancelDelete}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
