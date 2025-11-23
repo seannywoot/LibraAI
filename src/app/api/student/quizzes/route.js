@@ -101,7 +101,7 @@ export async function POST(request) {
                 pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/build/pdf.worker.js";
             }
 
-            const pdfBytes = Uint8Array.from(buffer);
+            const pdfBytes = new Uint8Array(buffer);
             const loadingTask = pdfjs.getDocument({ data: pdfBytes });
             const doc = await loadingTask.promise;
 
