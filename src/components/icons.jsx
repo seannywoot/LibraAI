@@ -27,6 +27,7 @@ export {
   Upload,
   Download,
   X,
+  Menu,
   ScanLine as Scan,
   Clock,
   AlertCircle,

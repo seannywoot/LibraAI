@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-import { User, Settings, LogOut, ChevronRight } from "@/components/icons";
+import { User, Settings, LogOut, ChevronRight, Menu, X } from "@/components/icons";
 import { useUserPreferences } from "@/contexts/UserPreferencesContext";
 
 // Remove horizontal padding so items align with the header's left edge (aside has p-6 already)
@@ -72,6 +72,7 @@ export default function DashboardSidebar({
   const { data: session } = useSession();
   const { name: contextName } = useUserPreferences();
   const [open, setOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // State for mobile/tablet sidebar
   const menuRef = useRef(null);
 
   // Handle navigation with optional interception
@@ -104,120 +105,167 @@ export default function DashboardSidebar({
   // Filter out profile/settings from the main nav to match the new UX
   const filteredLinks = Array.isArray(links)
     ? links.filter((l) => {
-        const label = (l?.label || "").toString().toLowerCase();
-        if (["profile", "settings", "sign out", "signout", "logout"].includes(label)) return false;
-        return true;
-      })
+      const label = (l?.label || "").toString().toLowerCase();
+      if (["profile", "settings", "sign out", "signout", "logout"].includes(label)) return false;
+      return true;
+    })
     : [];
 
   // Remove any border-related tokens from the nav background so the nav box has no stroke
   const navBackground = (theme.navBackground || "").replace(/\bborder[^\s]*\b/g, "").replace(/\s+/g, " ").trim();
 
   return (
-      <aside
-      className={`flex flex-col gap-6 rounded-3xl ${theme.panel} p-6 ${
-        fixed
-          ? "fixed left-4 top-4 h-[calc(100vh-2rem)] w-60 overflow-auto"
-          : fullHeight
-            ? "sticky top-4 self-start h-[calc(100vh-2rem)] overflow-auto"
-            : ""
-      }`}
-      aria-label="Primary navigation"
-    >
-      <header className="space-y-2">
-        <p className={`text-xs font-semibold uppercase tracking-[0.3em] ${theme.headerAccent}`}>
-          {tagline ?? (session?.user?.role === "admin" ? "Admin" : "Student")}
-        </p>
-        <h1 className={`text-2xl font-semibold tracking-tight ${theme.title}`}>LibraAI</h1>
-      </header>
-
-  {/* Remove horizontal padding from the nav container to align with header */}
-  <nav className={`flex flex-col gap-2 rounded-2xl ${navBackground} py-2 px-0`}>
-        {filteredLinks.map((link) => {
-          const rawHref = typeof link.href === "string" ? link.href : link.href?.pathname ?? "/";
-          const normalizedHref = rawHref.split("?")[0].split("#")[0];
-          const matchTarget = link.matchPath ?? normalizedHref;
-          const isActive = link.exact ? pathname === matchTarget : pathname.startsWith(matchTarget);
-          const linkClasses = `${baseLinkStyles} ${isActive ? theme.activeLink : theme.defaultLink}`;
-          const key = link.key ?? (typeof link.href === "string" ? link.href : link.href?.pathname ?? link.label);
-
-          return (
-            <Link 
-              key={key} 
-              href={link.href} 
-              className={linkClasses} 
-              aria-current={isActive ? "page" : undefined}
-              onClick={(e) => handleLinkClick(e, link.href)}
-            >
-              <span className="flex items-center gap-3">
-                {link.icon ? (
-                  <span className="text-(--text)/60 transition-colors group-hover:text-(--text)">
-                    {link.icon}
-                  </span>
-                ) : null}
-                <span>{link.label}</span>
-              </span>
-              {link.badge ? (
-                <span className="ml-auto rounded-md bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                  {link.badge}
-                </span>
-              ) : null}
-            </Link>
-          );
-        })}
+    <>
+      {/* Mobile/Tablet Navbar - Only visible below 1024px */}
+      <nav className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-white border-b border-zinc-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-xl hover:bg-zinc-50 transition-colors"
+            aria-label="Open menu"
+          >
+            <Menu className="h-6 w-6 text-zinc-900" />
+          </button>
+          <h1 className="text-lg font-semibold text-zinc-900">LibraAI</h1>
+          <div className="w-10" /> {/* Spacer for center alignment */}
+        </div>
       </nav>
 
-  {/* Footer description intentionally removed for a cleaner, consistent sidebar */}
+      {/* Backdrop overlay - Only on mobile/tablet when sidebar is open */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
-      {/* Account section at the bottom with dropdown */}
-      <div ref={menuRef} className="mt-auto pt-2 relative">
+      {/* Sidebar */}
+      <aside
+        className={`flex flex-col gap-6 rounded-3xl ${theme.panel} p-6 
+          ${fixed
+            ? `fixed left-4 top-4 h-[calc(100vh-2rem)] w-60 overflow-auto z-50
+                 transition-transform duration-300 ease-in-out
+                 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[280px]'}
+                 lg:translate-x-0`
+            : fullHeight
+              ? "sticky top-4 self-start h-[calc(100vh-2rem)] overflow-auto"
+              : ""
+          }`}
+        aria-label="Primary navigation"
+      >
+        {/* Close button - Only visible on mobile and tablet */}
         <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className={`w-full ${theme.defaultLink} ${baseLinkStyles} rounded-xl`}
-          aria-haspopup="menu"
-          aria-expanded={open ? "true" : "false"}
+          onClick={() => setSidebarOpen(false)}
+          className="lg:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-zinc-100 transition-colors"
+          aria-label="Close menu"
         >
-          <span className="flex items-center gap-3">
-            {/* Simple avatar using initial */}
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-(--bg-2) text-(--text) font-semibold">
-              {displayName.slice(0, 1)}
-            </span>
-            <span className="flex min-w-0 flex-col text-left">
-              <span className="truncate font-medium text-(--text)">{displayName}</span>
-              <span className="truncate text-xs text-(--subtext)">{session?.user?.email || ""}</span>
-            </span>
-          </span>
-          <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
+          <X className="h-5 w-5 text-zinc-600" />
         </button>
 
-        {open ? (
-          <div
-            role="menu"
-            className={`absolute bottom-14 left-0 right-0 z-50 rounded-2xl ${theme.navBackground} p-2 shadow-lg`}
+        <header className="space-y-2">
+          <p className={`text-xs font-semibold uppercase tracking-[0.3em] ${theme.headerAccent}`}>
+            {tagline ?? (session?.user?.role === "admin" ? "Admin" : "Student")}
+          </p>
+          <h1 className={`text-2xl font-semibold tracking-tight ${theme.title}`}>LibraAI</h1>
+        </header>
+
+        {/* Remove horizontal padding from the nav container to align with header */}
+        <nav className={`flex flex-col gap-2 rounded-2xl ${navBackground} py-2 px-0`}>
+          {filteredLinks.map((link) => {
+            const rawHref = typeof link.href === "string" ? link.href : link.href?.pathname ?? "/";
+            const normalizedHref = rawHref.split("?")[0].split("#")[0];
+            const matchTarget = link.matchPath ?? normalizedHref;
+            const isActive = link.exact ? pathname === matchTarget : pathname.startsWith(matchTarget);
+            const linkClasses = `${baseLinkStyles} ${isActive ? theme.activeLink : theme.defaultLink}`;
+            const key = link.key ?? (typeof link.href === "string" ? link.href : link.href?.pathname ?? link.label);
+
+            return (
+              <Link
+                key={key}
+                href={link.href}
+                className={linkClasses}
+                aria-current={isActive ? "page" : undefined}
+                onClick={(e) => {
+                  handleLinkClick(e, link.href);
+                  // Close sidebar on mobile/tablet when a link is clicked
+                  setSidebarOpen(false);
+                }}
+              >
+                <span className="flex items-center gap-3">
+                  {link.icon ? (
+                    <span className="text-(--text)/60 transition-colors group-hover:text-(--text)">
+                      {link.icon}
+                    </span>
+                  ) : null}
+                  <span>{link.label}</span>
+                </span>
+                {link.badge ? (
+                  <span className="ml-auto rounded-md bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                    {link.badge}
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Footer description intentionally removed for a cleaner, consistent sidebar */}
+
+        {/* Account section at the bottom with dropdown */}
+        <div ref={menuRef} className="mt-auto pt-2 relative">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className={`w-full ${theme.defaultLink} ${baseLinkStyles} rounded-xl`}
+            aria-haspopup="menu"
+            aria-expanded={open ? "true" : "false"}
           >
-            {/* Profile & Settings moved from sidebar into account menu */}
-            <Link
-              href={profileHref}
-              className={`${baseLinkStyles} ${theme.defaultLink} rounded-lg`}
-              role="menuitem"
-              onClick={(e) => handleLinkClick(e, profileHref)}
+            <span className="flex items-center gap-3">
+              {/* Simple avatar using initial */}
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-(--bg-2) text-(--text) font-semibold">
+                {displayName.slice(0, 1)}
+              </span>
+              <span className="flex min-w-0 flex-col text-left">
+                <span className="truncate font-medium text-(--text)">{displayName}</span>
+                <span className="truncate text-xs text-(--subtext)">{session?.user?.email || ""}</span>
+              </span>
+            </span>
+            <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
+          </button>
+
+          {open ? (
+            <div
+              role="menu"
+              className={`absolute bottom-14 left-0 right-0 z-50 rounded-2xl ${theme.navBackground} p-2 shadow-lg`}
             >
-              <Settings className="h-4 w-4 mr-3" />
-              <span>Profile & Settings</span>
-            </Link>
-            <div className="my-1 h-px w-full bg-(--stroke)/60" />
-            {SignOutComponent ? (
-              <SignOutComponent className={`w-full justify-start ${theme.signOutVariant}`} />
-            ) : (
-              <div className={`${baseLinkStyles} ${theme.signOutVariant} inline-flex`}>
-                <LogOut className="h-4 w-4" />
-                <span>Sign out</span>
-              </div>
-            )}
-          </div>
-        ) : null}
-      </div>
-    </aside>
+              {/* Profile & Settings moved from sidebar into account menu */}
+              <Link
+                href={profileHref}
+                className={`${baseLinkStyles} ${theme.defaultLink} rounded-lg`}
+                role="menuitem"
+                onClick={(e) => {
+                  handleLinkClick(e, profileHref);
+                  // Close sidebar on mobile/tablet
+                  setSidebarOpen(false);
+                }}
+              >
+                <Settings className="h-4 w-4 mr-3" />
+                <span>Profile & Settings</span>
+              </Link>
+              <div className="my-1 h-px w-full bg-(--stroke)/60" />
+              {SignOutComponent ? (
+                <SignOutComponent className={`w-full justify-start ${theme.signOutVariant}`} />
+              ) : (
+                <div className={`${baseLinkStyles} ${theme.signOutVariant} inline-flex`}>
+                  <LogOut className="h-4 w-4" />
+                  <span>Sign out</span>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+      </aside>
+    </>
   );
 }

@@ -121,7 +121,7 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+    <div className="min-h-screen bg-gray-50 py-8 px-6 pt-20 lg:pt-8 lg:pl-[300px]">
       <DashboardSidebar
         heading="LibraAI"
         links={navigationLinks}
