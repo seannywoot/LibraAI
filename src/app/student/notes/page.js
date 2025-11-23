@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
-import { Plus, FileText, Search, Trash2, Edit, Download } from "@/components/icons";
+import { Plus, FileText, Search, Trash2, Edit } from "@/components/icons";
 import { generateNotePDF } from "@/utils/pdfExport";
 import PDFPreviewModal from "@/components/pdf-preview-modal";
+import { showToast } from "@/components/ToastContainer";
+import ToastContainer from "@/components/ToastContainer";
 
 export default function NotesPage() {
   const router = useRouter();
@@ -78,9 +80,13 @@ export default function NotesPage() {
         });
         if (res.ok) {
           setNotes(notes.filter((n) => n._id !== noteToDelete._id));
+          showToast("Note deleted successfully", "success", 3000);
+        } else {
+          showToast("Failed to delete note", "error", 3000);
         }
       } catch (e) {
         console.error("Failed to delete note:", e);
+        showToast("Failed to delete note", "error", 3000);
       }
     }
     setDeleteModalOpen(false);
@@ -105,18 +111,10 @@ export default function NotesPage() {
 
   function getPreview(content) {
     if (!content) return "";
-
-    // Create a temporary DOM element to properly parse HTML and decode entities
     const temp = document.createElement("div");
     temp.innerHTML = content;
-
-    // Get the text content, which automatically decodes HTML entities
     let text = temp.textContent || temp.innerText || "";
-
-    // Clean up excessive whitespace
     text = text.replace(/\s+/g, " ").trim();
-
-    // Return truncated preview
     return text.substring(0, 150) + (text.length > 150 ? "..." : "");
   }
 
@@ -192,7 +190,7 @@ export default function NotesPage() {
               <Link
                 key={note._id}
                 href={`/student/notes/${note._id}`}
-                className="group block rounded-lg border border-gray-200 bg-white p-5 hover:shadow-lg transition-all"
+                className="group flex flex-col rounded-lg border border-gray-200 bg-white p-5 hover:shadow-lg transition-all min-h-[200px]"
               >
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">
@@ -208,12 +206,12 @@ export default function NotesPage() {
                 </div>
 
                 {note.content && (
-                  <p className="text-sm text-gray-600 line-clamp-3 mb-3">
+                  <p className="text-sm text-gray-600 line-clamp-3 mb-3 flex-1">
                     {getPreview(note.content)}
                   </p>
                 )}
 
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center justify-between text-xs text-gray-500 mt-auto">
                   <span>Updated {formatDate(note.updatedAt)}</span>
                   <Edit className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
@@ -223,7 +221,6 @@ export default function NotesPage() {
         )}
       </main>
 
-
       <PDFPreviewModal
         isOpen={pdfPreview.isOpen}
         onClose={() => setPdfPreview({ isOpen: false, blob: null, fileName: "" })}
@@ -231,50 +228,51 @@ export default function NotesPage() {
         fileName={pdfPreview.fileName}
       />
 
+      {/* Toast Container */}
+      <ToastContainer />
+
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
-        <>
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+          onClick={cancelDelete}
+        >
           <div
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
-            onClick={cancelDelete}
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Delete Note?
-                </h3>
-                <p className="text-sm text-gray-600 mb-1">
-                  Are you sure you want to delete this note?
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Delete Note?
+              </h3>
+              <p className="text-sm text-gray-600 mb-1">
+                Are you sure you want to delete this note?
+              </p>
+              {noteToDelete && (
+                <p className="text-sm font-medium text-gray-900 mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                  {noteToDelete.title || "Untitled"}
                 </p>
-                {noteToDelete && (
-                  <p className="text-sm font-medium text-gray-900 mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                    {noteToDelete.title || "Untitled"}
-                  </p>
-                )}
-                <p className="text-sm text-gray-500 mt-3">
-                  This action cannot be undone.
-                </p>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={cancelDelete}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition"
-                >
-                  Delete
-                </button>
-              </div>
+              )}
+              <p className="text-sm text-gray-500 mt-3">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={cancelDelete}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition"
+              >
+                Delete
+              </button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

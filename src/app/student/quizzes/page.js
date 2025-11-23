@@ -7,6 +7,8 @@ import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { Upload, FileText, Loader2, CheckCircle, Trash2 } from "@/components/icons";
 import Link from "next/link";
+import { showToast } from "@/components/ToastContainer";
+import ToastContainer from "@/components/ToastContainer";
 
 export default function QuizzesPage() {
     const router = useRouter();
@@ -142,9 +144,13 @@ export default function QuizzesPage() {
                 });
                 if (res.ok) {
                     setQuizzes(quizzes.filter((q) => q._id !== quizToDelete._id));
+                    showToast("Quiz deleted successfully", "success", 3000);
+                } else {
+                    showToast("Failed to delete quiz", "error", 3000);
                 }
             } catch (e) {
                 console.error("Failed to delete quiz:", e);
+                showToast("Failed to delete quiz", "error", 3000);
             }
         }
         setDeleteModalOpen(false);
@@ -419,6 +425,9 @@ export default function QuizzesPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Toast Container */}
+                <ToastContainer />
 
                 {/* Delete Confirmation Modal */}
                 {deleteModalOpen && (
