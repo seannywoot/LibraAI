@@ -39,7 +39,7 @@ export default function StudentAuthorsPage() {
     try {
       const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
       if (searchInput) params.append("search", searchInput);
-      
+
       const res = await fetch(`/api/student/authors?${params}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load authors");
@@ -84,7 +84,7 @@ export default function StudentAuthorsPage() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search authors..."
+              placeholder="Search by author name..."
               className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
             />
             {searchInput && (

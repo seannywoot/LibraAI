@@ -27,8 +27,9 @@ export async function GET(request) {
     const transactions = db.collection("transactions");
 
     // Search for matching book titles, authors, and user emails
+    // Only search transactions that exist (exclude books with no transaction history)
     const searchRegex = { $regex: query, $options: "i" };
-    
+
     const results = await transactions
       .find({
         $or: [
@@ -40,6 +41,14 @@ export async function GET(request) {
       })
       .limit(20)
       .toArray();
+
+    // Only show suggestions if we found actual transactions
+    if (results.length === 0) {
+      return new Response(
+        JSON.stringify({ ok: true, suggestions: [] }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
 
     // Extract unique suggestions
     const bookTitles = [...new Set(results.map(t => t.bookTitle).filter(Boolean))].slice(0, 3);

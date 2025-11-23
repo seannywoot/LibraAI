@@ -18,9 +18,9 @@ const BarcodeScanner = dynamic(() => import("@/components/barcode-scanner"), {
 function formatDate(dateStr) {
   if (!dateStr) return "—";
   const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", { 
-    month: "short", 
-    day: "numeric", 
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
     year: "numeric",
     timeZone: "Asia/Manila"
   });
@@ -51,7 +51,7 @@ function MyLibraryContent() {
   const router = useRouter();
   const tabParam = searchParams.get("tab");
   const initialTab = tabParam === "borrowed" ? "borrowed" : tabParam === "bookmarked" ? "bookmarked" : "personal";
-  
+
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
   const [myBooks, setMyBooks] = useState([]);
@@ -186,7 +186,7 @@ function MyLibraryContent() {
     try {
       const params = new URLSearchParams();
       if (searchInput) params.append("search", searchInput);
-      
+
       const res = await fetch(`/api/student/library?${params}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok)
@@ -203,12 +203,12 @@ function MyLibraryContent() {
     try {
       const params = new URLSearchParams();
       if (searchInput) params.append("search", searchInput);
-      
+
       const res = await fetch(`/api/student/books/borrowed?${params}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load borrowed books");
       setBorrowedBooks(data.items || []);
-      
+
       // Load bookmark status for borrowed books
       if (data.items && data.items.length > 0) {
         const bookIds = data.items.map(item => item.bookId).filter(Boolean);
@@ -225,7 +225,7 @@ function MyLibraryContent() {
     try {
       const params = new URLSearchParams();
       if (searchInput) params.append("search", searchInput);
-      
+
       const res = await fetch(`/api/student/books/bookmarked?${params}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load bookmarked books");
@@ -249,7 +249,7 @@ function MyLibraryContent() {
         throw new Error(data?.error || "Failed to add book");
 
       showToast("Book added to your library!", "success");
-      
+
       // Navigate to the book detail page to show recommendations
       if (data.bookId) {
         router.push(`/student/library/${data.bookId}`);
@@ -352,7 +352,7 @@ function MyLibraryContent() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to return book");
-      
+
       showToast("Return request submitted", "success");
       loadBorrowedBooks();
     } catch (e) {
@@ -364,7 +364,7 @@ function MyLibraryContent() {
 
   async function loadBookmarkStatus(bookIds) {
     if (!bookIds || bookIds.length === 0) return;
-    
+
     try {
       const bookmarkChecks = await Promise.all(
         bookIds.map(async (bookId) => {
@@ -375,7 +375,7 @@ function MyLibraryContent() {
           return { bookId, bookmarked: data?.bookmarked || false };
         })
       );
-      
+
       const newStatus = new Map();
       bookmarkChecks.forEach(({ bookId, bookmarked }) => {
         newStatus.set(bookId, bookmarked);
@@ -389,7 +389,7 @@ function MyLibraryContent() {
   async function handleToggleBookmark(bookId, e) {
     e.preventDefault();
     e.stopPropagation();
-    
+
     setBookmarking(bookId);
     try {
       const res = await fetch("/api/student/books/bookmark", {
@@ -404,9 +404,9 @@ function MyLibraryContent() {
       const newStatus = new Map(bookmarkStatus);
       newStatus.set(bookId, data.bookmarked);
       setBookmarkStatus(newStatus);
-      
+
       showToast(data.message, "success");
-      
+
       // Reload bookmarked books if we're on that tab
       if (activeTab === "bookmarked") {
         loadBookmarkedBooks();
@@ -474,31 +474,28 @@ function MyLibraryContent() {
         <div className="flex gap-2 border-b border-gray-200">
           <button
             onClick={() => setActiveTab("personal")}
-            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === "personal"
+            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "personal"
                 ? "border-black text-black"
                 : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
+              }`}
           >
             Personal Collection ({myBooks.length})
           </button>
           <button
             onClick={() => setActiveTab("borrowed")}
-            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === "borrowed"
+            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "borrowed"
                 ? "border-black text-black"
                 : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
+              }`}
           >
             Borrowed Books ({borrowedBooks.length})
           </button>
           <button
             onClick={() => setActiveTab("bookmarked")}
-            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === "bookmarked"
+            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "bookmarked"
                 ? "border-black text-black"
                 : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
+              }`}
           >
             Bookmarked ({bookmarkedBooks.length})
           </button>
@@ -528,7 +525,7 @@ function MyLibraryContent() {
               }, 200);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Search books..."
+            placeholder="Search by title, author, ISBN..."
             className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
           />
           {searchInput && (
@@ -550,11 +547,10 @@ function MyLibraryContent() {
                 <button
                   key={idx}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${
-                    idx === selectedSuggestionIndex
+                  className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${idx === selectedSuggestionIndex
                       ? "bg-gray-100"
                       : "hover:bg-gray-50"
-                  }`}
+                    }`}
                 >
                   <svg className="h-4 w-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {suggestion.type === "title" ? (
@@ -728,11 +724,10 @@ function MyLibraryContent() {
               <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded ${
-                    viewMode === "grid"
+                  className={`p-1.5 rounded ${viewMode === "grid"
                       ? "bg-gray-900 text-white"
                       : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <svg
                     className="h-4 w-4"
@@ -744,11 +739,10 @@ function MyLibraryContent() {
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded ${
-                    viewMode === "list"
+                  className={`p-1.5 rounded ${viewMode === "list"
                       ? "bg-gray-900 text-white"
                       : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <svg
                     className="h-4 w-4"
@@ -897,11 +891,10 @@ function MyLibraryContent() {
               <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded ${
-                    viewMode === "grid"
+                  className={`p-1.5 rounded ${viewMode === "grid"
                       ? "bg-gray-900 text-white"
                       : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <svg
                     className="h-4 w-4"
@@ -913,11 +906,10 @@ function MyLibraryContent() {
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded ${
-                    viewMode === "list"
+                  className={`p-1.5 rounded ${viewMode === "list"
                       ? "bg-gray-900 text-white"
                       : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <svg
                     className="h-4 w-4"
@@ -1103,11 +1095,10 @@ function MyLibraryContent() {
               <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded ${
-                    viewMode === "grid"
+                  className={`p-1.5 rounded ${viewMode === "grid"
                       ? "bg-gray-900 text-white"
                       : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <svg
                     className="h-4 w-4"
@@ -1119,11 +1110,10 @@ function MyLibraryContent() {
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded ${
-                    viewMode === "list"
+                  className={`p-1.5 rounded ${viewMode === "list"
                       ? "bg-gray-900 text-white"
                       : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <svg
                     className="h-4 w-4"
@@ -1168,9 +1158,8 @@ function MyLibraryContent() {
                       <Link
                         key={transaction._id}
                         href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
-                        className={`rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${
-                          overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
-                        }`}
+                        className={`rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                          }`}
                       >
                         <div className="flex gap-6">
                           {/* Book Cover */}
@@ -1242,16 +1231,15 @@ function MyLibraryContent() {
                                     Pending approval
                                   </span>
                                 )}
-                                
+
                                 {/* Bookmark Button */}
                                 <button
                                   onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
                                   disabled={bookmarking === transaction.bookId}
-                                  className={`p-2 rounded-full transition-colors ${
-                                    bookmarkStatus.get(transaction.bookId)
+                                  className={`p-2 rounded-full transition-colors ${bookmarkStatus.get(transaction.bookId)
                                       ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
                                       : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                                  } disabled:opacity-50`}
+                                    } disabled:opacity-50`}
                                   title={bookmarkStatus.get(transaction.bookId) ? "Remove bookmark" : "Bookmark this book"}
                                 >
                                   <Bookmark className={`h-4 w-4 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
@@ -1267,106 +1255,104 @@ function MyLibraryContent() {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
                   {borrowedBooks.map((transaction) => {
-                  const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
-                  const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
-                  const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
-                  const canReturn = transaction.status === "borrowed";
-                  return (
-                    <Link
-                      key={transaction._id}
-                      href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
-                      className={`rounded-lg border p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${
-                        overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
-                      }`}
-                    >
-                      {/* Book Cover */}
-                      <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
-                        {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
-                            alt={`Cover of ${transaction.bookTitle}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
-                            }}
-                          />
-                        ) : (
-                          <span>Book Cover</span>
-                        )}
-                      </div>
-
-                      {/* Book Details */}
-                      <div className="flex-1 flex flex-col">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
-                          {transaction.bookTitle}
-                        </h3>
-                        <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
-                          {transaction.bookAuthor}
-                        </p>
-
-                        {/* Status Badge */}
-                        <div className="mb-2 h-6 flex items-center">
-                          <StatusBadge status={transaction.status} />
-                        </div>
-
-                        {/* Dates */}
-                        <div className="text-[11px] text-gray-500 space-y-1 mb-3">
-                          <p>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</p>
-                          <p className={overdue ? "font-semibold text-rose-700" : ""}>
-                            Due: {formatDate(dueDate)}
-                            {overdue && " (Overdue)"}
-                          </p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="mt-auto space-y-2" onClick={(e) => e.preventDefault()}>
-                          {canReturn ? (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleReturn(transaction.bookId);
+                    const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
+                    const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
+                    const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
+                    const canReturn = transaction.status === "borrowed";
+                    return (
+                      <Link
+                        key={transaction._id}
+                        href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
+                        className={`rounded-lg border p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                          }`}
+                      >
+                        {/* Book Cover */}
+                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
+                          {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
+                              alt={`Cover of ${transaction.bookTitle}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
                               }}
-                              disabled={returning === transaction.bookId}
-                              className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                            >
-                              {returning === transaction.bookId ? "Submitting..." : "Request Return"}
-                            </button>
-                          ) : transaction.status === "return-requested" ? (
-                            <div className="w-full rounded-md bg-amber-100 border border-amber-200 px-4 py-2 text-xs font-medium text-amber-700 text-center">
-                              Awaiting confirmation
-                            </div>
-                          ) : transaction.status === "rejected" ? (
-                            <div className="w-full rounded-md bg-rose-100 border border-rose-200 px-4 py-2 text-xs font-medium text-rose-700 text-center">
-                              Request rejected
-                            </div>
+                            />
                           ) : (
-                            <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
-                              Pending approval
-                            </div>
+                            <span>Book Cover</span>
                           )}
-                          
-                          {/* Bookmark Button */}
-                          <button
-                            onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
-                            disabled={bookmarking === transaction.bookId}
-                            className={`w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-xs font-medium transition-colors ${
-                              bookmarkStatus.get(transaction.bookId)
-                                ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            } disabled:opacity-50`}
-                          >
-                            <Bookmark className={`h-3.5 w-3.5 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
-                            {bookmarkStatus.get(transaction.bookId) ? "Bookmarked" : "Bookmark"}
-                          </button>
                         </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+
+                        {/* Book Details */}
+                        <div className="flex-1 flex flex-col">
+                          <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
+                            {transaction.bookTitle}
+                          </h3>
+                          <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
+                            {transaction.bookAuthor}
+                          </p>
+
+                          {/* Status Badge */}
+                          <div className="mb-2 h-6 flex items-center">
+                            <StatusBadge status={transaction.status} />
+                          </div>
+
+                          {/* Dates */}
+                          <div className="text-[11px] text-gray-500 space-y-1 mb-3">
+                            <p>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</p>
+                            <p className={overdue ? "font-semibold text-rose-700" : ""}>
+                              Due: {formatDate(dueDate)}
+                              {overdue && " (Overdue)"}
+                            </p>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="mt-auto space-y-2" onClick={(e) => e.preventDefault()}>
+                            {canReturn ? (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleReturn(transaction.bookId);
+                                }}
+                                disabled={returning === transaction.bookId}
+                                className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                              >
+                                {returning === transaction.bookId ? "Submitting..." : "Request Return"}
+                              </button>
+                            ) : transaction.status === "return-requested" ? (
+                              <div className="w-full rounded-md bg-amber-100 border border-amber-200 px-4 py-2 text-xs font-medium text-amber-700 text-center">
+                                Awaiting confirmation
+                              </div>
+                            ) : transaction.status === "rejected" ? (
+                              <div className="w-full rounded-md bg-rose-100 border border-rose-200 px-4 py-2 text-xs font-medium text-rose-700 text-center">
+                                Request rejected
+                              </div>
+                            ) : (
+                              <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
+                                Pending approval
+                              </div>
+                            )}
+
+                            {/* Bookmark Button */}
+                            <button
+                              onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
+                              disabled={bookmarking === transaction.bookId}
+                              className={`w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-xs font-medium transition-colors ${bookmarkStatus.get(transaction.bookId)
+                                  ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                } disabled:opacity-50`}
+                            >
+                              <Bookmark className={`h-3.5 w-3.5 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
+                              {bookmarkStatus.get(transaction.bookId) ? "Bookmarked" : "Bookmark"}
+                            </button>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>

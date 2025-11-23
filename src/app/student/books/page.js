@@ -667,7 +667,9 @@ export default function StudentBooksPage() {
                 </div>
               </div>
             </div>
-          )}
+          )
+
+          }
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col min-h-0">
@@ -675,690 +677,700 @@ export default function StudentBooksPage() {
             <div className="shrink-0 space-y-6 mb-6">
               {/* Search Bar */}
               <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
-              <div className="relative flex items-center gap-2">
-                <div className="relative flex-1">
-                  <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <svg
+                      className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                    <input
+                      type="text"
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      onFocus={() =>
+                        suggestions.length > 0 && setShowSuggestions(true)
+                      }
+                      onBlur={() => {
+                        setTimeout(() => {
+                          if (shouldCloseOnBlur.current) {
+                            setShowSuggestions(false);
+                            setSelectedSuggestionIndex(-1);
+                          }
+                        }, 200);
+                      }}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Search by title, author, year, ISBN..."
+                      className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-10 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                     />
-                  </svg>
-                  <input
-                    type="text"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    onFocus={() =>
-                      suggestions.length > 0 && setShowSuggestions(true)
-                    }
-                    onBlur={() => {
-                      setTimeout(() => {
-                        if (shouldCloseOnBlur.current) {
+                    {searchInput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchInput("");
+                          setSuggestions([]);
                           setShowSuggestions(false);
                           setSelectedSuggestionIndex(-1);
-                        }
-                      }, 200);
-                    }}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Search books, authors..."
-                    className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                  />
-                </div>
-                <button
-                  onClick={loadBooks}
-                  className="p-2.5 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors"
-                  title="Search"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => setShowFilters(true)}
-                  className="relative p-2.5 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-                  title="Filters"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                    />
-                  </svg>
-                  {(filters.formats.length > 0 ||
-                    filters.categories.length > 0 ||
-                    filters.availability.length > 0) && (
-                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-black rounded-full">
-                      {filters.formats.length +
-                        filters.categories.length +
-                        filters.availability.length}
-                    </span>
-                  )}
-                </button>
-
-                {/* Auto-suggestions dropdown */}
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
-                    {suggestions.map((suggestion, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${
-                          idx === selectedSuggestionIndex
-                            ? "bg-gray-100"
-                            : "hover:bg-gray-50"
-                        }`}
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        <svg
-                          className="h-4 w-4 text-gray-400 shrink-0"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          {suggestion.type === "title" ? (
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                            />
-                          ) : (
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          )}
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 truncate">
-                            {suggestion.text}
-                          </p>
-                          <p className="text-xs text-gray-500 capitalize">
-                            {suggestion.type}
-                          </p>
-                        </div>
                       </button>
-                    ))}
+                    )}
+                  </div>
+                  <button
+                    onClick={loadBooks}
+                    className="p-2.5 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors"
+                    title="Search"
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setShowFilters(true)}
+                    className="relative p-2.5 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                    title="Filters"
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                      />
+                    </svg>
+                    {(filters.formats.length > 0 ||
+                      filters.categories.length > 0 ||
+                      filters.availability.length > 0) && (
+                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-black rounded-full">
+                          {filters.formats.length +
+                            filters.categories.length +
+                            filters.availability.length}
+                        </span>
+                      )}
+                  </button>
+
+                  {/* Auto-suggestions dropdown */}
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                      {suggestions.map((suggestion, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${idx === selectedSuggestionIndex
+                              ? "bg-gray-100"
+                              : "hover:bg-gray-50"
+                            }`}
+                        >
+                          <svg
+                            className="h-4 w-4 text-gray-400 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            {suggestion.type === "title" ? (
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                              />
+                            ) : (
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              />
+                            )}
+                          </svg>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-900 truncate">
+                              {suggestion.text}
+                            </p>
+                            <p className="text-xs text-gray-500 capitalize">
+                              {suggestion.type}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {searchInput && (
+                  <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span>{searchInput}</span>
                   </div>
                 )}
-              </div>
-              {searchInput && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-                  <svg
-                    className="h-4 w-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span>{searchInput}</span>
-                </div>
-              )}
-            </div>
+              </div >
 
-            {/* Results Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <p className="text-sm text-gray-600">
-                  <span className="font-semibold text-gray-900">
-                    {total.toLocaleString()}
-                  </span>{" "}
-                  results {searchInput && `for "${searchInput}"`}
-                </p>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Sort by:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => {
-                      setSortBy(e.target.value);
-                      setPage(1);
-                    }}
-                    className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                  >
-                    <option value="relevance">Relevance</option>
-                    <option value="title">Title</option>
-                    <option value="year">Year</option>
-                    <option value="author">Author</option>
-                  </select>
+              {/* Results Header */}
+              < div className="flex items-center justify-between" >
+                <div className="flex items-center gap-4">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold text-gray-900">
+                      {total.toLocaleString()}
+                    </span>{" "}
+                    results {searchInput && `for "${searchInput}"`}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Sort by:</span>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => {
+                        setSortBy(e.target.value);
+                        setPage(1);
+                      }}
+                      className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                    >
+                      <option value="relevance">Relevance</option>
+                      <option value="title">Title</option>
+                      <option value="year">Year</option>
+                      <option value="author">Author</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded ${
-                    viewMode === "grid"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
+                <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-1.5 rounded ${viewMode === "grid"
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-600 hover:bg-gray-100"
+                      }`}
                   >
-                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded ${
-                    viewMode === "list"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-1.5 rounded ${viewMode === "list"
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-600 hover:bg-gray-100"
+                      }`}
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            </div>
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div >
+            </div >
 
             {/* Scrollable Books List */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
-            {/* Books List */}
-            {loading ? (
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-                Loading books…
-              </div>
-            ) : error ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-                {error}
-              </div>
-            ) : items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-                <div className="rounded-full bg-white p-3 shadow text-gray-500">
-                  <BookIcon className="h-6 w-6" />
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {searchInput ? "No books found" : "No books available"}
-                </h2>
-                <p className="text-sm text-gray-600">
-                  {searchInput
-                    ? "Try adjusting your search terms."
-                    : "Check back later for new additions to the catalog."}
-                </p>
-              </div>
-            ) : viewMode === "list" ? (
-              <div className="space-y-4">
-                {items.map((book) => {
-                  const isBorrowingThis = borrowing === book._id;
-                  const lockedByOther = Boolean(borrowing) && !isBorrowingThis;
-                  const isBookmarked = bookmarkedBooks.has(book._id);
-                  const isBookmarkingThis = bookmarking === book._id;
-                  return (
-                    <Link
-                      key={book._id}
-                      href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
-                      className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                    >
-                      <div className="flex gap-6">
-                        {/* Book Cover */}
-                        <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
-                          {book.coverImage || book.coverImageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={book.coverImage || book.coverImageUrl}
-                              alt={`Cover of ${book.title}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
-                              }}
-                            />
-                          ) : (
-                            <span>No Cover</span>
-                          )}
-                        </div>
-
-                        {/* Book Details */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
-                            {book.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 mb-2">
-                            by {book.author}
-                          </p>
-                          <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
-                            {book.year && <span>Published: {book.year}</span>}
-                            {book.year && book.publisher && <span>|</span>}
-                            {book.publisher && <span>{book.publisher}</span>}
-                            {book.format && (
-                              <>
-                                <span>|</span>
-                                <span className="font-medium">
-                                  {book.format}
-                                </span>
-                              </>
-                            )}
-                          </div>
-
-                          {/* Description */}
-                          {book.description && (
-                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                              {book.description}
-                            </p>
-                          )}
-
-                          {/* Status and Actions */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <StatusChip status={book.status} />
-                              {book.isbn && (
-                                <span className="text-sm text-gray-500">
-                                  Call #: {book.isbn}
-                                </span>
+            < div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400" >
+              {/* Books List */}
+              {
+                loading ? (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
+                    Loading books…
+                  </div>
+                ) : error ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+                    {error}
+                  </div>
+                ) : items.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
+                    <div className="rounded-full bg-white p-3 shadow text-gray-500">
+                      <BookIcon className="h-6 w-6" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      {searchInput ? "No books found" : "No books available"}
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      {searchInput
+                        ? "Try adjusting your search terms."
+                        : "Check back later for new additions to the catalog."}
+                    </p>
+                  </div>
+                ) : viewMode === "list" ? (
+                  <div className="space-y-4">
+                    {items.map((book) => {
+                      const isBorrowingThis = borrowing === book._id;
+                      const lockedByOther = Boolean(borrowing) && !isBorrowingThis;
+                      const isBookmarked = bookmarkedBooks.has(book._id);
+                      const isBookmarkingThis = bookmarking === book._id;
+                      return (
+                        <Link
+                          key={book._id}
+                          href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
+                          className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                        >
+                          <div className="flex gap-6">
+                            {/* Book Cover */}
+                            <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                              {book.coverImage || book.coverImageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={book.coverImage || book.coverImageUrl}
+                                  alt={`Cover of ${book.title}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
+                                  }}
+                                />
+                              ) : (
+                                <span>No Cover</span>
                               )}
                             </div>
 
-                            <div
-                              className="flex items-center gap-3"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                            >
-                              {book.format === "eBook" && book.ebookUrl ? (
-                                <button
+                            {/* Book Details */}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                                {book.title}
+                              </h3>
+                              <p className="text-sm text-gray-600 mb-2">
+                                by {book.author}
+                              </p>
+                              <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                                {book.year && <span>Published: {book.year}</span>}
+                                {book.year && book.publisher && <span>|</span>}
+                                {book.publisher && <span>{book.publisher}</span>}
+                                {book.format && (
+                                  <>
+                                    <span>|</span>
+                                    <span className="font-medium">
+                                      {book.format}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Description */}
+                              {book.description && (
+                                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                  {book.description}
+                                </p>
+                              )}
+
+                              {/* Status and Actions */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <StatusChip status={book.status} />
+                                  {book.isbn && (
+                                    <span className="text-sm text-gray-500">
+                                      Call #: {book.isbn}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div
+                                  className="flex items-center gap-3"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
-                                    const isPdfId = /^[a-f\d]{24}$/i.test(
-                                      book.ebookUrl
-                                    );
-                                    const url = isPdfId
-                                      ? `/api/ebooks/${book.ebookUrl}`
-                                      : book.ebookUrl;
-                                    window.open(
-                                      url,
-                                      "_blank",
-                                      "noopener,noreferrer"
-                                    );
                                   }}
-                                  className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
                                 >
-                                  Access
-                                </button>
-                              ) : book.status === "available" &&
-                                !["reference-only", "staff-only"].includes(
-                                  book.loanPolicy || ""
-                                ) ? (
-                                <BorrowConfirmButton
-                                  onConfirm={() => handleBorrow(book._id)}
-                                  disabled={lockedByOther}
-                                  busy={isBorrowingThis}
-                                  className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                                  borrowLabel="Borrow"
-                                  confirmingLabel="Confirm?"
-                                  confirmingTitle="Submit Borrow Request"
-                                  confirmingMessage={`Send a borrow request for "${book.title}"?`}
-                                  confirmButtonLabel="Submit Request"
-                                  busyLabel="Borrowing..."
-                                />
-                              ) : book.status === "reserved" &&
-                                book.reservedForCurrentUser ? (
-                                <span className="text-sm font-medium text-gray-500">
-                                  Awaiting approval
-                                </span>
-                              ) : book.status === "reserved" ? (
-                                <button
-                                  disabled
-                                  className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
-                                >
-                                  Reserved
-                                </button>
-                              ) : book.status === "checked-out" ? (
-                                <button
-                                  disabled
-                                  className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
-                                >
-                                  Unavailable
-                                </button>
-                              ) : book.loanPolicy === "reference-only" ? (
-                                <span className="text-sm text-gray-500">
-                                  Reference only
-                                </span>
-                              ) : book.loanPolicy === "staff-only" ? (
-                                <span className="text-sm text-gray-500">
-                                  Staff only
-                                </span>
-                              ) : null}
+                                  {book.format === "eBook" && book.ebookUrl ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
+                                        const isPdfId = /^[a-f\d]{24}$/i.test(
+                                          book.ebookUrl
+                                        );
+                                        const url = isPdfId
+                                          ? `/api/ebooks/${book.ebookUrl}`
+                                          : book.ebookUrl;
+                                        window.open(
+                                          url,
+                                          "_blank",
+                                          "noopener,noreferrer"
+                                        );
+                                      }}
+                                      className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+                                    >
+                                      Access
+                                    </button>
+                                  ) : book.status === "available" &&
+                                    !["reference-only", "staff-only"].includes(
+                                      book.loanPolicy || ""
+                                    ) ? (
+                                    <BorrowConfirmButton
+                                      onConfirm={() => handleBorrow(book._id)}
+                                      disabled={lockedByOther}
+                                      busy={isBorrowingThis}
+                                      className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                                      borrowLabel="Borrow"
+                                      confirmingLabel="Confirm?"
+                                      confirmingTitle="Submit Borrow Request"
+                                      confirmingMessage={`Send a borrow request for "${book.title}"?`}
+                                      confirmButtonLabel="Submit Request"
+                                      busyLabel="Borrowing..."
+                                    />
+                                  ) : book.status === "reserved" &&
+                                    book.reservedForCurrentUser ? (
+                                    <span className="text-sm font-medium text-gray-500">
+                                      Awaiting approval
+                                    </span>
+                                  ) : book.status === "reserved" ? (
+                                    <button
+                                      disabled
+                                      className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
+                                    >
+                                      Reserved
+                                    </button>
+                                  ) : book.status === "checked-out" ? (
+                                    <button
+                                      disabled
+                                      className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
+                                    >
+                                      Unavailable
+                                    </button>
+                                  ) : book.loanPolicy === "reference-only" ? (
+                                    <span className="text-sm text-gray-500">
+                                      Reference only
+                                    </span>
+                                  ) : book.loanPolicy === "staff-only" ? (
+                                    <span className="text-sm text-gray-500">
+                                      Staff only
+                                    </span>
+                                  ) : null}
 
-                              {/* Bookmark Button */}
-                              <button
-                                onClick={(e) =>
-                                  handleToggleBookmark(book._id, e)
-                                }
-                                disabled={isBookmarkingThis}
-                                className={`p-2 rounded-full transition-colors ${
-                                  isBookmarked
-                                    ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                                    : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                                } disabled:opacity-50`}
-                                title={
-                                  isBookmarked
-                                    ? "Remove bookmark"
-                                    : "Bookmark this book"
-                                }
-                              >
-                                <Bookmark
-                                  className={`h-4 w-4 ${
-                                    isBookmarked ? "fill-current" : ""
-                                  }`}
-                                />
-                              </button>
+                                  {/* Bookmark Button */}
+                                  <button
+                                    onClick={(e) =>
+                                      handleToggleBookmark(book._id, e)
+                                    }
+                                    disabled={isBookmarkingThis}
+                                    className={`p-2 rounded-full transition-colors ${isBookmarked
+                                      ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                                      : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                                      } disabled:opacity-50`}
+                                    title={
+                                      isBookmarked
+                                        ? "Remove bookmark"
+                                        : "Bookmark this book"
+                                    }
+                                  >
+                                    <Bookmark
+                                      className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""
+                                        }`}
+                                    />
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                {items.map((book) => {
-                  const isBorrowingThis = borrowing === book._id;
-                  const lockedByOther = Boolean(borrowing) && !isBorrowingThis;
-                  const isBookmarked = bookmarkedBooks.has(book._id);
-                  const isBookmarkingThis = bookmarking === book._id;
-                  return (
-                    <div
-                      key={book._id}
-                      className="relative rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow flex flex-col"
-                    >
-                      {/* Bookmark Button */}
-                      <button
-                        onClick={(e) => handleToggleBookmark(book._id, e)}
-                        disabled={isBookmarkingThis}
-                        className={`absolute right-2 top-2 z-10 p-1.5 rounded-full transition-colors ${
-                          isBookmarked
-                            ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                            : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                        } disabled:opacity-50`}
-                        title={
-                          isBookmarked
-                            ? "Remove bookmark"
-                            : "Bookmark this book"
-                        }
-                      >
-                        <Bookmark
-                          className={`h-3.5 w-3.5 ${
-                            isBookmarked ? "fill-current" : ""
-                          }`}
-                        />
-                      </button>
-
-                      <Link
-                        href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
-                        className="flex flex-col h-full cursor-pointer"
-                      >
-                        {/* Book Cover */}
-                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2 overflow-hidden">
-                          {book.coverImage || book.coverImageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={book.coverImage || book.coverImageUrl}
-                              alt={`Cover of ${book.title}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.parentElement.innerHTML = '<span class="text-gray-400 text-[10px] font-medium">No Cover</span>';
-                              }}
-                            />
-                          ) : (
-                            <span>No Cover</span>
-                          )}
-                        </div>
-
-                        {/* Book Details */}
-                        <div className="flex-1 flex flex-col">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
-                            {book.title}
-                          </h3>
-                          <p className="text-[11px] text-gray-600 mb-1 line-clamp-1 h-4">
-                            {book.author}
-                          </p>
-                          <div className="text-[11px] text-gray-500 mb-2 h-4">
-                            {book.year && <span>{book.year}</span>}
-                          </div>
-
-                          {/* Status */}
-                          <div className="mb-2">
-                            <StatusChip status={book.status} />
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div
-                            className="mt-auto space-y-2"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                    {items.map((book) => {
+                      const isBorrowingThis = borrowing === book._id;
+                      const lockedByOther = Boolean(borrowing) && !isBorrowingThis;
+                      const isBookmarked = bookmarkedBooks.has(book._id);
+                      const isBookmarkingThis = bookmarking === book._id;
+                      return (
+                        <div
+                          key={book._id}
+                          className="relative rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow flex flex-col"
+                        >
+                          {/* Bookmark Button */}
+                          <button
+                            onClick={(e) => handleToggleBookmark(book._id, e)}
+                            disabled={isBookmarkingThis}
+                            className={`absolute right-2 top-2 z-10 p-1.5 rounded-full transition-colors ${isBookmarked
+                              ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                              : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                              } disabled:opacity-50`}
+                            title={
+                              isBookmarked
+                                ? "Remove bookmark"
+                                : "Bookmark this book"
+                            }
                           >
-                            {book.format === "eBook" && book.ebookUrl ? (
-                              <button
+                            <Bookmark
+                              className={`h-3.5 w-3.5 ${isBookmarked ? "fill-current" : ""
+                                }`}
+                            />
+                          </button>
+
+                          <Link
+                            href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
+                            className="flex flex-col h-full cursor-pointer"
+                          >
+                            {/* Book Cover */}
+                            <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2 overflow-hidden">
+                              {book.coverImage || book.coverImageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={book.coverImage || book.coverImageUrl}
+                                  alt={`Cover of ${book.title}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentElement.innerHTML = '<span class="text-gray-400 text-[10px] font-medium">No Cover</span>';
+                                  }}
+                                />
+                              ) : (
+                                <span>No Cover</span>
+                              )}
+                            </div>
+
+                            {/* Book Details */}
+                            <div className="flex-1 flex flex-col">
+                              <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
+                                {book.title}
+                              </h3>
+                              <p className="text-[11px] text-gray-600 mb-1 line-clamp-1 h-4">
+                                {book.author}
+                              </p>
+                              <div className="text-[11px] text-gray-500 mb-2 h-4">
+                                {book.year && <span>{book.year}</span>}
+                              </div>
+
+                              {/* Status */}
+                              <div className="mb-2">
+                                <StatusChip status={book.status} />
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div
+                                className="mt-auto space-y-2"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
-                                  const isPdfId = /^[a-f\d]{24}$/i.test(
-                                    book.ebookUrl
-                                  );
-                                  const url = isPdfId
-                                    ? `/api/ebooks/${book.ebookUrl}`
-                                    : book.ebookUrl;
-                                  window.open(
-                                    url,
-                                    "_blank",
-                                    "noopener,noreferrer"
-                                  );
                                 }}
-                                className="block w-full text-center rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
                               >
-                                Access
-                              </button>
-                            ) : book.status === "available" &&
-                              !["reference-only", "staff-only"].includes(
-                                book.loanPolicy || ""
-                              ) ? (
-                              <BorrowConfirmButton
-                                onConfirm={() => handleBorrow(book._id)}
-                                disabled={lockedByOther}
-                                busy={isBorrowingThis}
-                                className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                                wrapperClassName="w-full"
-                                borrowLabel="Borrow"
-                                confirmingLabel="Confirm?"
-                                confirmingTitle="Submit Borrow Request"
-                                confirmingMessage={`Send a borrow request for "${book.title}"?`}
-                                confirmButtonLabel="Submit Request"
-                                busyLabel="Borrowing..."
-                              />
-                            ) : book.status === "reserved" &&
-                              book.reservedForCurrentUser ? (
-                              <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
-                                Awaiting approval
-                              </div>
-                            ) : book.status === "reserved" ? (
-                              <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
-                                Reserved
-                              </div>
-                            ) : book.status === "checked-out" ? (
-                              <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
-                                Unavailable
-                              </div>
-                            ) : book.loanPolicy === "reference-only" ? (
-                              <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
-                                Reference only
-                              </div>
-                            ) : book.loanPolicy === "staff-only" ? (
-                              <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
-                                Staff only
-                              </div>
-                            ) : null}
+                                {book.format === "eBook" && book.ebookUrl ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
+                                      const isPdfId = /^[a-f\d]{24}$/i.test(
+                                        book.ebookUrl
+                                      );
+                                      const url = isPdfId
+                                        ? `/api/ebooks/${book.ebookUrl}`
+                                        : book.ebookUrl;
+                                      window.open(
+                                        url,
+                                        "_blank",
+                                        "noopener,noreferrer"
+                                      );
+                                    }}
+                                    className="block w-full text-center rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 transition-colors"
+                                  >
+                                    Access
+                                  </button>
+                                ) : book.status === "available" &&
+                                  !["reference-only", "staff-only"].includes(
+                                    book.loanPolicy || ""
+                                  ) ? (
+                                  <BorrowConfirmButton
+                                    onConfirm={() => handleBorrow(book._id)}
+                                    disabled={lockedByOther}
+                                    busy={isBorrowingThis}
+                                    className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                                    wrapperClassName="w-full"
+                                    borrowLabel="Borrow"
+                                    confirmingLabel="Confirm?"
+                                    confirmingTitle="Submit Borrow Request"
+                                    confirmingMessage={`Send a borrow request for "${book.title}"?`}
+                                    confirmButtonLabel="Submit Request"
+                                    busyLabel="Borrowing..."
+                                  />
+                                ) : book.status === "reserved" &&
+                                  book.reservedForCurrentUser ? (
+                                  <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
+                                    Awaiting approval
+                                  </div>
+                                ) : book.status === "reserved" ? (
+                                  <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
+                                    Reserved
+                                  </div>
+                                ) : book.status === "checked-out" ? (
+                                  <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
+                                    Unavailable
+                                  </div>
+                                ) : book.loanPolicy === "reference-only" ? (
+                                  <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
+                                    Reference only
+                                  </div>
+                                ) : book.loanPolicy === "staff-only" ? (
+                                  <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
+                                    Staff only
+                                  </div>
+                                ) : null}
 
-                            {/* Bookmark Button */}
-                            <button
-                              onClick={(e) => handleToggleBookmark(book._id, e)}
-                              disabled={isBookmarkingThis}
-                              className={`w-full flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium transition-colors border ${
-                                isBookmarked
-                                  ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                                  : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
-                              } disabled:opacity-50`}
-                              title={
-                                isBookmarked
-                                  ? "Remove bookmark"
-                                  : "Bookmark this book"
-                              }
-                            >
-                              <Bookmark
-                                className={`h-3 w-3 ${
-                                  isBookmarked ? "fill-current" : ""
-                                }`}
-                              />
-                              {isBookmarked ? "Bookmarked" : "Bookmark"}
-                            </button>
-                          </div>
+                                {/* Bookmark Button */}
+                                <button
+                                  onClick={(e) => handleToggleBookmark(book._id, e)}
+                                  disabled={isBookmarkingThis}
+                                  className={`w-full flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium transition-colors border ${isBookmarked
+                                    ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                    : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+                                    } disabled:opacity-50`}
+                                  title={
+                                    isBookmarked
+                                      ? "Remove bookmark"
+                                      : "Bookmark this book"
+                                  }
+                                >
+                                  <Bookmark
+                                    className={`h-3 w-3 ${isBookmarked ? "fill-current" : ""
+                                      }`}
+                                  />
+                                  {isBookmarked ? "Bookmarked" : "Bookmark"}
+                                </button>
+                              </div>
+                            </div>
+                          </Link>
                         </div>
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                      );
+                    })}
+                  </div>
+                )
+              }
 
-            {/* Pagination */}
-            {!loading && !error && items.length > 0 && (
-              <div className="flex items-center justify-center gap-2 pt-4">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                  className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg
-                    className="h-5 w-5 text-gray-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                </button>
-
-                {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                  const pageNum = i + 1;
-                  return (
+              {/* Pagination */}
+              {
+                !loading && !error && items.length > 0 && (
+                  <div className="flex items-center justify-center gap-2 pt-4">
                     <button
-                      key={pageNum}
-                      onClick={() => setPage(pageNum)}
-                      className={`min-w-10 h-10 rounded text-sm font-medium transition-colors ${
-                        page === pageNum
-                          ? "bg-black text-white"
-                          : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
-                      }`}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                      className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {pageNum}
+                      <svg
+                        className="h-5 w-5 text-gray-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
                     </button>
-                  );
-                })}
 
-                {totalPages > 5 && (
-                  <>
-                    <span className="text-gray-500">...</span>
+                    {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                      const pageNum = i + 1;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setPage(pageNum)}
+                          className={`min-w-10 h-10 rounded text-sm font-medium transition-colors ${page === pageNum
+                            ? "bg-black text-white"
+                            : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                            }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    {totalPages > 5 && (
+                      <>
+                        <span className="text-gray-500">...</span>
+                        <button
+                          onClick={() => setPage(totalPages)}
+                          className={`min-w-10 h-10 rounded text-sm font-medium transition-colors ${page === totalPages
+                            ? "bg-black text-white"
+                            : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                            }`}
+                        >
+                          {totalPages}
+                        </button>
+                      </>
+                    )}
+
                     <button
-                      onClick={() => setPage(totalPages)}
-                      className={`min-w-10 h-10 rounded text-sm font-medium transition-colors ${
-                        page === totalPages
-                          ? "bg-black text-white"
-                          : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
-                      }`}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {totalPages}
+                      <svg
+                        className="h-5 w-5 text-gray-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
                     </button>
-                  </>
-                )}
-
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg
-                    className="h-5 w-5 text-gray-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              </div>
-            )}
-            </div>
-          </div>
+                  </div>
+                )
+              }
+            </div >
+          </div >
 
           {/* Recommendations Sidebar */}
-          <RecommendationsSidebar
+          < RecommendationsSidebar
             key={recommendationsKey}
             maxItems={8}
             context={searchInput ? "search" : "browse"}
             onRefresh={() => {
               setRecommendationsKey((prev) => prev + 1);
               loadBooks();
-            }}
+            }
+            }
           />
-        </div>
-      </main>
-    </div>
+        </div >
+      </main >
+    </div >
   );
 }

@@ -31,24 +31,22 @@ export async function GET(request) {
       const { filters, freeText } = parseSearchQuery(search);
       const orConditions = [];
 
-      // Handle author-specific filter
+      // Handle author-specific filter - search only by name
       if (filters.author) {
         orConditions.push({ name: { $regex: filters.author, $options: "i" } });
       }
 
-      // Add free text search
+      // Add free text search - only search by name, not bio
       if (freeText) {
         orConditions.push(
-          { name: { $regex: freeText, $options: "i" } },
-          { bio: { $regex: freeText, $options: "i" } }
+          { name: { $regex: freeText, $options: "i" } }
         );
       }
 
-      // If no specific filters, search all fields
+      // If no specific filters, search only by name
       if (orConditions.length === 0 && !freeText && !filters.author) {
         orConditions.push(
-          { name: { $regex: search, $options: "i" } },
-          { bio: { $regex: search, $options: "i" } }
+          { name: { $regex: search, $options: "i" } }
         );
       }
 
