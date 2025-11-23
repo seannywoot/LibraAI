@@ -54,7 +54,7 @@ async function extractTextFromPDF(base64Data) {
     if (pdfjs.GlobalWorkerOptions) {
       pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/build/pdf.worker.js";
     }
-// Convert base64 to Uint8Array
+    // Convert base64 to Uint8Array
     const pdfBytes = Uint8Array.from(Buffer.from(base64Data, "base64"));
 
     const loadingTask = pdfjs.getDocument({ data: pdfBytes });
@@ -77,12 +77,12 @@ async function extractTextFromPDF(base64Data) {
 
     fullText = fullText.trim();
     const wordCount = fullText ? fullText.split(/\s+/).length : 0;
-    
+
     let formattedText = fullText;
     if (numPages > 50) {
       formattedText += `\n\n[Note: Document has ${numPages} pages. Only first 50 pages were extracted for analysis.]`;
     }
-    
+
     return {
       success: true,
       text: formattedText.trim(),
@@ -166,10 +166,10 @@ async function searchBooks(db, query, status) {
 
 async function getBooksByCategory(db, shelfCode) {
   const booksCollection = db.collection("books");
-  
+
   // Get total count for this shelf
   const totalInShelf = await booksCollection.countDocuments({ shelf: shelfCode });
-  
+
   const books = await booksCollection
     .find({ shelf: shelfCode })
     .limit(20)
@@ -241,20 +241,20 @@ async function getAvailableShelves(db) {
 
 async function getCatalogStats(db) {
   const booksCollection = db.collection("books");
-  
+
   // Get total counts
   const totalBooks = await booksCollection.countDocuments({});
   const availableBooks = await booksCollection.countDocuments({ status: "available" });
   const borrowedBooks = await booksCollection.countDocuments({ status: "borrowed" });
   const reservedBooks = await booksCollection.countDocuments({ status: "reserved" });
-  
+
   // Get category distribution
   const categoryStats = await booksCollection.aggregate([
     { $group: { _id: "$category", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
     { $limit: 10 }
   ]).toArray();
-  
+
   return {
     totalBooks,
     availableBooks,
@@ -323,12 +323,12 @@ async function generateBorrowLink(db, bookId) {
       formattedMessage: canBorrow
         ? `Great! You can borrow "${book.title}" by ${book.author} by clicking this link: ${borrowLink}\n\nThis will take you to the book details page where you can submit your borrow request.`
         : book.status === "borrowed"
-        ? `"${book.title}" is currently checked out. You can view its details here: ${borrowLink}`
-        : book.status === "reserved"
-        ? `"${book.title}" is currently reserved. You can view its details here: ${borrowLink}`
-        : book.loanPolicy === "reference-only"
-        ? `"${book.title}" is reference only and cannot be borrowed. You can view it in the library. Details: ${borrowLink}`
-        : `"${book.title}" is currently unavailable for borrowing. View details: ${borrowLink}`,
+          ? `"${book.title}" is currently checked out. You can view its details here: ${borrowLink}`
+          : book.status === "reserved"
+            ? `"${book.title}" is currently reserved. You can view its details here: ${borrowLink}`
+            : book.loanPolicy === "reference-only"
+              ? `"${book.title}" is reference only and cannot be borrowed. You can view it in the library. Details: ${borrowLink}`
+              : `"${book.title}" is currently unavailable for borrowing. View details: ${borrowLink}`,
     };
   } catch (error) {
     return { error: "Invalid book ID" };
@@ -350,7 +350,7 @@ export async function POST(request) {
       message = formData.get("message");
       history = JSON.parse(formData.get("history") || "[]");
       conversationId = formData.get("conversationId") || null;
-      
+
       // Get PDF context if available (for follow-up questions)
       const pdfContextStr = formData.get("pdfContext");
       if (pdfContextStr) {
@@ -378,7 +378,7 @@ export async function POST(request) {
         if (file.type === "application/pdf") {
           console.log("📄 Extracting text from PDF...");
           const pdfExtraction = await extractTextFromPDF(base64Data);
-          
+
           if (pdfExtraction.success) {
             console.log(`✅ PDF text extracted: ${pdfExtraction.pageCount} pages, ${pdfExtraction.wordCount} words`);
             fileData.extractedText = pdfExtraction.text;
@@ -397,7 +397,7 @@ export async function POST(request) {
       history = body.history;
       conversationId = body.conversationId;
       pdfContext = body.pdfContext; // Get PDF context for follow-up questions
-      
+
       if (pdfContext) {
         console.log("📄 Using existing PDF context from JSON:", pdfContext.name);
       }
@@ -747,73 +747,73 @@ RESPONSE STYLE:
       try {
         console.log("🤖 Attempting to use GPT-4o via Bytez (with tool calling)...");
         const bytezModel = bytezSDK.model("openai/gpt-4o");
-      
-      // Build messages for OpenAI format
-      let userMessageContent = message;
-      const toolCallingInstruction = `\n\nFUNCTION CALLING INSTRUCTIONS (VERY IMPORTANT)\nIf answering requires library data (search, category, stats, details, borrow):\n- Do NOT fabricate data.\n- Instead, output ONLY a JSON object with one of these shapes:\n  {\n    "call_functions": [ { "name": "<functionName>", "arguments": { ... } } ]\n  }\n  or for a single call:\n  {\n    "call_function": { "name": "<functionName>", "arguments": { ... } }\n  }\nValid function names: searchBooks, getBooksByCategory, getAvailableShelves, getCatalogStats, getBookDetails, generateBorrowLink.\nArguments must follow the provided schemas.\nIf no function is needed, reply normally with text.`;
-      
-      // Add PDF context if available (for follow-up questions)
-      if (!fileData && pdfContext && pdfContext.extractedText) {
-        const pdfInfo = `\n\n[Context: User previously uploaded a PDF file: ${pdfContext.name} (${pdfContext.pageCount} pages, ${pdfContext.wordCount} words)]\n\nPDF Content:\n${pdfContext.extractedText}`;
-        userMessageContent = `${message}${pdfInfo}\n\nPlease answer the user's question based on the PDF content above.`;
-        console.log("📄 Including PDF context in Qwen follow-up question");
-      }
-      // Add new PDF data if uploaded
-      else if (fileData && fileData.mimeType === "application/pdf" && fileData.extractedText) {
-        const pdfInfo = `\n\n[User uploaded a PDF file: ${fileData.name} (${fileData.pageCount} pages, ${fileData.wordCount} words)]\n\nExtracted PDF Content:\n${fileData.extractedText}`;
-        userMessageContent = `${message}${pdfInfo}\n\nPlease analyze this PDF document and respond to the user's request. If they asked for a summary, provide a concise overview. If they asked for bullet points, create a structured list of key points.`;
-      }
-      
-      const openaiMessages = [
-        {
-          role: "system",
-          content: systemContext
-        },
-        {
-          role: "system",
-          content: toolCallingInstruction
-        },
-        ...chatHistory.map(msg => ({
-          role: msg.role === "model" ? "assistant" : (msg.role === "user" ? "user" : "assistant"),
-          content: msg.parts[0].text
-        })),
-        {
-          role: "user",
-          content: userMessageContent
-        }
-      ];
 
-      // Use queue to handle concurrency limit of 1
-      const queueLength = qwenQueue.getQueueLength();
-      if (queueLength > 0) {
-        console.log(`⏳ Qwen queue has ${queueLength} pending requests, waiting...`);
-      }
-      
-      // Prepare functions array in the OpenAI schema if possible
-      const functionsForBytez = (Array.isArray(tools) ? tools.flatMap(t => t.functionDeclarations || []) : []);
-      console.log(`Prepared ${functionsForBytez.length} function declarations for Bytez`);
-      const { error, output } = await qwenQueue.add(async () => {
-        try {
-          console.log("Calling bytezModel.run with functions/tools to test function-calling support");
-          return await bytezModel.run(openaiMessages, {
-            temperature: 0.7,
-            // Pass the flattened functions declarations (OpenAI-style)
-            functions: functionsForBytez,
-            function_call: "auto",
-          });
-        } catch (e) {
-          console.warn("bytezModel.run rejected functions param, falling back to previous call:", e?.message || e);
-          // Fallback to original call without functions param
-          return await bytezModel.run(openaiMessages, { temperature: 0.7 });
+        // Build messages for OpenAI format
+        let userMessageContent = message;
+        const toolCallingInstruction = `\n\nFUNCTION CALLING INSTRUCTIONS (VERY IMPORTANT)\nIf answering requires library data (search, category, stats, details, borrow):\n- Do NOT fabricate data.\n- Instead, output ONLY a JSON object with one of these shapes:\n  {\n    "call_functions": [ { "name": "<functionName>", "arguments": { ... } } ]\n  }\n  or for a single call:\n  {\n    "call_function": { "name": "<functionName>", "arguments": { ... } }\n  }\nValid function names: searchBooks, getBooksByCategory, getAvailableShelves, getCatalogStats, getBookDetails, generateBorrowLink.\nArguments must follow the provided schemas.\nIf no function is needed, reply normally with text.`;
+
+        // Add PDF context if available (for follow-up questions)
+        if (!fileData && pdfContext && pdfContext.extractedText) {
+          const pdfInfo = `\n\n[Context: User previously uploaded a PDF file: ${pdfContext.name} (${pdfContext.pageCount} pages, ${pdfContext.wordCount} words)]\n\nPDF Content:\n${pdfContext.extractedText}`;
+          userMessageContent = `${message}${pdfInfo}\n\nPlease answer the user's question based on the PDF content above.`;
+          console.log("📄 Including PDF context in Qwen follow-up question");
         }
-      });
-      
-      if (error) {
-        throw new Error(error);
-      }
+        // Add new PDF data if uploaded
+        else if (fileData && fileData.mimeType === "application/pdf" && fileData.extractedText) {
+          const pdfInfo = `\n\n[User uploaded a PDF file: ${fileData.name} (${fileData.pageCount} pages, ${fileData.wordCount} words)]\n\nExtracted PDF Content:\n${fileData.extractedText}`;
+          userMessageContent = `${message}${pdfInfo}\n\nPlease analyze this PDF document and respond to the user's request. If they asked for a summary, provide a concise overview. If they asked for bullet points, create a structured list of key points.`;
+        }
+
+        const openaiMessages = [
+          {
+            role: "system",
+            content: systemContext
+          },
+          {
+            role: "system",
+            content: toolCallingInstruction
+          },
+          ...chatHistory.map(msg => ({
+            role: msg.role === "model" ? "assistant" : (msg.role === "user" ? "user" : "assistant"),
+            content: msg.parts[0].text
+          })),
+          {
+            role: "user",
+            content: userMessageContent
+          }
+        ];
+
+        // Use queue to handle concurrency limit of 1
+        const queueLength = qwenQueue.getQueueLength();
+        if (queueLength > 0) {
+          console.log(`⏳ Qwen queue has ${queueLength} pending requests, waiting...`);
+        }
+
+        // Prepare functions array in the OpenAI schema if possible
+        const functionsForBytez = (Array.isArray(tools) ? tools.flatMap(t => t.functionDeclarations || []) : []);
+        console.log(`Prepared ${functionsForBytez.length} function declarations for Bytez`);
+        const { error, output } = await qwenQueue.add(async () => {
+          try {
+            console.log("Calling bytezModel.run with functions/tools to test function-calling support");
+            return await bytezModel.run(openaiMessages, {
+              temperature: 0.7,
+              // Pass the flattened functions declarations (OpenAI-style)
+              functions: functionsForBytez,
+              function_call: "auto",
+            });
+          } catch (e) {
+            console.warn("bytezModel.run rejected functions param, falling back to previous call:", e?.message || e);
+            // Fallback to original call without functions param
+            return await bytezModel.run(openaiMessages, { temperature: 0.7 });
+          }
+        });
+
+        if (error) {
+          throw new Error(error);
+        }
 
         console.log("✅ GPT-4o responded successfully");
-        
+
         // Extract text from output
         const responseText = typeof output === 'string' ? output : (output?.content || output);
 
@@ -955,7 +955,7 @@ RESPONSE STYLE:
           text: () => finalText,
           functionCalls: () => null,
         };
-        
+
       } catch (openaiError) {
         console.warn("⚠️ GPT-4o failed or unavailable, falling back to Gemini:", openaiError.message);
         usingGemini = true;
@@ -979,7 +979,7 @@ RESPONSE STYLE:
     // Only use Gemini if OpenAI failed
     if (usingGemini) {
       console.log("🔄 Using Gemini 2.5 Flash as fallback");
-      
+
       chat = model.startChat({
         history: [
           {
@@ -1053,7 +1053,7 @@ RESPONSE STYLE:
       // Deduplicate function calls
       const uniqueFunctionCalls = [];
       const seenCalls = new Set();
-      
+
       for (const call of functionCalls) {
         const callKey = `${call.name}:${JSON.stringify(call.args)}`;
         if (!seenCalls.has(callKey)) {
@@ -1076,7 +1076,7 @@ RESPONSE STYLE:
             switch (functionName) {
               case "searchBooks":
                 functionResult = await searchBooks(db, args.query, args.status);
-                
+
                 // Add helpful context if no results
                 if (functionResult.totalMatches === 0) {
                   functionResult.suggestion = `No books found for "${args.query}". Consider trying:
@@ -1088,7 +1088,7 @@ RESPONSE STYLE:
                 break;
               case "getBooksByCategory":
                 functionResult = await getBooksByCategory(db, args.shelfCode);
-                
+
                 if (functionResult.totalInShelf === 0) {
                   functionResult.suggestion = `Shelf "${args.shelfCode}" has no books. Use getAvailableShelves to see available shelves.`;
                 }
@@ -1110,7 +1110,7 @@ RESPONSE STYLE:
               default:
                 functionResult = { error: "Unknown function" };
             }
-            
+
             executedFunctions.add(functionName);
           } catch (error) {
             console.error(`Error in function ${functionName}:`, error);
@@ -1181,12 +1181,12 @@ RESPONSE STYLE:
     // If user asks a different question, it means the previous one was answered
     if (history && history.length > 0) {
       const unansweredQueriesCollection = db.collection("unanswered_queries");
-      
+
       // Get the last user message from history
       const lastUserMessages = history.filter(m => m.role === 'user');
       if (lastUserMessages.length > 0) {
         const lastUserMessage = lastUserMessages[lastUserMessages.length - 1].content;
-        
+
         // If current message is different from last message, mark last as resolved
         if (lastUserMessage.toLowerCase().trim() !== message.toLowerCase().trim()) {
           await unansweredQueriesCollection.updateMany(
@@ -1232,7 +1232,7 @@ RESPONSE STYLE:
       stack: error.stack,
       name: error.name
     });
-    
+
     return NextResponse.json(
       {
         error: "Failed to get response from AI",

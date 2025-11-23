@@ -21,6 +21,8 @@
     "seed-books": "node scripts/seed-books-direct.js",
     "add-slugs": "node scripts/add-slugs.js",
     "check-slugs": "node scripts/check-slugs.js",
+    "debug-conversations": "node scripts/debug-conversations.js",
+    "migrate-conversations": "node scripts/migrate-all-conversation-userids.js",
     "vercel-build": "next build"
   },
   "engines": {

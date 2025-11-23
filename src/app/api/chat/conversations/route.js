@@ -15,7 +15,7 @@ export async function GET() {
   try {
     // Requirement 3.2: Authenticate the user session
     const session = await getServerSession(authOptions);
-    
+
     // Requirement 3.7: Return 401 if user is not authenticated
     if (!session || !session.user) {
       return NextResponse.json(
@@ -61,7 +61,7 @@ export async function GET() {
     );
   } catch (error) {
     console.error("Error loading conversations:", error);
-    
+
     return NextResponse.json(
       {
         success: false,
@@ -84,7 +84,7 @@ export async function POST(request) {
   try {
     // Requirement 2.2: Authenticate the user session
     const session = await getServerSession(authOptions);
-    
+
     // Requirement 2.7: Return 401 if user is not authenticated
     if (!session || !session.user) {
       return NextResponse.json(
@@ -178,8 +178,15 @@ export async function POST(request) {
     const db = await getDb();
     const conversationsCollection = db.collection("conversations");
 
-    // Get user ID from session
+    // Get user ID from session - ALWAYS prefer ObjectId over email to ensure consistency
+    // This prevents userId mismatch issues where conversations get saved with different userId formats
     const userId = session.user.id || session.user.email;
+
+    // Log warning if falling back to email (shouldn't happen in normal operation)
+    if (!session.user.id) {
+      console.warn('⚠️  POST /api/chat/conversations: session.user.id is missing, using email as fallback');
+      console.warn('   This may cause conversation history issues. Ensure user.id is set in session.');
+    }
 
     // Prepare conversation document
     const now = new Date();
@@ -230,7 +237,7 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error("Error saving conversation:", error);
-    
+
     // Handle JSON parsing errors
     if (error instanceof SyntaxError) {
       return NextResponse.json(
@@ -241,7 +248,7 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    
+
     return NextResponse.json(
       {
         success: false,
