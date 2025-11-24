@@ -20,6 +20,15 @@ const nextConfig = {
         canvas: false,
       };
     }
+    
+    // PDF.js configuration for serverless
+    if (isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        canvas: false,
+      };
+    }
+    
     return config;
   },
 };

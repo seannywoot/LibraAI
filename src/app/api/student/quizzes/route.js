@@ -64,10 +64,16 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
+        console.log("========== POST /api/student/quizzes ==========");
         const session = await getServerSession(authOptions);
+        console.log("Session user:", session?.user?.email);
+        
         if (!session || session.user?.role !== "student") {
+            console.log("❌ Unauthorized");
             return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
         }
+        
+        console.log("✅ User authorized:", session.user.id);
 
         const formData = await request.formData();
         const pdfFile = formData.get("pdf");
@@ -95,16 +101,28 @@ export async function POST(request) {
 
         let pdfText = "";
         try {
+            console.log("📄 Starting PDF text extraction...");
             const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
 
-            // Ensure worker is configured for Node environment
+            // Disable worker for serverless environment
             if (pdfjs.GlobalWorkerOptions) {
-                pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/build/pdf.worker.js";
+                pdfjs.GlobalWorkerOptions.workerSrc = null;
             }
 
+            console.log("✅ PDF.js loaded, worker disabled");
+
             const pdfBytes = new Uint8Array(buffer);
-            const loadingTask = pdfjs.getDocument({ data: pdfBytes });
+            console.log("📦 PDF bytes prepared, size:", pdfBytes.length);
+            
+            const loadingTask = pdfjs.getDocument({ 
+                data: pdfBytes,
+                useWorkerFetch: false,
+                isEvalSupported: false,
+                useSystemFonts: true
+            });
+            
             const doc = await loadingTask.promise;
+            console.log("✅ PDF loaded, pages:", doc.numPages);
 
             const numPages = doc.numPages || 1;
             const maxPages = Math.min(numPages, 20);
@@ -115,12 +133,18 @@ export async function POST(request) {
                 const content = await page.getTextContent();
                 const pageText = content.items.map((item) => ("str" in item ? item.str : "")).join(" ");
                 fullText += `\n\n${pageText}`;
+                console.log(`✅ Extracted page ${pageNum}/${maxPages}`);
             }
 
             pdfText = fullText.trim();
+            console.log("✅ Total text extracted:", pdfText.length, "characters");
         } catch (pdfError) {
-            console.error("PDF text extraction error:", pdfError);
-            return NextResponse.json({ ok: false, error: "Failed to extract text from PDF" }, { status: 500 });
+            console.error("❌ PDF text extraction error:", pdfError);
+            console.error("Error stack:", pdfError.stack);
+            return NextResponse.json({ 
+                ok: false, 
+                error: `Failed to extract text from PDF: ${pdfError.message}` 
+            }, { status: 500 });
         }
 
         if (!pdfText || pdfText.trim().length < 100) {
@@ -129,8 +153,10 @@ export async function POST(request) {
 
         const bytezApiKey = process.env.BYTEZ_API_KEY;
         if (!bytezApiKey) {
+            console.error("❌ BYTEZ_API_KEY environment variable is not set");
             return NextResponse.json({ ok: false, error: "AI API key not configured" }, { status: 500 });
         }
+        console.log("✅ Bytez API key found, length:", bytezApiKey.length);
 
         const Bytez = (await import("bytez.js")).default;
         const bytezSDK = new Bytez(bytezApiKey);
@@ -150,6 +176,7 @@ The correctAnswer field should be the index (0-3) of the correct option. Make su
 
         let aiContent = "";
         try {
+            console.log("🤖 Calling Bytez AI...");
             const messages = [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userPrompt }
@@ -161,8 +188,12 @@ The correctAnswer field should be the index (0-3) of the correct option. Make su
             });
 
             if (error) {
-                console.error("Bytez AI generation error:", error);
-                return NextResponse.json({ ok: false, error: "Failed to generate quiz questions" }, { status: 500 });
+                console.error("❌ Bytez AI generation error:", error);
+                console.error("Error details:", JSON.stringify(error, null, 2));
+                return NextResponse.json({ 
+                    ok: false, 
+                    error: `AI generation failed: ${error.message || JSON.stringify(error)}` 
+                }, { status: 500 });
             }
 
             aiContent = output || "";
@@ -171,10 +202,15 @@ The correctAnswer field should be the index (0-3) of the correct option. Make su
                 aiContent = aiContent.content;
             }
 
-            console.log("AI Content extracted, length:", aiContent.length);
+            console.log("✅ AI Content extracted, length:", aiContent.length);
+            console.log("📝 First 200 chars:", aiContent.substring(0, 200));
         } catch (aiError) {
-            console.error("Bytez AI call failed:", aiError);
-            return NextResponse.json({ ok: false, error: "Failed to generate quiz questions" }, { status: 500 });
+            console.error("❌ Bytez AI call failed:", aiError);
+            console.error("Error stack:", aiError.stack);
+            return NextResponse.json({ 
+                ok: false, 
+                error: `AI call failed: ${aiError.message}` 
+            }, { status: 500 });
         }
 
         let questions;
