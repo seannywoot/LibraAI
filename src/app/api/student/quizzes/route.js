@@ -104,8 +104,12 @@ export async function POST(request) {
 
         let pdfText = "";
         try {
-            // Use the Node.js CommonJS build which does not require a worker
-const pdfjs = await import("pdfjs-dist/build/pdf.node.js");
+            // Use the legacy build and explicitly disable workers for Node/serverless
+            const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
+
+            if (pdfjs.GlobalWorkerOptions) {
+                pdfjs.GlobalWorkerOptions.workerSrc = undefined;
+            }
 
             // Convert to Uint8Array
             const pdfBytes = new Uint8Array(buffer);
