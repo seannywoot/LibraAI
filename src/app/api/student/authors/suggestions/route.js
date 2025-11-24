@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { escapeRegex } from "@/utils/searchParser";
 
 export async function GET(request) {
   try {
@@ -24,7 +25,7 @@ export async function GET(request) {
     const authors = await db
       .collection("authors")
       .find({
-        name: { $regex: query, $options: "i" },
+        name: { $regex: escapeRegex(query), $options: "i" },
       })
       .limit(6)
       .toArray();

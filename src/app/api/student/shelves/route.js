@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
-import { parseSearchQuery } from "@/utils/searchParser";
+import { parseSearchQuery, escapeRegex } from "@/utils/searchParser";
 
 export async function GET(request) {
   try {
@@ -20,6 +20,7 @@ export async function GET(request) {
     const search = searchParams.get("search")?.trim() || "";
     const sortBy = searchParams.get("sortBy") || "code";
     const locationFilter = searchParams.get("location")?.trim() || "";
+    const codePrefixFilter = searchParams.get("codePrefix")?.trim() || "";
 
     const client = await clientPromise;
     const db = client.db();
@@ -35,22 +36,22 @@ export async function GET(request) {
 
       // Handle shelf-specific filter
       if (filters.shelf) {
-        orConditions.push({ code: { $regex: filters.shelf, $options: "i" } });
+        orConditions.push({ code: { $regex: escapeRegex(filters.shelf), $options: "i" } });
       }
 
       // Add free text search for code and location
       if (freeText) {
         orConditions.push(
-          { code: { $regex: freeText, $options: "i" } },
-          { location: { $regex: freeText, $options: "i" } }
+          { code: { $regex: escapeRegex(freeText), $options: "i" } },
+          { location: { $regex: escapeRegex(freeText), $options: "i" } }
         );
       }
 
       // If no specific filters, search code and location fields
       if (orConditions.length === 0 && !freeText && !filters.shelf) {
         orConditions.push(
-          { code: { $regex: search, $options: "i" } },
-          { location: { $regex: search, $options: "i" } }
+          { code: { $regex: escapeRegex(search), $options: "i" } },
+          { location: { $regex: escapeRegex(search), $options: "i" } }
         );
       }
 
@@ -61,7 +62,12 @@ export async function GET(request) {
 
     // Add location filter
     if (locationFilter) {
-      query.location = { $regex: locationFilter, $options: "i" };
+      query.location = { $regex: escapeRegex(locationFilter), $options: "i" };
+    }
+
+    // Add code prefix filter
+    if (codePrefixFilter) {
+      query.code = { $regex: `^${escapeRegex(codePrefixFilter)}`, $options: "i" };
     }
 
     // Determine sort order
