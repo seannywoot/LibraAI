@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
-import { parseSearchQuery } from "@/utils/searchParser";
+import { parseSearchQuery, escapeRegex } from "@/utils/searchParser";
 
 export async function GET(request) {
   try {
@@ -33,20 +33,20 @@ export async function GET(request) {
 
       // Handle author-specific filter - search only by name
       if (filters.author) {
-        orConditions.push({ name: { $regex: filters.author, $options: "i" } });
+        orConditions.push({ name: { $regex: escapeRegex(filters.author), $options: "i" } });
       }
 
       // Add free text search - only search by name, not bio
       if (freeText) {
         orConditions.push(
-          { name: { $regex: freeText, $options: "i" } }
+          { name: { $regex: escapeRegex(freeText), $options: "i" } }
         );
       }
 
       // If no specific filters, search only by name
       if (orConditions.length === 0 && !freeText && !filters.author) {
         orConditions.push(
-          { name: { $regex: search, $options: "i" } }
+          { name: { $regex: escapeRegex(search), $options: "i" } }
         );
       }
 

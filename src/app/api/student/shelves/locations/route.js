@@ -16,9 +16,14 @@ export async function GET(request) {
     const db = client.db();
     const shelves = db.collection("shelves");
 
-    // Get unique locations
-    const locations = await shelves.distinct("location", { location: { $exists: true, $ne: "" } });
-    
+    // Use aggregation instead of distinct to avoid apiStrict issues
+    const result = await shelves.aggregate([
+      { $match: { location: { $exists: true, $ne: "" } } },
+      { $group: { _id: null, locations: { $addToSet: "$location" } } }
+    ]).toArray();
+
+    const locations = result.length > 0 ? result[0].locations : [];
+
     // Sort alphabetically
     locations.sort();
 

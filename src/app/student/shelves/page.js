@@ -15,9 +15,10 @@ export default function StudentShelvesPage() {
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
   const [searchInput, setSearchInput] = useState("");
-  const [sortBy, setSortBy] = useState("code"); // 'code', 'bookCount', 'location'
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState("");
+  const [codePrefixes, setCodePrefixes] = useState([]);
+  const [selectedCodePrefix, setSelectedCodePrefix] = useState("");
   const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
 
   const navigationLinks = getStudentLinks();
@@ -36,25 +37,26 @@ export default function StudentShelvesPage() {
   useEffect(() => {
     loadShelves();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, sortBy, selectedLocation]);
+  }, [page, pageSize, selectedLocation, selectedCodePrefix]);
 
-  // Load unique locations on mount
+  // Load unique locations and code prefixes on mount
   useEffect(() => {
     loadLocations();
-     
+    loadCodePrefixes();
   }, []);
 
   async function loadShelves() {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ 
-        page: page.toString(), 
+      const params = new URLSearchParams({
+        page: page.toString(),
         pageSize: pageSize.toString(),
-        sortBy: sortBy
+        sortBy: "code"
       });
       if (searchInput) params.append("search", searchInput);
       if (selectedLocation) params.append("location", selectedLocation);
+      if (selectedCodePrefix) params.append("codePrefix", selectedCodePrefix);
       const res = await fetch(`/api/student/shelves?${params}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load shelves");
@@ -79,13 +81,25 @@ export default function StudentShelvesPage() {
     }
   }
 
+  async function loadCodePrefixes() {
+    try {
+      const res = await fetch("/api/student/shelves/prefixes", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        setCodePrefixes(data.prefixes || []);
+      }
+    } catch (e) {
+      console.error("Failed to load code prefixes:", e);
+    }
+  }
+
   function handleClearSearch() {
     setSearchInput("");
   }
 
   function handleClearFilters() {
-    setSortBy("code");
     setSelectedLocation("");
+    setSelectedCodePrefix("");
     setSearchInput("");
     setPage(1);
   }
@@ -108,43 +122,42 @@ export default function StudentShelvesPage() {
             {/* Search Bar with View Toggle */}
             <div className="flex items-center gap-3">
               <div className="relative flex-1">
-              <svg
-                className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search by code or location..."
-                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-              />
-              {searchInput && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                <svg
+                  className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search by code or location..."
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
               {/* View Toggle */}
               <div className="flex rounded-lg border border-zinc-300 bg-white overflow-hidden">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`px-3 py-2.5 text-sm transition-colors ${
-                    viewMode === "grid"
-                      ? "bg-zinc-900 text-white"
-                      : "text-zinc-700 hover:bg-zinc-50"
-                  }`}
+                  className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "grid"
+                    ? "bg-zinc-900 text-white"
+                    : "text-zinc-700 hover:bg-zinc-50"
+                    }`}
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -152,11 +165,10 @@ export default function StudentShelvesPage() {
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`px-3 py-2.5 text-sm transition-colors ${
-                    viewMode === "list"
-                      ? "bg-zinc-900 text-white"
-                      : "text-zinc-700 hover:bg-zinc-50"
-                  }`}
+                  className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "list"
+                    ? "bg-zinc-900 text-white"
+                    : "text-zinc-700 hover:bg-zinc-50"
+                    }`}
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -167,21 +179,24 @@ export default function StudentShelvesPage() {
 
             {/* Filters */}
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-zinc-700">Sort by:</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value);
-                    setPage(1);
-                  }}
-                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                >
-                  <option value="code">Shelf Code</option>
-                  <option value="bookCount">Book Count</option>
-                  <option value="location">Location</option>
-                </select>
-              </div>
+              {codePrefixes.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-zinc-700">Code:</label>
+                  <select
+                    value={selectedCodePrefix}
+                    onChange={(e) => {
+                      setSelectedCodePrefix(e.target.value);
+                      setPage(1);
+                    }}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                  >
+                    <option value="">All Codes</option>
+                    {codePrefixes.map((prefix) => (
+                      <option key={prefix} value={prefix}>{prefix}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {locations.length > 0 && (
                 <div className="flex items-center gap-2">
@@ -202,7 +217,7 @@ export default function StudentShelvesPage() {
                 </div>
               )}
 
-              {(sortBy !== "code" || selectedLocation || searchInput) && (
+              {(selectedLocation || selectedCodePrefix || searchInput) && (
                 <button
                   onClick={handleClearFilters}
                   className="ml-auto text-sm text-zinc-600 hover:text-zinc-900 underline"
