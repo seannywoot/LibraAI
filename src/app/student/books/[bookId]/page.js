@@ -31,6 +31,11 @@ function StatusChip({ status }) {
       text: "text-zinc-800",
       dot: "bg-zinc-500",
     },
+    damaged: {
+      bg: "bg-rose-100",
+      text: "text-rose-800",
+      dot: "bg-rose-500",
+    },
     lost: { bg: "bg-rose-100", text: "text-rose-800", dot: "bg-rose-500" },
   };
   const c = map[status] || map.available;
@@ -45,6 +50,16 @@ function StatusChip({ status }) {
       {label}
     </span>
   );
+}
+
+function formatBookFormat(format) {
+  if (!format) return null;
+  
+  const formatLower = format.toLowerCase();
+  if (formatLower === 'hardcover' || formatLower === 'paperback') {
+    return `Physical, ${format}`;
+  }
+  return format;
 }
 
 export default function BookDetailPage({ params }) {
@@ -377,7 +392,7 @@ export default function BookDetailPage({ params }) {
                     <p className="text-sm font-semibold text-gray-900">
                       Format
                     </p>
-                    <p className="text-sm text-gray-600">{book.format}</p>
+                    <p className="text-sm text-gray-600">{formatBookFormat(book.format)}</p>
                   </div>
                 )}
                 {((book.categories && book.categories.length > 0) || book.category) && (

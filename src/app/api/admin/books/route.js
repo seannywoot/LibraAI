@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { buildSearchQuery } from "@/utils/searchParser";
 
 export async function GET(request) {
   try {
@@ -37,17 +38,8 @@ export async function GET(request) {
       thumbnail: 1,
     };
 
-    // Build search query
-    const query = search
-      ? {
-          $or: [
-            { title: { $regex: search, $options: "i" } },
-            { author: { $regex: search, $options: "i" } },
-            { isbn: { $regex: search, $options: "i" } },
-            { barcode: { $regex: search, $options: "i" } },
-          ],
-        }
-      : {};
+    // Build search query with advanced syntax support (e.g., "author: Rowling", "year: 2023")
+    const query = search ? buildSearchQuery(search) : {};
 
     const [rawItems, total] = await Promise.all([
       books.find(query, { projection }).sort({ createdAt: -1 }).skip(skip).limit(pageSize).toArray(),

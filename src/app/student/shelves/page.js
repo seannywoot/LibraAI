@@ -15,6 +15,9 @@ export default function StudentShelvesPage() {
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
   const [searchInput, setSearchInput] = useState("");
+  const [sortBy, setSortBy] = useState("code"); // 'code', 'bookCount', 'location'
+  const [locations, setLocations] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState("");
 
   const navigationLinks = getStudentLinks();
 
@@ -32,14 +35,25 @@ export default function StudentShelvesPage() {
   useEffect(() => {
     loadShelves();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize]);
+  }, [page, pageSize, sortBy, selectedLocation]);
+
+  // Load unique locations on mount
+  useEffect(() => {
+    loadLocations();
+     
+  }, []);
 
   async function loadShelves() {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
+      const params = new URLSearchParams({ 
+        page: page.toString(), 
+        pageSize: pageSize.toString(),
+        sortBy: sortBy
+      });
       if (searchInput) params.append("search", searchInput);
+      if (selectedLocation) params.append("location", selectedLocation);
       const res = await fetch(`/api/student/shelves?${params}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load shelves");
@@ -52,8 +66,27 @@ export default function StudentShelvesPage() {
     }
   }
 
+  async function loadLocations() {
+    try {
+      const res = await fetch("/api/student/shelves/locations", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        setLocations(data.locations || []);
+      }
+    } catch (e) {
+      console.error("Failed to load locations:", e);
+    }
+  }
+
   function handleClearSearch() {
     setSearchInput("");
+  }
+
+  function handleClearFilters() {
+    setSortBy("code");
+    setSelectedLocation("");
+    setSearchInput("");
+    setPage(1);
   }
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -70,33 +103,82 @@ export default function StudentShelvesPage() {
             <p className="text-sm text-zinc-600">Explore library shelves and discover books by location.</p>
           </div>
 
-          <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search by code or location..."
-              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-            />
-            {searchInput && (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+          <div className="space-y-4">
+            <div className="relative">
+              <svg
+                className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search by code or location..."
+                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Filters */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-zinc-700">Sort by:</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setPage(1);
+                  }}
+                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                >
+                  <option value="code">Shelf Code</option>
+                  <option value="bookCount">Book Count</option>
+                  <option value="location">Location</option>
+                </select>
+              </div>
+
+              {locations.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-zinc-700">Location:</label>
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => {
+                      setSelectedLocation(e.target.value);
+                      setPage(1);
+                    }}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                  >
+                    <option value="">All Locations</option>
+                    {locations.map((loc) => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {(sortBy !== "code" || selectedLocation || searchInput) && (
+                <button
+                  onClick={handleClearFilters}
+                  className="ml-auto text-sm text-zinc-600 hover:text-zinc-900 underline"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </div>
           </div>
         </header>
 

@@ -1,7 +1,7 @@
 /**
  * Escape special regex characters in user input
  */
-function escapeRegex(text) {
+export function escapeRegex(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 

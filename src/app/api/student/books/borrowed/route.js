@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { parseSearchQuery, escapeRegex } from "@/utils/searchParser";
 
 export async function GET(request) {
   try {
@@ -25,12 +26,37 @@ export async function GET(request) {
       status: { $in: ["pending-approval", "borrowed", "return-requested", "rejected"] },
     };
 
-    // Add search filter if provided
+    // Add search filter with advanced syntax support (e.g., "author: Rowling", "title: Harry Potter")
     if (search) {
-      query.$or = [
-        { bookTitle: { $regex: search, $options: "i" } },
-        { bookAuthor: { $regex: search, $options: "i" } },
-      ];
+      const { filters, freeText } = parseSearchQuery(search);
+      const orConditions = [];
+
+      if (filters.title) {
+        orConditions.push({ bookTitle: { $regex: escapeRegex(filters.title), $options: "i" } });
+      }
+      if (filters.author) {
+        orConditions.push({ bookAuthor: { $regex: escapeRegex(filters.author), $options: "i" } });
+      }
+
+      if (freeText) {
+        const escapedText = escapeRegex(freeText);
+        orConditions.push(
+          { bookTitle: { $regex: escapedText, $options: "i" } },
+          { bookAuthor: { $regex: escapedText, $options: "i" } }
+        );
+      }
+
+      if (orConditions.length === 0) {
+        const escapedSearch = escapeRegex(search);
+        orConditions.push(
+          { bookTitle: { $regex: escapedSearch, $options: "i" } },
+          { bookAuthor: { $regex: escapedSearch, $options: "i" } }
+        );
+      }
+
+      if (orConditions.length > 0) {
+        query.$or = orConditions;
+      }
     }
 
     const borrowed = await transactions

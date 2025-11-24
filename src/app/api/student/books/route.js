@@ -84,11 +84,42 @@ export async function GET(request) {
       }
     }
 
-    // Apply format filter (case-insensitive, partial match)
+    // Apply format filter
     if (formats.length > 0) {
-      // Create regex patterns for case-insensitive partial matching
-      // This matches "Physical" in "Physical Book" and "eBook" in "eBook" or "E-Book"
-      query.format = { $in: formats.map(f => new RegExp(f, 'i')) };
+      const formatRegexes = [];
+      
+      formats.forEach(f => {
+        if (f.toLowerCase() === 'physical') {
+          // "Physical" should match:
+          // - Hardcover
+          // - Paperback
+          // - "Physical Book" or "Physical" (exact or partial match)
+          // - Books with no format field (null/undefined) - assume physical by default
+          formatRegexes.push(
+            /^Hardcover$/i,
+            /^Paperback$/i,
+            /^Physical/i  // Matches "Physical", "Physical Book", etc.
+          );
+        } else {
+          // For eBook or other formats, match exactly
+          formatRegexes.push(new RegExp(`^${f}$`, 'i'));
+        }
+      });
+      
+      if (formatRegexes.length > 0) {
+        // Also include books with null/undefined format when filtering by Physical
+        if (formats.some(f => f.toLowerCase() === 'physical')) {
+          query.$or = query.$or || [];
+          query.$or.push(
+            { format: { $in: formatRegexes } },
+            { format: { $exists: false } },
+            { format: null },
+            { format: "" }
+          );
+        } else {
+          query.format = { $in: formatRegexes };
+        }
+      }
     }
 
     // Apply category filter (check both category and categories fields)

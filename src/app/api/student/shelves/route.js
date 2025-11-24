@@ -18,6 +18,8 @@ export async function GET(request) {
     const pageSize = Math.max(Math.min(parseInt(searchParams.get("pageSize") || "20", 10), 100), 1);
     const skip = (page - 1) * pageSize;
     const search = searchParams.get("search")?.trim() || "";
+    const sortBy = searchParams.get("sortBy") || "code";
+    const locationFilter = searchParams.get("location")?.trim() || "";
 
     const client = await clientPromise;
     const db = client.db();
@@ -57,8 +59,20 @@ export async function GET(request) {
       }
     }
 
+    // Add location filter
+    if (locationFilter) {
+      query.location = { $regex: locationFilter, $options: "i" };
+    }
+
+    // Determine sort order
+    let sortOrder = { code: 1 };
+    if (sortBy === "location") {
+      sortOrder = { location: 1, code: 1 };
+    }
+    // Note: bookCount sorting will be done after fetching since it's computed
+
     const [rawItems, total] = await Promise.all([
-      shelves.find(query, { projection }).sort({ code: 1 }).skip(skip).limit(pageSize).toArray(),
+      shelves.find(query, { projection }).sort(sortOrder).skip(skip).limit(pageSize).toArray(),
       shelves.countDocuments(query),
     ]);
 
@@ -70,6 +84,11 @@ export async function GET(request) {
         return { ...shelf, bookCount };
       })
     );
+
+    // Sort by book count if requested (after computing counts)
+    if (sortBy === "bookCount") {
+      itemsWithCounts.sort((a, b) => b.bookCount - a.bookCount);
+    }
 
     return new Response(
       JSON.stringify({ ok: true, items: itemsWithCounts, page, pageSize, total }),

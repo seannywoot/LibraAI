@@ -8,6 +8,7 @@ import {
   buildRequestDeniedEmail, 
   buildReturnConfirmationEmail 
 } from "@/lib/email-templates";
+import { parseSearchQuery, escapeRegex } from "@/utils/searchParser";
 
 export async function GET(request) {
   try {
@@ -43,14 +44,44 @@ export async function GET(request) {
       query.status = statusFilter;
     }
     
-    // Add search filter
+    // Add search filter with advanced syntax support
     if (search) {
-      query.$or = [
-        { bookTitle: { $regex: search, $options: "i" } },
-        { bookAuthor: { $regex: search, $options: "i" } },
-        { userName: { $regex: search, $options: "i" } },
-        { userId: { $regex: search, $options: "i" } },
-      ];
+      const { filters, freeText } = parseSearchQuery(search);
+      const orConditions = [];
+
+      // Handle specific field filters
+      if (filters.title) {
+        orConditions.push({ bookTitle: { $regex: escapeRegex(filters.title), $options: "i" } });
+      }
+      if (filters.author) {
+        orConditions.push({ bookAuthor: { $regex: escapeRegex(filters.author), $options: "i" } });
+      }
+
+      // Add free text search across all fields
+      if (freeText) {
+        const escapedText = escapeRegex(freeText);
+        orConditions.push(
+          { bookTitle: { $regex: escapedText, $options: "i" } },
+          { bookAuthor: { $regex: escapedText, $options: "i" } },
+          { userName: { $regex: escapedText, $options: "i" } },
+          { userEmail: { $regex: escapedText, $options: "i" } }
+        );
+      }
+
+      // If no specific filters, search all fields
+      if (orConditions.length === 0) {
+        const escapedSearch = escapeRegex(search);
+        orConditions.push(
+          { bookTitle: { $regex: escapedSearch, $options: "i" } },
+          { bookAuthor: { $regex: escapedSearch, $options: "i" } },
+          { userName: { $regex: escapedSearch, $options: "i" } },
+          { userEmail: { $regex: escapedSearch, $options: "i" } }
+        );
+      }
+
+      if (orConditions.length > 0) {
+        query.$or = orConditions;
+      }
     }
 
     // Sort by archivedAt if showing archived, otherwise by requestedAt/borrowedAt

@@ -30,6 +30,11 @@ function StatusChip({ status }) {
       text: "text-zinc-800",
       dot: "bg-zinc-500",
     },
+    damaged: {
+      bg: "bg-rose-100",
+      text: "text-rose-800",
+      dot: "bg-rose-500",
+    },
     lost: { bg: "bg-rose-100", text: "text-rose-800", dot: "bg-rose-500" },
   };
   const c = map[status] || map.available;
@@ -44,6 +49,16 @@ function StatusChip({ status }) {
       {label}
     </span>
   );
+}
+
+function formatBookFormat(format) {
+  if (!format) return null;
+  
+  const formatLower = format.toLowerCase();
+  if (formatLower === 'hardcover' || formatLower === 'paperback') {
+    return `Physical, ${format}`;
+  }
+  return format;
 }
 
 export default function StudentBooksPage() {
@@ -66,6 +81,14 @@ export default function StudentBooksPage() {
     formats: [],
     categories: [],
   });
+  const [tempFilters, setTempFilters] = useState({
+    resourceTypes: ["Books"],
+    yearRange: [1950, 2025],
+    availability: [],
+    formats: [],
+    categories: [],
+  });
+  const [yearInputs, setYearInputs] = useState({ from: "1950", to: "2025" });
   const [showFilters, setShowFilters] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -98,13 +121,15 @@ export default function StudentBooksPage() {
     setSearchInput(urlSearch);
     setSortBy(urlSortBy);
     setPage(urlPage);
-    setFilters({
+    const initialFilters = {
       resourceTypes: urlResourceTypes,
       yearRange: [urlYearMin, urlYearMax],
       availability: urlAvailability,
       formats: urlFormats,
       categories: urlCategories,
-    });
+    };
+    setFilters(initialFilters);
+    setTempFilters(initialFilters);
     
     setIsInitialized(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -369,6 +394,32 @@ export default function StudentBooksPage() {
     setPage(1);
   }
 
+  function handleApplyFilters() {
+    setFilters(tempFilters);
+    setPage(1);
+    setShowFilters(false);
+  }
+
+  function handleClearFilters() {
+    const defaultFilters = {
+      resourceTypes: ["Books"],
+      yearRange: [1950, 2025],
+      availability: [],
+      formats: [],
+      categories: [],
+    };
+    setTempFilters(defaultFilters);
+    setFilters(defaultFilters);
+    setYearInputs({ from: "1950", to: "2025" });
+    setPage(1);
+  }
+
+  function handleCancelFilters() {
+    setTempFilters(filters);
+    setYearInputs({ from: filters.yearRange[0].toString(), to: filters.yearRange[1].toString() });
+    setShowFilters(false);
+  }
+
   function handleKeyDown(e) {
     if (showSuggestions && suggestions.length > 0) {
       switch (e.key) {
@@ -409,7 +460,7 @@ export default function StudentBooksPage() {
   }
 
   function toggleResourceType(type) {
-    setFilters((prev) => ({
+    setTempFilters((prev) => ({
       ...prev,
       resourceTypes: prev.resourceTypes.includes(type)
         ? prev.resourceTypes.filter((t) => t !== type)
@@ -418,7 +469,7 @@ export default function StudentBooksPage() {
   }
 
   function toggleAvailability(status) {
-    setFilters((prev) => ({
+    setTempFilters((prev) => ({
       ...prev,
       availability: prev.availability.includes(status)
         ? prev.availability.filter((a) => a !== status)
@@ -427,7 +478,7 @@ export default function StudentBooksPage() {
   }
 
   function toggleFormat(format) {
-    setFilters((prev) => ({
+    setTempFilters((prev) => ({
       ...prev,
       formats: prev.formats.includes(format)
         ? prev.formats.filter((f) => f !== format)
@@ -436,7 +487,7 @@ export default function StudentBooksPage() {
   }
 
   function toggleCategory(category) {
-    setFilters((prev) => ({
+    setTempFilters((prev) => ({
       ...prev,
       categories: prev.categories.includes(category)
         ? prev.categories.filter((c) => c !== category)
@@ -575,7 +626,7 @@ export default function StudentBooksPage() {
                           >
                             <input
                               type="checkbox"
-                              checked={filters.formats.includes(format)}
+                              checked={tempFilters.formats.includes(format)}
                               onChange={() => toggleFormat(format)}
                               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
@@ -601,7 +652,7 @@ export default function StudentBooksPage() {
                             >
                               <input
                                 type="checkbox"
-                                checked={filters.availability.includes(status)}
+                                checked={tempFilters.availability.includes(status)}
                                 onChange={() => toggleAvailability(status)}
                                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                               />
@@ -625,32 +676,32 @@ export default function StudentBooksPage() {
                             From
                           </label>
                           <input
-                            type="number"
-                            min="1950"
-                            max={filters.yearRange[1]}
-                            value={filters.yearRange[0]}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="1950"
+                            value={yearInputs.from}
                             onChange={(e) => {
-                              const value = e.target.value === "" ? "" : parseInt(e.target.value);
-                              if (value === "") {
-                                setFilters((prev) => ({
+                              const value = e.target.value;
+                              // Allow empty string or valid numbers
+                              if (value === "" || /^\d+$/.test(value)) {
+                                setYearInputs((prev) => ({ ...prev, from: value }));
+                                // Update filter with parsed value or default
+                                const numValue = value === "" ? 1950 : parseInt(value);
+                                setTempFilters((prev) => ({
                                   ...prev,
-                                  yearRange: [1950, prev.yearRange[1]],
-                                }));
-                              } else {
-                                setFilters((prev) => ({
-                                  ...prev,
-                                  yearRange: [value, prev.yearRange[1]],
+                                  yearRange: [numValue, prev.yearRange[1]],
                                 }));
                               }
                             }}
                             onBlur={(e) => {
-                              const value = parseInt(e.target.value) || 1950;
-                              setFilters((prev) => ({
+                              const value = e.target.value === "" ? "1950" : e.target.value;
+                              const numValue = parseInt(value);
+                              const clampedValue = Math.max(1950, Math.min(numValue, tempFilters.yearRange[1]));
+                              setYearInputs((prev) => ({ ...prev, from: clampedValue.toString() }));
+                              setTempFilters((prev) => ({
                                 ...prev,
-                                yearRange: [
-                                  Math.max(1950, Math.min(value, prev.yearRange[1])),
-                                  prev.yearRange[1],
-                                ],
+                                yearRange: [clampedValue, prev.yearRange[1]],
                               }));
                             }}
                             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
@@ -662,32 +713,32 @@ export default function StudentBooksPage() {
                             To
                           </label>
                           <input
-                            type="number"
-                            min={filters.yearRange[0]}
-                            max="2025"
-                            value={filters.yearRange[1]}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="2025"
+                            value={yearInputs.to}
                             onChange={(e) => {
-                              const value = e.target.value === "" ? "" : parseInt(e.target.value);
-                              if (value === "") {
-                                setFilters((prev) => ({
+                              const value = e.target.value;
+                              // Allow empty string or valid numbers
+                              if (value === "" || /^\d+$/.test(value)) {
+                                setYearInputs((prev) => ({ ...prev, to: value }));
+                                // Update filter with parsed value or default
+                                const numValue = value === "" ? 2025 : parseInt(value);
+                                setTempFilters((prev) => ({
                                   ...prev,
-                                  yearRange: [prev.yearRange[0], 2025],
-                                }));
-                              } else {
-                                setFilters((prev) => ({
-                                  ...prev,
-                                  yearRange: [prev.yearRange[0], value],
+                                  yearRange: [prev.yearRange[0], numValue],
                                 }));
                               }
                             }}
                             onBlur={(e) => {
-                              const value = parseInt(e.target.value) || 2025;
-                              setFilters((prev) => ({
+                              const value = e.target.value === "" ? "2025" : e.target.value;
+                              const numValue = parseInt(value);
+                              const clampedValue = Math.min(2025, Math.max(numValue, tempFilters.yearRange[0]));
+                              setYearInputs((prev) => ({ ...prev, to: clampedValue.toString() }));
+                              setTempFilters((prev) => ({
                                 ...prev,
-                                yearRange: [
-                                  prev.yearRange[0],
-                                  Math.min(2025, Math.max(value, prev.yearRange[0])),
-                                ],
+                                yearRange: [prev.yearRange[0], clampedValue],
                               }));
                             }}
                             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
@@ -710,7 +761,7 @@ export default function StudentBooksPage() {
                             >
                               <input
                                 type="checkbox"
-                                checked={filters.categories.includes(category)}
+                                checked={tempFilters.categories.includes(category)}
                                 onChange={() => toggleCategory(category)}
                                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                               />
@@ -732,33 +783,20 @@ export default function StudentBooksPage() {
                 {/* Modal Footer */}
                 <div className="flex items-center justify-between p-6 border-t border-gray-200">
                   <button
-                    onClick={() => {
-                      setFilters({
-                        resourceTypes: ["Books"],
-                        yearRange: [1950, 2025],
-                        availability: [],
-                        formats: [],
-                        categories: [],
-                      });
-                      setPage(1);
-                    }}
+                    onClick={handleClearFilters}
                     className="px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
                   >
                     Clear All Filters
                   </button>
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={() => setShowFilters(false)}
+                      onClick={handleCancelFilters}
                       className="px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       Cancel
                     </button>
                     <button
-                      onClick={() => {
-                        setPage(1);
-                        loadBooks();
-                        setShowFilters(false);
-                      }}
+                      onClick={handleApplyFilters}
                       className="px-6 py-2.5 rounded-lg bg-black text-white text-sm font-medium hover:bg-gray-800 transition-colors"
                     >
                       Apply Filters
@@ -1080,7 +1118,7 @@ export default function StudentBooksPage() {
                                   <>
                                     <span>|</span>
                                     <span className="font-medium">
-                                      {book.format}
+                                      {formatBookFormat(book.format)}
                                     </span>
                                   </>
                                 )}

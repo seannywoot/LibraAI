@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { slugify } from "@/lib/slug";
+import { parseSearchQuery, escapeRegex } from "@/utils/searchParser";
 
 function normalize(v) { return (v ?? "").toString().trim(); }
 
@@ -22,10 +23,36 @@ export async function GET(request) {
     const db = client.db();
     const shelves = db.collection("shelves");
 
-    const query = s ? { $or: [
-      { codeLower: { $regex: new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") } },
-      { location: { $regex: new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") } },
-    ] } : {};
+    // Build search query with advanced syntax support (e.g., "shelf: A1", "location: Floor 2")
+    let query = {};
+    if (s) {
+      const { filters, freeText } = parseSearchQuery(s);
+      const orConditions = [];
+
+      if (filters.shelf) {
+        orConditions.push({ codeLower: { $regex: escapeRegex(filters.shelf), $options: "i" } });
+      }
+
+      if (freeText) {
+        const escapedText = escapeRegex(freeText);
+        orConditions.push(
+          { codeLower: { $regex: escapedText, $options: "i" } },
+          { location: { $regex: escapedText, $options: "i" } }
+        );
+      }
+
+      if (orConditions.length === 0) {
+        const escapedSearch = escapeRegex(s);
+        orConditions.push(
+          { codeLower: { $regex: escapedSearch, $options: "i" } },
+          { location: { $regex: escapedSearch, $options: "i" } }
+        );
+      }
+
+      if (orConditions.length > 0) {
+        query.$or = orConditions;
+      }
+    }
 
     const projection = { code: 1, name: 1, slug: 1, location: 1, capacity: 1, notes: 1, createdAt: 1 };
 

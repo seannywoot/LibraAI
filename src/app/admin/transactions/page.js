@@ -93,7 +93,7 @@ export default function AdminTransactionsPage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Auto-suggestions effect
+  // Auto-suggestions effect - reload when status filter changes
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchInput.length >= 2) {
@@ -105,7 +105,7 @@ export default function AdminTransactionsPage() {
     }, 200);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchInput]);
+  }, [searchInput, statusFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,8 +145,11 @@ export default function AdminTransactionsPage() {
   async function loadSuggestions() {
     setLoadingSuggestions(true);
     try {
+      const params = new URLSearchParams({ q: searchInput });
+      if (statusFilter) params.append("status", statusFilter);
+      
       const res = await fetch(
-        `/api/admin/transactions/suggestions?q=${encodeURIComponent(searchInput)}`,
+        `/api/admin/transactions/suggestions?${params}`,
         { cache: "no-store" }
       );
       const data = await res.json().catch(() => ({}));

@@ -16,6 +16,7 @@ function StatusChip({ status }) {
     "checked-out": { bg: "bg-amber-100", text: "text-amber-800", dot: "bg-amber-500" },
     reserved: { bg: "bg-sky-100", text: "text-sky-800", dot: "bg-sky-500" },
     maintenance: { bg: "bg-zinc-200", text: "text-zinc-800", dot: "bg-zinc-500" },
+    damaged: { bg: "bg-rose-100", text: "text-rose-800", dot: "bg-rose-500" },
     lost: { bg: "bg-rose-100", text: "text-rose-800", dot: "bg-rose-500" },
   };
   const c = map[status] || map.available;

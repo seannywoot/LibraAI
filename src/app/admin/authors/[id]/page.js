@@ -26,6 +26,11 @@ function StatusChip({ status }) {
       text: "text-zinc-800",
       dot: "bg-zinc-500",
     },
+    damaged: {
+      bg: "bg-rose-100",
+      text: "text-rose-800",
+      dot: "bg-rose-500",
+    },
     lost: { bg: "bg-rose-100", text: "text-rose-800", dot: "bg-rose-500" },
   };
   const c = map[status] || map.available;

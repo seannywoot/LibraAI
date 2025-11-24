@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { slugify } from "@/lib/slug";
+import { parseSearchQuery, escapeRegex } from "@/utils/searchParser";
 
 function normalizeName(v) {
   return (v ?? "").toString().trim();
@@ -31,7 +32,19 @@ export async function GET(request) {
       await authors.createIndex({ nameLower: 1 }, { unique: true });
     } catch {}
 
-    const query = s ? { nameLower: { $regex: new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") } } : {};
+    // Build search query with advanced syntax support (e.g., "author: Rowling")
+    let query = {};
+    if (s) {
+      const { filters, freeText } = parseSearchQuery(s);
+      
+      if (filters.author) {
+        query.nameLower = { $regex: escapeRegex(filters.author), $options: "i" };
+      } else if (freeText) {
+        query.nameLower = { $regex: escapeRegex(freeText), $options: "i" };
+      } else {
+        query.nameLower = { $regex: escapeRegex(s), $options: "i" };
+      }
+    }
 
     const projection = { name: 1, bio: 1, slug: 1, createdAt: 1 };
 

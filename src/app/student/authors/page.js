@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Users } from "@/components/icons";
@@ -15,6 +15,11 @@ export default function StudentAuthorsPage() {
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
   const [searchInput, setSearchInput] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const shouldCloseOnBlur = useRef(true);
 
   const navigationLinks = getStudentLinks();
 
@@ -24,6 +29,21 @@ export default function StudentAuthorsPage() {
       setPage(1);
       loadAuthors();
     }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
+  // Auto-suggestions effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput.length >= 2) {
+        loadSuggestions();
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 200);
+
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
@@ -52,8 +72,76 @@ export default function StudentAuthorsPage() {
     }
   }
 
+  async function loadSuggestions() {
+    setLoadingSuggestions(true);
+    try {
+      const res = await fetch(
+        `/api/student/authors/suggestions?q=${encodeURIComponent(searchInput)}`,
+        { cache: "no-store" }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        setSuggestions(data.suggestions || []);
+        setShowSuggestions(true);
+      }
+    } catch (e) {
+      console.error("Failed to load suggestions:", e);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }
+
+  function handleSuggestionClick(suggestion) {
+    setSearchInput(suggestion.text);
+    setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+    setPage(1);
+  }
+
   function handleClearSearch() {
     setSearchInput("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+  }
+
+  function handleKeyDown(e) {
+    if (showSuggestions && suggestions.length > 0) {
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setSelectedSuggestionIndex((prev) =>
+            prev < suggestions.length - 1 ? prev + 1 : prev
+          );
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : -1));
+          break;
+        case "Enter":
+          e.preventDefault();
+          shouldCloseOnBlur.current = false;
+          if (selectedSuggestionIndex >= 0) {
+            handleSuggestionClick(suggestions[selectedSuggestionIndex]);
+          } else {
+            setShowSuggestions(false);
+            setSelectedSuggestionIndex(-1);
+            setSuggestions([]);
+            loadAuthors();
+          }
+          setTimeout(() => {
+            shouldCloseOnBlur.current = true;
+          }, 100);
+          break;
+        case "Escape":
+          setShowSuggestions(false);
+          setSelectedSuggestionIndex(-1);
+          setSuggestions([]);
+          break;
+      }
+    } else if (e.key === "Enter") {
+      loadAuthors();
+    }
   }
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -84,6 +172,18 @@ export default function StudentAuthorsPage() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
+              onFocus={() =>
+                searchInput.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)
+              }
+              onBlur={() => {
+                setTimeout(() => {
+                  if (shouldCloseOnBlur.current) {
+                    setShowSuggestions(false);
+                    setSelectedSuggestionIndex(-1);
+                  }
+                }, 200);
+              }}
+              onKeyDown={handleKeyDown}
               placeholder="Search by author name..."
               className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
             />
@@ -97,6 +197,45 @@ export default function StudentAuthorsPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            )}
+
+            {/* Auto-suggestions dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                {suggestions.map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${
+                      idx === selectedSuggestionIndex
+                        ? "bg-zinc-100"
+                        : "hover:bg-zinc-50"
+                    }`}
+                  >
+                    <svg
+                      className="h-4 w-4 text-zinc-400 shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-zinc-900 truncate">
+                        {suggestion.text}
+                      </p>
+                      <p className="text-xs text-zinc-500 capitalize">
+                        {suggestion.type}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </header>

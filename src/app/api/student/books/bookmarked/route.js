@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { parseSearchQuery, escapeRegex } from "@/utils/searchParser";
 
 // GET /api/student/books/bookmarked - Get all bookmarked books for the current student
 export async function GET(request) {
@@ -57,16 +58,45 @@ export async function GET(request) {
     // Get book IDs
     const bookIds = bookmarks.map((b) => b.bookId);
 
-    // Build query for books
+    // Build query for books with advanced syntax support (e.g., "author: Rowling", "title: Harry Potter")
     const bookQuery = { _id: { $in: bookIds } };
 
     // Add search filter if provided
     if (search) {
-      bookQuery.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { author: { $regex: search, $options: "i" } },
-        { isbn: { $regex: search, $options: "i" } },
-      ];
+      const { filters, freeText } = parseSearchQuery(search);
+      const orConditions = [];
+
+      if (filters.title) {
+        orConditions.push({ title: { $regex: escapeRegex(filters.title), $options: "i" } });
+      }
+      if (filters.author) {
+        orConditions.push({ author: { $regex: escapeRegex(filters.author), $options: "i" } });
+      }
+      if (filters.isbn) {
+        orConditions.push({ isbn: { $regex: escapeRegex(filters.isbn), $options: "i" } });
+      }
+
+      if (freeText) {
+        const escapedText = escapeRegex(freeText);
+        orConditions.push(
+          { title: { $regex: escapedText, $options: "i" } },
+          { author: { $regex: escapedText, $options: "i" } },
+          { isbn: { $regex: escapedText, $options: "i" } }
+        );
+      }
+
+      if (orConditions.length === 0) {
+        const escapedSearch = escapeRegex(search);
+        orConditions.push(
+          { title: { $regex: escapedSearch, $options: "i" } },
+          { author: { $regex: escapedSearch, $options: "i" } },
+          { isbn: { $regex: escapedSearch, $options: "i" } }
+        );
+      }
+
+      if (orConditions.length > 0) {
+        bookQuery.$or = orConditions;
+      }
     }
 
     // Get the actual books
