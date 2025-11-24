@@ -104,8 +104,8 @@ export async function POST(request) {
 
         let pdfText = "";
         try {
-            // Use the Node.js ESM build which does not require a separate worker file
-            const pdfjs = await import("pdfjs-dist/build/pdf.mjs");
+            // Use the Node.js CommonJS build which does not require a worker
+const pdfjs = await import("pdfjs-dist/build/pdf.node.js");
 
             // Convert to Uint8Array
             const pdfBytes = new Uint8Array(buffer);
