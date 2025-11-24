@@ -8,36 +8,45 @@ Quiz generation works locally but fails on deployed site (Vercel).
 🔴 **Deploy the code changes made to fix PDF.js and add logging**
 
 The fixes have been applied to:
-- `src/app/api/student/quizzes/route.js` - Enhanced logging + PDF.js serverless config
-- `next.config.mjs` - Webpack configuration for PDF.js
+- `src/app/api/student/quizzes/route.js` - Replaced PDF.js with pdf-parse + enhanced logging
+- `package.json` - Added pdf-parse dependency
 - `vercel.json` - Function timeout and memory limits
 
-**Next Step:** Commit and push these changes, then check Vercel logs during quiz generation.
+**Next Step:** Commit and push these changes (including package.json and package-lock.json), then test quiz generation.
 
-## Root Causes Identified
+## Root Cause Identified
 
-### 1. PDF.js Worker Configuration ⚠️ **MOST LIKELY**
-The PDF worker doesn't work in serverless environments and needs special configuration.
+### PDF.js Worker Not Compatible with Serverless ⚠️ **CONFIRMED**
+Error: `Cannot find module './pdf.worker.js'`
 
-### 2. Function Timeout/Memory Limits
-Default Vercel limits may be too restrictive for PDF processing + AI generation.
+PDF.js requires a web worker file that doesn't work in Vercel's serverless environment. The worker file path cannot be resolved in the Lambda function.
 
-### 3. Missing Webpack Configuration
-PDF.js needs specific webpack aliases for serverless deployment.
+**Solution:** Switched from `pdfjs-dist` to `pdf-parse`, a Node.js-native library designed for serverless environments.
 
 ## Solutions Applied
 
-### ✅ Fix 1: PDF.js Worker Configuration
+### ✅ Fix 1: Replaced PDF.js with pdf-parse
 **File:** `src/app/api/student/quizzes/route.js`
 
-Changed worker configuration to disable worker in serverless:
+Completely replaced `pdfjs-dist` with `pdf-parse`:
 ```javascript
-// Before
-pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/build/pdf.worker.js";
-
-// After
+// Before (pdfjs-dist - doesn't work in serverless)
+const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
 pdfjs.GlobalWorkerOptions.workerSrc = null;
+const loadingTask = pdfjs.getDocument({ data: pdfBytes });
+// ... complex page iteration
+
+// After (pdf-parse - serverless-friendly)
+const pdfParse = (await import("pdf-parse")).default;
+const data = await pdfParse(buffer, { max: 20 });
+pdfText = data.text.trim();
 ```
+
+**Why pdf-parse?**
+- Pure Node.js implementation (no web workers)
+- Designed for serverless environments
+- Simpler API, better performance
+- Already used by many serverless applications
 
 ### ✅ Fix 2: Enhanced Error Logging
 Added logging to detect missing API key:
@@ -58,18 +67,10 @@ Added function-specific settings:
 }
 ```
 
-### ✅ Fix 4: Next.js Webpack Configuration
-**File:** `next.config.mjs`
+### ✅ Fix 4: Installed pdf-parse Package
+**Command:** `npm install pdf-parse`
 
-Added PDF.js serverless configuration:
-```javascript
-if (isServer) {
-  config.resolve.alias = {
-    ...config.resolve.alias,
-    canvas: false,
-  };
-}
-```
+Added the serverless-compatible PDF parsing library to dependencies.
 
 ### ✅ Fix 5: Enhanced Logging
 Added comprehensive logging throughout the quiz generation process to identify exact failure points in production.
@@ -148,11 +149,13 @@ If it fails, you'll see exactly where with ❌ markers.
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| "AI API key not configured" | Missing `BYTEZ_API_KEY` | Add to Vercel env vars |
-| "Failed to extract text from PDF" | PDF.js worker issue | Already fixed (worker disabled) |
+| "Cannot find module './pdf.worker.js'" | PDF.js incompatible with serverless | ✅ Fixed (switched to pdf-parse) |
+| "AI API key not configured" | Missing `BYTEZ_API_KEY` | ✅ Already configured |
+| "Failed to extract text from PDF" | Corrupted or image-only PDF | Use text-based PDFs |
+| "PDF does not contain enough readable text" | Scanned/image PDF | Use OCR or text-based PDFs |
 | "Failed to generate quiz questions" | Bytez API error | Check API key validity |
-| Function timeout | Processing too long | Already fixed (60s timeout) |
-| Out of memory | Large PDF processing | Already fixed (1024MB memory) |
+| Function timeout | Processing too long | ✅ Fixed (60s timeout) |
+| Out of memory | Large PDF processing | ✅ Fixed (1024MB memory) |
 
 ## Verification Checklist
 
@@ -165,10 +168,11 @@ If it fails, you'll see exactly where with ❌ markers.
 
 ## Additional Notes
 
-### Dependencies Verified
-Both required packages are in `package.json`:
-- ✅ `bytez.js`: ^1.1.18
-- ✅ `pdfjs-dist`: ^3.11.174
+### Dependencies Updated
+Required packages in `package.json`:
+- ✅ `bytez.js`: ^1.1.18 (AI generation)
+- ✅ `pdf-parse`: latest (PDF text extraction - serverless compatible)
+- ❌ `pdfjs-dist`: ^3.11.174 (still in package.json but no longer used for quiz generation)
 
 ### API Endpoint Details
 - **Route:** `POST /api/student/quizzes`

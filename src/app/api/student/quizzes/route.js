@@ -102,41 +102,31 @@ export async function POST(request) {
         let pdfText = "";
         try {
             console.log("📄 Starting PDF text extraction...");
-            const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
-
-            // Disable worker for serverless environment
-            if (pdfjs.GlobalWorkerOptions) {
-                pdfjs.GlobalWorkerOptions.workerSrc = null;
-            }
-
-            console.log("✅ PDF.js loaded, worker disabled");
-
-            const pdfBytes = new Uint8Array(buffer);
-            console.log("📦 PDF bytes prepared, size:", pdfBytes.length);
             
-            const loadingTask = pdfjs.getDocument({ 
-                data: pdfBytes,
-                useWorkerFetch: false,
-                isEvalSupported: false,
-                useSystemFonts: true
+            // Use pdf-parse which works better in serverless environments
+            const pdfParse = (await import("pdf-parse")).default;
+            console.log("✅ pdf-parse loaded");
+            
+            console.log("📦 PDF buffer size:", buffer.length, "bytes");
+            
+            const data = await pdfParse(buffer, {
+                max: 20 // Limit to first 20 pages
             });
             
-            const doc = await loadingTask.promise;
-            console.log("✅ PDF loaded, pages:", doc.numPages);
-
-            const numPages = doc.numPages || 1;
-            const maxPages = Math.min(numPages, 20);
-
-            let fullText = "";
-            for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
-                const page = await doc.getPage(pageNum);
-                const content = await page.getTextContent();
-                const pageText = content.items.map((item) => ("str" in item ? item.str : "")).join(" ");
-                fullText += `\n\n${pageText}`;
-                console.log(`✅ Extracted page ${pageNum}/${maxPages}`);
+            console.log("✅ PDF parsed successfully");
+            console.log("📊 Pages:", data.numpages);
+            console.log("📝 Text length:", data.text.length, "characters");
+            
+            pdfText = data.text.trim();
+            
+            if (!pdfText || pdfText.length < 100) {
+                console.error("❌ Insufficient text extracted:", pdfText.length, "characters");
+                return NextResponse.json({ 
+                    ok: false, 
+                    error: "PDF does not contain enough readable text content" 
+                }, { status: 400 });
             }
-
-            pdfText = fullText.trim();
+            
             console.log("✅ Total text extracted:", pdfText.length, "characters");
         } catch (pdfError) {
             console.error("❌ PDF text extraction error:", pdfError);
@@ -145,10 +135,6 @@ export async function POST(request) {
                 ok: false, 
                 error: `Failed to extract text from PDF: ${pdfError.message}` 
             }, { status: 500 });
-        }
-
-        if (!pdfText || pdfText.trim().length < 100) {
-            return NextResponse.json({ ok: false, error: "PDF does not contain enough text content" }, { status: 400 });
         }
 
         const bytezApiKey = process.env.BYTEZ_API_KEY;
