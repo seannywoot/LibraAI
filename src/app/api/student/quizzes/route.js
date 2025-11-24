@@ -107,15 +107,20 @@ export async function POST(request) {
             // Use the same PDF extraction as the chatbot
             const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
 
-            // Use public worker file for serverless compatibility
+            // Completely disable worker for serverless
             if (pdfjs.GlobalWorkerOptions) {
-                pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.js";
+                pdfjs.GlobalWorkerOptions.workerSrc = false;
             }
 
             // Convert to Uint8Array
             const pdfBytes = new Uint8Array(buffer);
 
-            const loadingTask = pdfjs.getDocument({ data: pdfBytes });
+            const loadingTask = pdfjs.getDocument({ 
+                data: pdfBytes,
+                useWorkerFetch: false,
+                isEvalSupported: false,
+                useSystemFonts: true
+            });
             const doc = await loadingTask.promise;
 
             console.log("✅ PDF loaded, pages:", doc.numPages);

@@ -50,14 +50,19 @@ async function extractTextFromPDF(base64Data) {
   try {
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
 
-    // Use public worker file for serverless compatibility
+    // Completely disable worker for serverless
     if (pdfjs.GlobalWorkerOptions) {
-      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.js";
+      pdfjs.GlobalWorkerOptions.workerSrc = false;
     }
     // Convert base64 to Uint8Array
     const pdfBytes = Uint8Array.from(Buffer.from(base64Data, "base64"));
 
-    const loadingTask = pdfjs.getDocument({ data: pdfBytes });
+    const loadingTask = pdfjs.getDocument({ 
+      data: pdfBytes,
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    });
     const doc = await loadingTask.promise;
 
     const numPages = doc.numPages || 1;
