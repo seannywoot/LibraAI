@@ -35,9 +35,10 @@ class RecommendationService {
    * @param {string} options.context - "browse" or "search"
    * @param {number} options.limit - Maximum number of recommendations
    * @param {boolean} options.forceRefresh - Skip cache and fetch fresh data
+   * @param {boolean} options.shuffle - Shuffle results for variety
    */
   async getRecommendations(options = {}) {
-    const { context = "browse", limit = 10, forceRefresh = false } = options;
+    const { context = "browse", limit = 10, forceRefresh = false, shuffle = false } = options;
     const cacheKey = this.getCacheKey(context, limit);
 
     // Check cache first (unless force refresh)
@@ -58,7 +59,8 @@ class RecommendationService {
     try {
       const params = new URLSearchParams({
         limit: limit.toString(),
-        context: context
+        context: context,
+        shuffle: shuffle.toString()
       });
 
       const res = await fetch(`/api/student/books/recommendations?${params}`, {
@@ -71,11 +73,13 @@ class RecommendationService {
         throw new Error(data?.error || "Failed to load recommendations");
       }
 
-      // Cache the result
-      this.cache.set(cacheKey, {
-        data: data,
-        timestamp: Date.now()
-      });
+      // Cache the result (but only if not shuffled, to allow variety on refresh)
+      if (!shuffle) {
+        this.cache.set(cacheKey, {
+          data: data,
+          timestamp: Date.now()
+        });
+      }
 
       return {
         ...data,
@@ -134,7 +138,7 @@ class RecommendationService {
   getCachedRecommendations(context = "browse", limit = 10) {
     const cacheKey = this.getCacheKey(context, limit);
     const cached = this.cache.get(cacheKey);
-    
+
     if (this.isCacheValid(cached)) {
       return {
         ...cached.data,
@@ -184,16 +188,16 @@ export function getRecommendationService() {
     // Server-side rendering - return mock
     return {
       getRecommendations: async () => ({ ok: false, recommendations: [] }),
-      invalidateCache: () => {},
+      invalidateCache: () => { },
       getCachedRecommendations: () => null,
-      preload: async () => {},
-      cleanup: () => {}
+      preload: async () => { },
+      cleanup: () => { }
     };
   }
 
   if (!serviceInstance) {
     serviceInstance = new RecommendationService();
-    
+
     // Set up periodic cleanup (every 10 minutes)
     setInterval(() => {
       serviceInstance.cleanup();

@@ -449,18 +449,6 @@ export default function BookDetailPage({ params }) {
 
               {/* Description */}
               {book.description && (
-                <div className="pt-4 border-t border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                    About this book
-                  </h3>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {book.description}
-                  </p>
-                </div>
-              )}
-
-              {/* Description */}
-              {book.description && (
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-2">
                     Description

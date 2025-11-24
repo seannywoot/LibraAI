@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import RecommendationCard from "./recommendation-card";
 import { getBehaviorTracker } from "@/lib/behavior-tracker";
 import { getRecommendationService } from "@/lib/recommendation-service";
+import { showToast } from "./ToastContainer";
 
-export default function RecommendationsSidebar({ 
-  className = "", 
+export default function RecommendationsSidebar({
+  className = "",
   maxItems = 10,
   context = "browse",
   onRefresh
@@ -18,6 +19,7 @@ export default function RecommendationsSidebar({
   const [expanded, setExpanded] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [bookmarkedBooks, setBookmarkedBooks] = useState(new Set());
   const recommendationService = getRecommendationService();
   const router = useRouter();
 
@@ -33,15 +35,22 @@ export default function RecommendationsSidebar({
       const data = await recommendationService.getRecommendations({
         context,
         limit: maxItems,
-        forceRefresh
+        forceRefresh,
+        shuffle: true  // Always shuffle for variety (including on login/page load)
       });
 
       if (!data?.ok) {
         throw new Error(data?.error || "Failed to load recommendations");
       }
 
-      setRecommendations(data.recommendations || []);
+      const recs = data.recommendations || [];
+      setRecommendations(recs);
       setLastUpdate(new Date());
+      
+      // Load bookmark status for all recommendations
+      if (recs.length > 0) {
+        loadBookmarkStatus(recs);
+      }
     } catch (err) {
       console.error("Failed to load recommendations:", err);
       setError(err?.message || "Failed to load recommendations");
@@ -51,17 +60,70 @@ export default function RecommendationsSidebar({
     }
   }
 
+  async function loadBookmarkStatus(books) {
+    try {
+      const bookmarkChecks = await Promise.all(
+        books.map(async (book) => {
+          const bookId = book._id;
+          const res = await fetch(
+            `/api/student/books/bookmark?bookId=${bookId}`,
+            {
+              cache: "no-store",
+            }
+          );
+          const data = await res.json().catch(() => ({}));
+          return { bookId, bookmarked: data?.bookmarked || false };
+        })
+      );
+
+      // Update bookmarked set
+      const newBookmarked = new Set();
+      bookmarkChecks.forEach(({ bookId, bookmarked }) => {
+        if (bookmarked) newBookmarked.add(bookId);
+      });
+      setBookmarkedBooks(newBookmarked);
+    } catch (e) {
+      console.error("Failed to load bookmark status:", e);
+    }
+  }
+
+  async function handleToggleBookmark(bookId) {
+    try {
+      const res = await fetch("/api/student/books/bookmark", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ bookId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok)
+        throw new Error(data?.error || "Failed to toggle bookmark");
+
+      // Update local state
+      const newBookmarked = new Set(bookmarkedBooks);
+      if (data.bookmarked) {
+        newBookmarked.add(bookId);
+      } else {
+        newBookmarked.delete(bookId);
+      }
+      setBookmarkedBooks(newBookmarked);
+
+      showToast(data.message, "success");
+    } catch (e) {
+      showToast(e?.message || "Failed to toggle bookmark", "error");
+    }
+  }
+
   function formatTimeAgo(date) {
     const seconds = Math.floor((new Date() - date) / 1000);
-    
+
     if (seconds < 60) return 'just now';
-    
+
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes}m ago`;
-    
+
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours}h ago`;
-    
+
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
   }
@@ -99,7 +161,7 @@ export default function RecommendationsSidebar({
     if (book?._id) {
       router.push(`/student/books/${encodeURIComponent(book.slug || book._id)}`);
     }
-    
+
     // Optionally trigger a refresh
     if (onRefresh) {
       onRefresh();
@@ -237,9 +299,8 @@ export default function RecommendationsSidebar({
               aria-label={expanded ? "Collapse" : "Expand"}
             >
               <svg
-                className={`w-5 h-5 text-gray-600 transition-transform ${
-                  expanded ? "rotate-180" : ""
-                }`}
+                className={`w-5 h-5 text-gray-600 transition-transform ${expanded ? "rotate-180" : ""
+                  }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -268,6 +329,8 @@ export default function RecommendationsSidebar({
                   book={book}
                   onClick={handleRecommendationClick}
                   compact={true}
+                  isBookmarked={bookmarkedBooks.has(book._id)}
+                  onBookmarkToggle={handleToggleBookmark}
                 />
               ))}
             </div>

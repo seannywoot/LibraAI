@@ -15,6 +15,7 @@ export async function getRecommendations({
   excludeBookIds = [],
   context = "browse",
   bookId = null,
+  shuffle = false,
 }) {
   const client = await clientPromise;
   const dbName = process.env.MONGODB_DB || process.env.MONGODB_DB_NAME || "test";
@@ -58,8 +59,24 @@ export async function getRecommendations({
   // Apply diversity filter
   const diverse = applyDiversityFilter(scored, profile.diversityScore);
 
-  // If diversity filter removed everything, use scored books
-  const finalRecommendations = diverse.length > 0 ? diverse : scored;
+  // Apply shuffle if requested (for refresh)
+  let finalRecommendations = diverse.length > 0 ? diverse : scored;
+
+  if (shuffle && finalRecommendations.length > limit) {
+    // Tier-based shuffling: maintain relative quality
+    // Split into tiers based on score ranges
+    const topTier = finalRecommendations.filter(b => b.relevanceScore >= 70);
+    const midTier = finalRecommendations.filter(b => b.relevanceScore >= 40 && b.relevanceScore < 70);
+    const lowTier = finalRecommendations.filter(b => b.relevanceScore < 40);
+
+    // Shuffle each tier independently
+    const shuffledTop = shuffleArray(topTier);
+    const shuffledMid = shuffleArray(midTier);
+    const shuffledLow = shuffleArray(lowTier);
+
+    // Combine tiers (prioritize top tier, then mid, then low)
+    finalRecommendations = [...shuffledTop, ...shuffledMid, ...shuffledLow];
+  }
 
   // Return top recommendations
   return {
@@ -67,6 +84,7 @@ export async function getRecommendations({
     profile: {
       totalInteractions: profile.totalInteractions,
       topCategories: profile.topCategories.slice(0, 3),
+      topTags: profile.topTags.slice(0, 5),
       topAuthors: profile.topAuthors.slice(0, 3),
       diversityScore: Math.round(profile.diversityScore * 100),
       engagementLevel: profile.engagementLevel,
@@ -196,10 +214,16 @@ async function buildUserProfile(db, userId) {
   // Process borrowing history (high signal)
   for (const transaction of borrowHistory) {
     const weight = transaction.status === "returned" ? 12 : 8;
-    
+
     if (transaction.bookCategories) {
       for (let i = 0; i < weight; i++) {
         categories.push(...transaction.bookCategories);
+      }
+    }
+
+    if (transaction.bookTags) {
+      for (let i = 0; i < weight; i++) {
+        tags.push(...transaction.bookTags);
       }
     }
 
@@ -483,12 +507,12 @@ function scoreBooks(books, profile) {
         categoryScore = 95; // Increased from 90 for 3+ matches
       }
       score += categoryScore;
-      
+
       const matchedCat = (book.categories || []).find((c) => profile.topCategories.includes(c));
       if (matchedCat) {
         // Determine if this is a top category (top 3) or exploration category
         const categoryIndex = profile.topCategories.findIndex(cat => cat === matchedCat);
-        
+
         if (categoryIndex === 0) {
           // #1 favorite category
           matchReasons.push(`You love ${matchedCat}`);
@@ -508,29 +532,41 @@ function scoreBooks(books, profile) {
       // Better scoring for tag matches (Google Books provides rich subject tags)
       let tagScore;
       if (tagMatches === 1) {
-        tagScore = 35; // Increased from 30
+        tagScore = 50; // Increased to match category importance
       } else if (tagMatches === 2) {
-        tagScore = 55; // Increased from 50
+        tagScore = 80; // Increased to match category importance
       } else {
-        tagScore = 75; // Increased from 70 for 3+ matches
+        tagScore = 100; // Increased to match category importance for 3+ matches
       }
       score += tagScore;
-      
+
       if (matchReasons.length < 3) {
         const matchedTag = (book.tags || []).find((t) => profile.topTags.includes(t));
         if (matchedTag) {
-          matchReasons.push(`Similar to ${matchedTag}`);
+          // Determine if this is a top tag or exploration tag
+          const tagIndex = profile.topTags.findIndex(tag => tag === matchedTag);
+
+          if (tagIndex === 0) {
+            // #1 favorite tag
+            matchReasons.push(`Your favorite topic: ${matchedTag}`);
+          } else if (tagIndex <= 2) {
+            // Top 3 tags
+            matchReasons.push(`Interested in ${matchedTag}`);
+          } else {
+            // Lower ranked tags - suggest exploration
+            matchReasons.push(`Exploring ${matchedTag}`);
+          }
         } else {
           matchReasons.push("Matches your interests");
         }
       }
     }
-    
+
     // Bonus for books with rich metadata from Google Books
     if (book.description && book.description.length > 100) {
       score += 5; // Small bonus for well-documented books
     }
-    
+
     // Bonus for books with cover images (indicates Google Books enrichment)
     if (book.coverImage || book.thumbnail) {
       score += 3; // Small bonus for visual appeal
@@ -638,12 +674,12 @@ async function getSimilarBooks(db, bookId, limit, excludeBookIds) {
 
   // Try to find in main catalog first
   let sourceBook = await books.findOne({ _id: new ObjectId(bookId) });
-  
+
   // If not found, check personal libraries (for scanned books)
   if (!sourceBook) {
     sourceBook = await personalLibraries.findOne({ _id: new ObjectId(bookId) });
   }
-  
+
   if (!sourceBook) {
     return getPopularRecommendations(db, limit);
   }
@@ -693,9 +729,9 @@ async function getSimilarBooks(db, bookId, limit, excludeBookIds) {
       } else if (categoryMatches >= 3) {
         score += 95; // Increased from 90 for 3+ matches
       }
-      
+
       if (matchReasons.length < 3) {
-        const matchedCat = (book.categories || []).find((c) => 
+        const matchedCat = (book.categories || []).find((c) =>
           (sourceBook.categories || []).includes(c)
         );
         if (matchedCat) {
@@ -711,18 +747,25 @@ async function getSimilarBooks(db, bookId, limit, excludeBookIds) {
     if (tagMatches > 0) {
       // Better scoring for tag matches (Google Books provides rich subject tags)
       if (tagMatches === 1) {
-        score += 35; // Increased from 30
+        score += 50; // Increased to match category importance
       } else if (tagMatches === 2) {
-        score += 55; // Increased from 50
+        score += 80; // Increased to match category importance
       } else if (tagMatches >= 3) {
-        score += 75; // Increased from 70 for 3+ matches
+        score += 100; // Increased to match category importance for 3+ matches
       }
-      
+
       if (matchReasons.length < 3) {
-        matchReasons.push("Related topics");
+        const matchedTag = (book.tags || []).find((t) =>
+          (sourceBook.tags || []).includes(t)
+        );
+        if (matchedTag) {
+          matchReasons.push(`Related topic: ${matchedTag}`);
+        } else {
+          matchReasons.push("Related topics");
+        }
       }
     }
-    
+
     // Bonus for books with rich metadata (Google Books enriched)
     if (book.description && book.description.length > 100) {
       score += 5; // Small bonus for well-documented books
@@ -894,4 +937,18 @@ function calculateDiversityScore(categories, tags, authors) {
 
   const diversity = (uniqueCategories + uniqueTags + uniqueAuthors) / totalItems;
   return Math.min(diversity, 1);
+}
+
+/**
+ * Helper: Shuffle array using Fisher-Yates algorithm
+ */
+function shuffleArray(array) {
+  const arr = [...array]; // Don't mutate original
+
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+
+  return arr;
 }

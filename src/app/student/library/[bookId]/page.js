@@ -249,7 +249,7 @@ export default function PersonalBookDetailPage({ params }) {
 
               {book.description && (
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">Notes</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2">Description</h2>
                   <p className="text-sm text-gray-600 leading-relaxed">
                     {book.description}
                   </p>

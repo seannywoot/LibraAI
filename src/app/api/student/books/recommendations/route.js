@@ -17,14 +17,14 @@ export async function GET(request) {
     const rateLimit = checkRateLimit('recommendations', session.user.email);
     if (!rateLimit.allowed) {
       return new Response(
-        JSON.stringify({ 
-          ok: false, 
+        JSON.stringify({
+          ok: false,
           error: "Rate limit exceeded",
           retryAfter: rateLimit.retryAfter
         }),
-        { 
+        {
           status: 429,
-          headers: { 
+          headers: {
             "content-type": "application/json",
             "X-RateLimit-Limit": "20",
             "X-RateLimit-Remaining": rateLimit.remaining.toString(),
@@ -40,6 +40,7 @@ export async function GET(request) {
     const context = searchParams.get("context") || "browse";
     const currentBookId = searchParams.get("currentBookId");
     const bookId = searchParams.get("bookId"); // For book-specific recommendations
+    const shuffle = searchParams.get("shuffle") === "true"; // For refresh variety
 
     // Build exclude list
     const excludeBookIds = currentBookId ? [currentBookId] : [];
@@ -51,6 +52,7 @@ export async function GET(request) {
       excludeBookIds,
       context,
       bookId,
+      shuffle,
     });
 
     return new Response(

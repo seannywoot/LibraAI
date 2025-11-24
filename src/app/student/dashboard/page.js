@@ -20,15 +20,15 @@ function formatDate(dateStr) {
 
 function formatTimeAgo(date) {
   const seconds = Math.floor((new Date() - date) / 1000);
-  
+
   if (seconds < 60) return 'just now';
-  
+
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
-  
+
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
-  
+
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
@@ -103,10 +103,11 @@ export default function StudentDashboardPage() {
     if (!isInitialLoad) {
       setRefreshingRecommendations(true);
     }
-    
+
     try {
+      // Always shuffle recommendations for variety (including on login/initial load)
       const recsRes = await fetch(
-        "/api/student/books/recommendations?limit=6",
+        `/api/student/books/recommendations?limit=6&shuffle=true`,
         { cache: "no-store" }
       );
       const recsData = await recsRes.json().catch(() => ({}));
@@ -378,13 +379,12 @@ export default function StudentDashboardPage() {
                   <Link
                     key={transaction._id}
                     href="/student/library?tab=borrowed"
-                    className={`block rounded-lg border p-4 hover:shadow-md transition-shadow ${
-                      isCritical
-                        ? "border-rose-200 bg-rose-50"
-                        : isDueSoon
+                    className={`block rounded-lg border p-4 hover:shadow-md transition-shadow ${isCritical
+                      ? "border-rose-200 bg-rose-50"
+                      : isDueSoon
                         ? "border-amber-200 bg-amber-50"
                         : "border-gray-200 bg-white"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-16 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs overflow-hidden">
@@ -415,13 +415,12 @@ export default function StudentDashboardPage() {
                             Borrowed: {formatDate(transaction.borrowedAt)}
                           </span>
                           <span
-                            className={`font-medium ${
-                              isCritical
-                                ? "text-rose-700"
-                                : isDueSoon
+                            className={`font-medium ${isCritical
+                              ? "text-rose-700"
+                              : isDueSoon
                                 ? "text-amber-700"
                                 : "text-gray-700"
-                            }`}
+                              }`}
                           >
                             Due: {formatDate(transaction.dueDate)}
                             {daysUntil !== null &&
@@ -430,8 +429,7 @@ export default function StudentDashboardPage() {
                             {daysUntil !== null &&
                               daysUntil >= 0 &&
                               daysUntil <= 3 &&
-                              ` (${daysUntil} ${
-                                daysUntil === 1 ? "day" : "days"
+                              ` (${daysUntil} ${daysUntil === 1 ? "day" : "days"
                               } left)`}
                           </span>
                         </div>
@@ -524,56 +522,56 @@ export default function StudentDashboardPage() {
               )}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {recommendations.map((book) => (
-                <Link
-                  key={book._id}
-                  href={`/student/books/${book._id}`}
-                  className="group rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow"
-                >
-                  <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs mb-2 overflow-hidden">
-                    {book.coverImage || book.coverImageUrl || book.thumbnail ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={book.coverImage || book.coverImageUrl || book.thumbnail}
-                        alt={book.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs">Book</span>';
-                        }}
-                      />
-                    ) : (
-                      <span>Book</span>
-                    )}
-                  </div>
-                  <h3 className="text-xs font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700">
-                    {book.title}
-                  </h3>
-                  <p className="text-xs text-gray-600 mt-1 line-clamp-1">
-                    {book.author}
-                  </p>
-                  {book.matchReasons && book.matchReasons.length > 0 && (
-                    <div className="flex items-center gap-1 mt-1.5">
-                      <svg
-                        className="w-3 h-3 text-blue-500 shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                  <Link
+                    key={book._id}
+                    href={`/student/books/${book._id}`}
+                    className="group rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow"
+                  >
+                    <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs mb-2 overflow-hidden">
+                      {book.coverImage || book.coverImageUrl || book.thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={book.coverImage || book.coverImageUrl || book.thumbnail}
+                          alt={book.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs">Book</span>';
+                          }}
                         />
-                      </svg>
-                      <p className="text-xs text-blue-600 font-medium line-clamp-1">
-                        {book.matchReasons[0]}
-                      </p>
+                      ) : (
+                        <span>Book</span>
+                      )}
                     </div>
-                  )}
-                </Link>
-              ))}
-            </div>
+                    <h3 className="text-xs font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700">
+                      {book.title}
+                    </h3>
+                    <p className="text-xs text-gray-600 mt-1 line-clamp-1">
+                      {book.author}
+                    </p>
+                    {book.matchReasons && book.matchReasons.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <svg
+                          className="w-3 h-3 text-blue-500 shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                        <p className="text-xs text-blue-600 font-medium line-clamp-1">
+                          {book.matchReasons[0]}
+                        </p>
+                      </div>
+                    )}
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </section>
