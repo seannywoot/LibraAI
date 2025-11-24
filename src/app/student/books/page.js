@@ -95,6 +95,7 @@ export default function StudentBooksPage() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const shouldCloseOnBlur = useRef(true);
+  const justSelectedSuggestion = useRef(false);
   const [recommendationsKey, setRecommendationsKey] = useState(0);
   const [bookmarkedBooks, setBookmarkedBooks] = useState(new Set());
   const [bookmarking, setBookmarking] = useState(null);
@@ -104,38 +105,77 @@ export default function StudentBooksPage() {
   const navigationLinks = getStudentLinks();
   const tracker = getBehaviorTracker();
 
-  // Initialize state from URL parameters on mount
+  // Initialize state from URL parameters or sessionStorage on mount
   useEffect(() => {
     if (isInitialized) return;
     
-    const urlSearch = searchParams.get("search") || "";
-    const urlSortBy = searchParams.get("sortBy") || "relevance";
-    const urlPage = parseInt(searchParams.get("page") || "1", 10);
-    const urlResourceTypes = searchParams.get("resourceTypes")?.split(",").filter(Boolean) || ["Books"];
-    const urlFormats = searchParams.get("formats")?.split(",").filter(Boolean) || [];
-    const urlCategories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
-    const urlAvailability = searchParams.get("availability")?.split(",").filter(Boolean) || [];
-    const urlYearMin = parseInt(searchParams.get("yearMin") || "1950", 10);
-    const urlYearMax = parseInt(searchParams.get("yearMax") || "2025", 10);
+    // Try to restore from sessionStorage first
+    const savedState = sessionStorage.getItem('catalogState');
+    let initialState = null;
+    
+    if (savedState) {
+      try {
+        initialState = JSON.parse(savedState);
+      } catch (e) {
+        console.error('Failed to parse saved catalog state:', e);
+      }
+    }
+    
+    // If we have saved state, use it; otherwise use URL params or defaults
+    if (initialState) {
+      setSearchInput(initialState.searchInput || "");
+      setSortBy(initialState.sortBy || "relevance");
+      setPage(initialState.page || 1);
+      setFilters(initialState.filters || {
+        resourceTypes: ["Books"],
+        yearRange: [1950, 2025],
+        availability: [],
+        formats: [],
+        categories: [],
+      });
+      setTempFilters(initialState.filters || {
+        resourceTypes: ["Books"],
+        yearRange: [1950, 2025],
+        availability: [],
+        formats: [],
+        categories: [],
+      });
+      setYearInputs({
+        from: initialState.filters?.yearRange?.[0]?.toString() || "1950",
+        to: initialState.filters?.yearRange?.[1]?.toString() || "2025",
+      });
+      setViewMode(initialState.viewMode || "grid");
+    } else {
+      // Fall back to URL params
+      const urlSearch = searchParams.get("search") || "";
+      const urlSortBy = searchParams.get("sortBy") || "relevance";
+      const urlPage = parseInt(searchParams.get("page") || "1", 10);
+      const urlResourceTypes = searchParams.get("resourceTypes")?.split(",").filter(Boolean) || ["Books"];
+      const urlFormats = searchParams.get("formats")?.split(",").filter(Boolean) || [];
+      const urlCategories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
+      const urlAvailability = searchParams.get("availability")?.split(",").filter(Boolean) || [];
+      const urlYearMin = parseInt(searchParams.get("yearMin") || "1950", 10);
+      const urlYearMax = parseInt(searchParams.get("yearMax") || "2025", 10);
 
-    setSearchInput(urlSearch);
-    setSortBy(urlSortBy);
-    setPage(urlPage);
-    const initialFilters = {
-      resourceTypes: urlResourceTypes,
-      yearRange: [urlYearMin, urlYearMax],
-      availability: urlAvailability,
-      formats: urlFormats,
-      categories: urlCategories,
-    };
-    setFilters(initialFilters);
-    setTempFilters(initialFilters);
+      setSearchInput(urlSearch);
+      setSortBy(urlSortBy);
+      setPage(urlPage);
+      const initialFilters = {
+        resourceTypes: urlResourceTypes,
+        yearRange: [urlYearMin, urlYearMax],
+        availability: urlAvailability,
+        formats: urlFormats,
+        categories: urlCategories,
+      };
+      setFilters(initialFilters);
+      setTempFilters(initialFilters);
+    }
     
     setIsInitialized(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update URL when filters/search/sort change
+  // Update URL and sessionStorage when filters/search/sort change
   useEffect(() => {
     if (!isInitialized) return;
 
@@ -159,7 +199,17 @@ export default function StudentBooksPage() {
     
     // Update URL without triggering a navigation
     window.history.replaceState({}, "", newUrl);
-  }, [searchInput, sortBy, page, filters, isInitialized]);
+    
+    // Save state to sessionStorage for persistence across navigation
+    const stateToSave = {
+      searchInput,
+      sortBy,
+      page,
+      filters,
+      viewMode,
+    };
+    sessionStorage.setItem('catalogState', JSON.stringify(stateToSave));
+  }, [searchInput, sortBy, page, filters, viewMode, isInitialized]);
 
   // Cleanup tracker on unmount
   useEffect(() => {
@@ -169,8 +219,23 @@ export default function StudentBooksPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Clear sessionStorage when navigating away (except for back/forward navigation)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Keep the state in sessionStorage even on page refresh
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   // Debounced search effect
   useEffect(() => {
+    if (!isInitialized) return;
+    
     const timer = setTimeout(() => {
       setPage(1);
       loadBooks();
@@ -188,10 +253,16 @@ export default function StudentBooksPage() {
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchInput]);
+  }, [searchInput, isInitialized]);
 
   // Auto-suggestions effect
   useEffect(() => {
+    // Don't show suggestions if user just selected one
+    if (justSelectedSuggestion.current) {
+      justSelectedSuggestion.current = false;
+      return;
+    }
+
     const timer = setTimeout(() => {
       if (searchInput.length >= 2) {
         loadSuggestions();
@@ -206,6 +277,8 @@ export default function StudentBooksPage() {
   }, [searchInput]);
 
   useEffect(() => {
+    if (!isInitialized) return;
+    
     loadBooks();
     loadCategories();
 
@@ -223,7 +296,7 @@ export default function StudentBooksPage() {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, sortBy, filters]);
+  }, [page, pageSize, sortBy, filters, isInitialized]);
 
   async function loadCategories() {
     try {
@@ -388,9 +461,11 @@ export default function StudentBooksPage() {
   }
 
   function handleSuggestionClick(suggestion) {
+    justSelectedSuggestion.current = true;
     setSearchInput(suggestion.text);
     setShowSuggestions(false);
     setSelectedSuggestionIndex(-1);
+    setSuggestions([]);
     setPage(1);
   }
 
@@ -915,7 +990,7 @@ export default function StudentBooksPage() {
                   </button>
 
                   {/* Auto-suggestions dropdown */}
-                  {showSuggestions && suggestions.length > 0 && (
+                  {showSuggestions && suggestions.length > 0 && searchInput.trim().length >= 2 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
                       {suggestions.map((suggestion, idx) => (
                         <button
@@ -961,22 +1036,6 @@ export default function StudentBooksPage() {
                     </div>
                   )}
                 </div>
-                {searchInput && (
-                  <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-                    <svg
-                      className="h-4 w-4"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span>{searchInput}</span>
-                  </div>
-                )}
               </div >
 
               {/* Results Header */}

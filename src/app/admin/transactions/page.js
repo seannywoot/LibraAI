@@ -66,6 +66,7 @@ export default function AdminTransactionsPage() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const shouldCloseOnBlur = useRef(true);
+  const justSelectedSuggestion = useRef(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [actionLoading, setActionLoading] = useState("");
   const [dueDates, setDueDates] = useState({});
@@ -95,6 +96,12 @@ export default function AdminTransactionsPage() {
 
   // Auto-suggestions effect - reload when status filter changes
   useEffect(() => {
+    // Don't show suggestions if user just selected one
+    if (justSelectedSuggestion.current) {
+      justSelectedSuggestion.current = false;
+      return;
+    }
+
     const timer = setTimeout(() => {
       if (searchInput.length >= 2) {
         loadSuggestions();
@@ -165,9 +172,11 @@ export default function AdminTransactionsPage() {
   }
 
   function handleSuggestionClick(suggestion) {
+    justSelectedSuggestion.current = true;
     setSearchInput(suggestion.text);
     setShowSuggestions(false);
     setSelectedSuggestionIndex(-1);
+    setSuggestions([]);
     setPage(1);
   }
 
@@ -405,7 +414,7 @@ export default function AdminTransactionsPage() {
             )}
 
             {/* Auto-suggestions dropdown */}
-            {showSuggestions && suggestions.length > 0 && (
+            {showSuggestions && suggestions.length > 0 && searchInput.trim().length >= 2 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
                 {suggestions.map((suggestion, idx) => (
                   <button

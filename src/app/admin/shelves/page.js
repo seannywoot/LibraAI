@@ -307,7 +307,11 @@ export default function AdminShelvesPage() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
             <h2 className="text-lg font-semibold text-zinc-900">No existing shelf</h2>
-            <p className="text-sm text-zinc-600">Click &quot;Add Shelf&quot; to add a new shelf to the system.</p>
+            <p className="text-sm text-zinc-600">
+              {searchInput 
+                ? "Try searching for other shelf codes or locations, or consult with the librarian for assistance." 
+                : "Click \"Add Shelf\" to add a new shelf to the system."}
+            </p>
           </div>
         ) : (
           <section className="space-y-4">

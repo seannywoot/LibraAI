@@ -18,6 +18,7 @@ export default function StudentShelvesPage() {
   const [sortBy, setSortBy] = useState("code"); // 'code', 'bookCount', 'location'
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState("");
+  const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
 
   const navigationLinks = getStudentLinks();
 
@@ -104,7 +105,9 @@ export default function StudentShelvesPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="relative">
+            {/* Search Bar with View Toggle */}
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
               <svg
                 className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
                 fill="none"
@@ -131,6 +134,35 @@ export default function StudentShelvesPage() {
                   </svg>
                 </button>
               )}
+              </div>
+
+              {/* View Toggle */}
+              <div className="flex rounded-lg border border-zinc-300 bg-white overflow-hidden">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`px-3 py-2.5 text-sm transition-colors ${
+                    viewMode === "grid"
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-700 hover:bg-zinc-50"
+                  }`}
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`px-3 py-2.5 text-sm transition-colors ${
+                    viewMode === "list"
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-700 hover:bg-zinc-50"
+                  }`}
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Filters */}
@@ -210,31 +242,61 @@ export default function StudentShelvesPage() {
           </div>
         ) : (
           <section className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {items.map((shelf) => (
-                <Link
-                  key={shelf._id}
-                  href={`/student/shelves/${encodeURIComponent(shelf.slug || shelf.code || shelf._id)}`}
-                  className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3 hover:bg-zinc-100 hover:border-zinc-300 transition-colors"
-                >
-                  <div className="flex items-start gap-3">
+            {viewMode === "grid" ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {items.map((shelf) => (
+                  <Link
+                    key={shelf._id}
+                    href={`/student/shelves/${encodeURIComponent(shelf.slug || shelf.code || shelf._id)}`}
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3 hover:bg-zinc-100 hover:border-zinc-300 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-lg bg-white p-2 shadow-sm">
+                        <LibraryIcon className="h-5 w-5 text-zinc-700" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <h3 className="font-semibold text-zinc-900">{shelf.code}</h3>
+                        {shelf.name && <p className="text-sm text-zinc-600">{shelf.name}</p>}
+                        {shelf.location && (
+                          <p className="text-xs text-zinc-500">📍 {shelf.location}</p>
+                        )}
+                        <p className="text-xs font-medium text-zinc-700 pt-1">
+                          {shelf.bookCount || 0} {shelf.bookCount === 1 ? 'book' : 'books'}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {items.map((shelf) => (
+                  <Link
+                    key={shelf._id}
+                    href={`/student/shelves/${encodeURIComponent(shelf.slug || shelf.code || shelf._id)}`}
+                    className="flex items-center gap-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:bg-zinc-100 hover:border-zinc-300 transition-colors"
+                  >
                     <div className="rounded-lg bg-white p-2 shadow-sm">
                       <LibraryIcon className="h-5 w-5 text-zinc-700" />
                     </div>
-                    <div className="flex-1 space-y-1">
+                    <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-zinc-900">{shelf.code}</h3>
-                      {shelf.name && <p className="text-sm text-zinc-600">{shelf.name}</p>}
-                      {shelf.location && (
-                        <p className="text-xs text-zinc-500">📍 {shelf.location}</p>
-                      )}
-                      <p className="text-xs font-medium text-zinc-700 pt-1">
+                      <div className="flex items-center gap-3 text-sm text-zinc-600">
+                        {shelf.name && <span>{shelf.name}</span>}
+                        {shelf.location && (
+                          <span className="text-xs text-zinc-500">📍 {shelf.location}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-medium text-zinc-700">
                         {shelf.bookCount || 0} {shelf.bookCount === 1 ? 'book' : 'books'}
                       </p>
                     </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </Link>
+                ))}
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-4">
               <p className="text-xs text-zinc-500">Page {page} of {totalPages} · {total} total</p>

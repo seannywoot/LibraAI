@@ -20,6 +20,8 @@ export default function StudentAuthorsPage() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const shouldCloseOnBlur = useRef(true);
+  const justSelectedSuggestion = useRef(false);
+  const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
 
   const navigationLinks = getStudentLinks();
 
@@ -35,6 +37,12 @@ export default function StudentAuthorsPage() {
 
   // Auto-suggestions effect
   useEffect(() => {
+    // Don't show suggestions if user just selected one
+    if (justSelectedSuggestion.current) {
+      justSelectedSuggestion.current = false;
+      return;
+    }
+
     const timer = setTimeout(() => {
       if (searchInput.length >= 2) {
         loadSuggestions();
@@ -92,9 +100,11 @@ export default function StudentAuthorsPage() {
   }
 
   function handleSuggestionClick(suggestion) {
+    justSelectedSuggestion.current = true;
     setSearchInput(suggestion.text);
     setShowSuggestions(false);
     setSelectedSuggestionIndex(-1);
+    setSuggestions([]);
     setPage(1);
   }
 
@@ -158,8 +168,9 @@ export default function StudentAuthorsPage() {
             <p className="text-sm text-zinc-600">Explore authors in our library collection.</p>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative">
+          {/* Search Bar with View Toggle */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
             <svg
               className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
               fill="none"
@@ -200,7 +211,7 @@ export default function StudentAuthorsPage() {
             )}
 
             {/* Auto-suggestions dropdown */}
-            {showSuggestions && suggestions.length > 0 && (
+            {showSuggestions && suggestions.length > 0 && searchInput.trim().length >= 2 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
                 {suggestions.map((suggestion, idx) => (
                   <button
@@ -237,6 +248,35 @@ export default function StudentAuthorsPage() {
                 ))}
               </div>
             )}
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex rounded-lg border border-zinc-300 bg-white overflow-hidden">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`px-3 py-2.5 text-sm transition-colors ${
+                  viewMode === "grid"
+                    ? "bg-zinc-900 text-white"
+                    : "text-zinc-700 hover:bg-zinc-50"
+                }`}
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`px-3 py-2.5 text-sm transition-colors ${
+                  viewMode === "list"
+                    ? "bg-zinc-900 text-white"
+                    : "text-zinc-700 hover:bg-zinc-50"
+                }`}
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -268,30 +308,57 @@ export default function StudentAuthorsPage() {
           </div>
         ) : (
           <section className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {items.map((author) => (
-                <Link
-                  key={author._id}
-                  href={`/student/authors/${encodeURIComponent(author.slug || author._id)}`}
-                  className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3 hover:bg-zinc-100 hover:border-zinc-300 transition-colors"
-                >
-                  <div className="flex items-start gap-3">
+            {viewMode === "grid" ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {items.map((author) => (
+                  <Link
+                    key={author._id}
+                    href={`/student/authors/${encodeURIComponent(author.slug || author._id)}`}
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-3 hover:bg-zinc-100 hover:border-zinc-300 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-full bg-white p-2 shadow-sm">
+                        <Users className="h-5 w-5 text-zinc-700" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <h3 className="font-semibold text-zinc-900">{author.name}</h3>
+                        {author.bio && (
+                          <p className="text-sm text-zinc-600 line-clamp-3">{author.bio}</p>
+                        )}
+                        <p className="text-xs font-medium text-zinc-700 pt-1">
+                          {author.bookCount || 0} {author.bookCount === 1 ? 'book' : 'books'}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {items.map((author) => (
+                  <Link
+                    key={author._id}
+                    href={`/student/authors/${encodeURIComponent(author.slug || author._id)}`}
+                    className="flex items-center gap-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:bg-zinc-100 hover:border-zinc-300 transition-colors"
+                  >
                     <div className="rounded-full bg-white p-2 shadow-sm">
                       <Users className="h-5 w-5 text-zinc-700" />
                     </div>
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-zinc-900">{author.name}</h3>
                       {author.bio && (
-                        <p className="text-sm text-zinc-600 line-clamp-3">{author.bio}</p>
+                        <p className="text-sm text-zinc-600 line-clamp-1">{author.bio}</p>
                       )}
-                      <p className="text-xs font-medium text-zinc-700 pt-1">
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-medium text-zinc-700">
                         {author.bookCount || 0} {author.bookCount === 1 ? 'book' : 'books'}
                       </p>
                     </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </Link>
+                ))}
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-4">
               <p className="text-xs text-zinc-500">Page {page} of {totalPages} · {total} total</p>
