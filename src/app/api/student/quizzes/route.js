@@ -99,26 +99,45 @@ export async function POST(request) {
         const arrayBuffer = await pdfFile.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
+        console.log("📄 Starting PDF text extraction...");
+        console.log("📦 PDF buffer size:", buffer.length, "bytes");
+
         let pdfText = "";
         try {
-            console.log("📄 Starting PDF text extraction...");
-            
-            // Use pdf-parse which works better in serverless environments
-            const pdfParse = (await import("pdf-parse")).default;
-            console.log("✅ pdf-parse loaded");
-            
-            console.log("📦 PDF buffer size:", buffer.length, "bytes");
-            
-            const data = await pdfParse(buffer, {
-                max: 20 // Limit to first 20 pages
-            });
-            
-            console.log("✅ PDF parsed successfully");
-            console.log("📊 Pages:", data.numpages);
-            console.log("📝 Text length:", data.text.length, "characters");
-            
-            pdfText = data.text.trim();
-            
+            // Use the same PDF extraction as the chatbot
+            const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
+
+            // Use public worker file for serverless compatibility
+            if (pdfjs.GlobalWorkerOptions) {
+                pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.js";
+            }
+
+            // Convert to Uint8Array
+            const pdfBytes = new Uint8Array(buffer);
+
+            const loadingTask = pdfjs.getDocument({ data: pdfBytes });
+            const doc = await loadingTask.promise;
+
+            console.log("✅ PDF loaded, pages:", doc.numPages);
+
+            const numPages = doc.numPages || 1;
+            const maxPages = Math.min(numPages, 20);
+
+            let fullText = "";
+
+            for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+                const page = await doc.getPage(pageNum);
+                const content = await page.getTextContent();
+                const pageText = content.items
+                    .map((item) => ("str" in item ? item.str : ""))
+                    .join(" ");
+                fullText += `\n\n${pageText}`;
+                console.log(`✅ Extracted page ${pageNum}/${maxPages}`);
+            }
+
+            pdfText = fullText.trim();
+            console.log("✅ Total text extracted:", pdfText.length, "characters");
+
             if (!pdfText || pdfText.length < 100) {
                 console.error("❌ Insufficient text extracted:", pdfText.length, "characters");
                 return NextResponse.json({ 
@@ -126,8 +145,6 @@ export async function POST(request) {
                     error: "PDF does not contain enough readable text content" 
                 }, { status: 400 });
             }
-            
-            console.log("✅ Total text extracted:", pdfText.length, "characters");
         } catch (pdfError) {
             console.error("❌ PDF text extraction error:", pdfError);
             console.error("Error stack:", pdfError.stack);
@@ -148,6 +165,7 @@ export async function POST(request) {
         const bytezSDK = new Bytez(bytezApiKey);
         const bytezModel = bytezSDK.model("openai/gpt-4o");
 
+        // Now generate quiz questions from the extracted text
         const systemPrompt = `You are a quiz generator. Generate exactly ${questionCount} multiple-choice questions based on the provided document text. Each question should have 4 options and one correct answer. Return ONLY a valid JSON array with this structure:
 [
   {
@@ -162,7 +180,7 @@ The correctAnswer field should be the index (0-3) of the correct option. Make su
 
         let aiContent = "";
         try {
-            console.log("🤖 Calling Bytez AI...");
+            console.log("🤖 Generating quiz questions from extracted text...");
             const messages = [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userPrompt }

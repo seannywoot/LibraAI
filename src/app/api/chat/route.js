@@ -50,9 +50,9 @@ async function extractTextFromPDF(base64Data) {
   try {
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
 
-    // Ensure worker is configured for Node environment
+    // Use public worker file for serverless compatibility
     if (pdfjs.GlobalWorkerOptions) {
-      pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/build/pdf.worker.js";
+      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.js";
     }
     // Convert base64 to Uint8Array
     const pdfBytes = Uint8Array.from(Buffer.from(base64Data, "base64"));
