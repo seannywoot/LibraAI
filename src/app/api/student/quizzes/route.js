@@ -97,9 +97,9 @@ export async function POST(request) {
         try {
             const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
 
-            // Use CDN for worker file - local paths don't work in serverless
+            // Ensure worker is configured for Node environment
             if (pdfjs.GlobalWorkerOptions) {
-                pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+                pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/build/pdf.worker.js";
             }
 
             const pdfBytes = new Uint8Array(buffer);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { Book as BookIcon, BookOpen, Bookmark } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
@@ -46,6 +47,8 @@ function StatusChip({ status }) {
 }
 
 export default function StudentBooksPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [items, setItems] = useState([]);
@@ -73,9 +76,65 @@ export default function StudentBooksPage() {
   const [bookmarkedBooks, setBookmarkedBooks] = useState(new Set());
   const [bookmarking, setBookmarking] = useState(null);
   const [availableCategories, setAvailableCategories] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const navigationLinks = getStudentLinks();
   const tracker = getBehaviorTracker();
+
+  // Initialize state from URL parameters on mount
+  useEffect(() => {
+    if (isInitialized) return;
+    
+    const urlSearch = searchParams.get("search") || "";
+    const urlSortBy = searchParams.get("sortBy") || "relevance";
+    const urlPage = parseInt(searchParams.get("page") || "1", 10);
+    const urlResourceTypes = searchParams.get("resourceTypes")?.split(",").filter(Boolean) || ["Books"];
+    const urlFormats = searchParams.get("formats")?.split(",").filter(Boolean) || [];
+    const urlCategories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
+    const urlAvailability = searchParams.get("availability")?.split(",").filter(Boolean) || [];
+    const urlYearMin = parseInt(searchParams.get("yearMin") || "1950", 10);
+    const urlYearMax = parseInt(searchParams.get("yearMax") || "2025", 10);
+
+    setSearchInput(urlSearch);
+    setSortBy(urlSortBy);
+    setPage(urlPage);
+    setFilters({
+      resourceTypes: urlResourceTypes,
+      yearRange: [urlYearMin, urlYearMax],
+      availability: urlAvailability,
+      formats: urlFormats,
+      categories: urlCategories,
+    });
+    
+    setIsInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Update URL when filters/search/sort change
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const params = new URLSearchParams();
+    
+    if (searchInput) params.set("search", searchInput);
+    if (sortBy !== "relevance") params.set("sortBy", sortBy);
+    if (page !== 1) params.set("page", page.toString());
+    // Only include resourceTypes if not default (Books only)
+    if (filters.resourceTypes.length !== 1 || filters.resourceTypes[0] !== "Books") {
+      params.set("resourceTypes", filters.resourceTypes.join(","));
+    }
+    if (filters.formats.length > 0) params.set("formats", filters.formats.join(","));
+    if (filters.categories.length > 0) params.set("categories", filters.categories.join(","));
+    if (filters.availability.length > 0) params.set("availability", filters.availability.join(","));
+    if (filters.yearRange[0] !== 1950) params.set("yearMin", filters.yearRange[0].toString());
+    if (filters.yearRange[1] !== 2025) params.set("yearMax", filters.yearRange[1].toString());
+
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : window.location.pathname;
+    
+    // Update URL without triggering a navigation
+    window.history.replaceState({}, "", newUrl);
+  }, [searchInput, sortBy, page, filters, isInitialized]);
 
   // Cleanup tracker on unmount
   useEffect(() => {
@@ -182,13 +241,20 @@ export default function StudentBooksPage() {
       if (searchInput) params.append("search", searchInput);
 
       // Add filter parameters
+      // Only send resourceTypes if it's not the default (Books only) or if it's empty
+      // If only "Books" is selected, don't send the parameter (books don't have resourceType field in DB)
+      if (filters.resourceTypes.length > 0 && 
+          !(filters.resourceTypes.length === 1 && filters.resourceTypes[0] === "Books")) {
+        params.append("resourceTypes", filters.resourceTypes.join(","));
+      }
       if (filters.formats.length > 0) {
         params.append("formats", filters.formats.join(","));
       }
       if (filters.categories.length > 0) {
         params.append("categories", filters.categories.join(","));
       }
-      if (filters.yearRange) {
+      // Only send year range if it's not the default range
+      if (filters.yearRange && (filters.yearRange[0] !== 1950 || filters.yearRange[1] !== 2025)) {
         params.append("yearMin", filters.yearRange[0].toString());
         params.append("yearMax", filters.yearRange[1].toString());
       }
@@ -477,12 +543,7 @@ export default function StudentBooksPage() {
                         Resource Type
                       </h3>
                       <div className="space-y-2">
-                        {[
-                          { label: "Books", count: total },
-                          { label: "Articles", count: 0 },
-                          { label: "Journals", count: 0 },
-                          { label: "Theses", count: 0 },
-                        ].map(({ label, count }) => (
+                        {["Books", "Articles", "Journals", "Theses"].map((label) => (
                           <label
                             key={label}
                             className="flex items-center gap-2 cursor-pointer"
@@ -494,7 +555,7 @@ export default function StudentBooksPage() {
                               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                             <span className="text-sm text-gray-700">
-                              {label} ({count})
+                              {label}
                             </span>
                           </label>
                         ))}
@@ -569,14 +630,25 @@ export default function StudentBooksPage() {
                             max={filters.yearRange[1]}
                             value={filters.yearRange[0]}
                             onChange={(e) => {
+                              const value = e.target.value === "" ? "" : parseInt(e.target.value);
+                              if (value === "") {
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  yearRange: [1950, prev.yearRange[1]],
+                                }));
+                              } else {
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  yearRange: [value, prev.yearRange[1]],
+                                }));
+                              }
+                            }}
+                            onBlur={(e) => {
                               const value = parseInt(e.target.value) || 1950;
                               setFilters((prev) => ({
                                 ...prev,
                                 yearRange: [
-                                  Math.max(
-                                    1950,
-                                    Math.min(value, prev.yearRange[1])
-                                  ),
+                                  Math.max(1950, Math.min(value, prev.yearRange[1])),
                                   prev.yearRange[1],
                                 ],
                               }));
@@ -595,15 +667,26 @@ export default function StudentBooksPage() {
                             max="2025"
                             value={filters.yearRange[1]}
                             onChange={(e) => {
+                              const value = e.target.value === "" ? "" : parseInt(e.target.value);
+                              if (value === "") {
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  yearRange: [prev.yearRange[0], 2025],
+                                }));
+                              } else {
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  yearRange: [prev.yearRange[0], value],
+                                }));
+                              }
+                            }}
+                            onBlur={(e) => {
                               const value = parseInt(e.target.value) || 2025;
                               setFilters((prev) => ({
                                 ...prev,
                                 yearRange: [
                                   prev.yearRange[0],
-                                  Math.min(
-                                    2025,
-                                    Math.max(value, prev.yearRange[0])
-                                  ),
+                                  Math.min(2025, Math.max(value, prev.yearRange[0])),
                                 ],
                               }));
                             }}
@@ -620,7 +703,7 @@ export default function StudentBooksPage() {
                       </h3>
                       {availableCategories.length > 0 ? (
                         <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
-                          {availableCategories.map((category) => (
+                          {[...availableCategories].sort((a, b) => a.localeCompare(b)).map((category) => (
                             <label
                               key={category}
                               className="flex items-center gap-2 cursor-pointer"
@@ -647,23 +730,40 @@ export default function StudentBooksPage() {
                 </div>
 
                 {/* Modal Footer */}
-                <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
-                  <button
-                    onClick={() => setShowFilters(false)}
-                    className="px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
+                <div className="flex items-center justify-between p-6 border-t border-gray-200">
                   <button
                     onClick={() => {
+                      setFilters({
+                        resourceTypes: ["Books"],
+                        yearRange: [1950, 2025],
+                        availability: [],
+                        formats: [],
+                        categories: [],
+                      });
                       setPage(1);
-                      loadBooks();
-                      setShowFilters(false);
                     }}
-                    className="px-6 py-2.5 rounded-lg bg-black text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+                    className="px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
                   >
-                    Apply Filters
+                    Clear All Filters
                   </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setShowFilters(false)}
+                      className="px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPage(1);
+                        loadBooks();
+                        setShowFilters(false);
+                      }}
+                      className="px-6 py-2.5 rounded-lg bg-black text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+                    >
+                      Apply Filters
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -697,7 +797,7 @@ export default function StudentBooksPage() {
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
                       onFocus={() =>
-                        suggestions.length > 0 && setShowSuggestions(true)
+                        searchInput.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)
                       }
                       onBlur={() => {
                         setTimeout(() => {
@@ -784,8 +884,8 @@ export default function StudentBooksPage() {
                           key={idx}
                           onClick={() => handleSuggestionClick(suggestion)}
                           className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${idx === selectedSuggestionIndex
-                              ? "bg-gray-100"
-                              : "hover:bg-gray-50"
+                            ? "bg-gray-100"
+                            : "hover:bg-gray-50"
                             }`}
                         >
                           <svg
@@ -871,8 +971,8 @@ export default function StudentBooksPage() {
                   <button
                     onClick={() => setViewMode("grid")}
                     className={`p-1.5 rounded ${viewMode === "grid"
-                        ? "bg-gray-900 text-white"
-                        : "text-gray-600 hover:bg-gray-100"
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
                       }`}
                   >
                     <svg
@@ -886,8 +986,8 @@ export default function StudentBooksPage() {
                   <button
                     onClick={() => setViewMode("list")}
                     className={`p-1.5 rounded ${viewMode === "list"
-                        ? "bg-gray-900 text-white"
-                        : "text-gray-600 hover:bg-gray-100"
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
                       }`}
                   >
                     <svg
@@ -999,7 +1099,7 @@ export default function StudentBooksPage() {
                                   <StatusChip status={book.status} />
                                   {book.isbn && (
                                     <span className="text-sm text-gray-500">
-                                      Call #: {book.isbn}
+                                      ISBN: {book.isbn}
                                     </span>
                                   )}
                                 </div>

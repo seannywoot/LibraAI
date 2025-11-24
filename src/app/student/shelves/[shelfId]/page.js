@@ -315,7 +315,7 @@ export default function ShelfBooksPage() {
                           <StatusChip status={book.status} />
                           {book.isbn && (
                             <span className="text-sm text-gray-500">
-                              Call #: {book.isbn}
+                              ISBN: {book.isbn}
                             </span>
                           )}
                         </div>

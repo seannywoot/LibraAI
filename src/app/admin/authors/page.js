@@ -284,8 +284,8 @@ export default function AdminAuthorsPage() {
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">{error}</div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
-            <h2 className="text-lg font-semibold text-zinc-900">No authors yet</h2>
-            <p className="text-sm text-zinc-600">Click &quot;Add Author&quot; to get started.</p>
+            <h2 className="text-lg font-semibold text-zinc-900">No existing author</h2>
+            <p className="text-sm text-zinc-600">Click &quot;Add Author&quot; to add a new author to the system.</p>
           </div>
         ) : (
           <section className="space-y-4">

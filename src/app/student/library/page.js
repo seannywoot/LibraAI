@@ -57,6 +57,9 @@ function MyLibraryContent() {
   const [myBooks, setMyBooks] = useState([]);
   const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [bookmarkedBooks, setBookmarkedBooks] = useState([]);
+  const [totalMyBooks, setTotalMyBooks] = useState(0);
+  const [totalBorrowedBooks, setTotalBorrowedBooks] = useState(0);
+  const [totalBookmarkedBooks, setTotalBookmarkedBooks] = useState(0);
   const [searchInput, setSearchInput] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -81,16 +84,20 @@ function MyLibraryContent() {
 
   const navigationLinks = getStudentLinks();
 
-  // Debounce search input
+  // Debounce search input - only search within active tab
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadMyLibrary();
-      loadBorrowedBooks();
-      loadBookmarkedBooks();
+      if (activeTab === "personal") {
+        loadMyLibrary();
+      } else if (activeTab === "borrowed") {
+        loadBorrowedBooks();
+      } else if (activeTab === "bookmarked") {
+        loadBookmarkedBooks();
+      }
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchInput]);
+  }, [searchInput, activeTab]);
 
   // Auto-suggestions effect
   useEffect(() => {
@@ -106,12 +113,67 @@ function MyLibraryContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput, activeTab]);
 
+  // Load all counts on initial mount
   useEffect(() => {
-    loadMyLibrary();
-    loadBorrowedBooks();
-    loadBookmarkedBooks();
+    loadAllCounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Load data for active tab on tab change
+  useEffect(() => {
+    if (activeTab === "personal") {
+      loadMyLibrary();
+    } else if (activeTab === "borrowed") {
+      loadBorrowedBooks();
+    } else if (activeTab === "bookmarked") {
+      loadBookmarkedBooks();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  async function loadAllCounts() {
+    // Load all three counts in parallel without search filters
+    try {
+      const [myLibRes, borrowedRes, bookmarkedRes] = await Promise.all([
+        fetch("/api/student/library", { cache: "no-store" }),
+        fetch("/api/student/books/borrowed", { cache: "no-store" }),
+        fetch("/api/student/books/bookmarked", { cache: "no-store" })
+      ]);
+
+      const [myLibData, borrowedData, bookmarkedData] = await Promise.all([
+        myLibRes.json().catch(() => ({})),
+        borrowedRes.json().catch(() => ({})),
+        bookmarkedRes.json().catch(() => ({}))
+      ]);
+
+      if (myLibRes.ok && myLibData?.ok) {
+        setTotalMyBooks(myLibData.books?.length || 0);
+        if (activeTab === "personal") {
+          setMyBooks(myLibData.books || []);
+          setLoading(false);
+        }
+      }
+
+      if (borrowedRes.ok && borrowedData?.ok) {
+        setTotalBorrowedBooks(borrowedData.items?.length || 0);
+        if (activeTab === "borrowed") {
+          setBorrowedBooks(borrowedData.items || []);
+          setLoading(false);
+        }
+      }
+
+      if (bookmarkedRes.ok && bookmarkedData?.ok) {
+        setTotalBookmarkedBooks(bookmarkedData.books?.length || 0);
+        if (activeTab === "bookmarked") {
+          setBookmarkedBooks(bookmarkedData.books || []);
+          setLoading(false);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load counts:", e);
+      setLoading(false);
+    }
+  }
 
   function handleClearSearch() {
     setSearchInput("");
@@ -192,6 +254,11 @@ function MyLibraryContent() {
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Failed to load library");
       setMyBooks(data.books || []);
+      
+      // Only update total count when not searching
+      if (!searchInput) {
+        setTotalMyBooks(data.books?.length || 0);
+      }
     } catch (e) {
       showToast(e?.message || "Failed to load library", "error");
     } finally {
@@ -208,6 +275,11 @@ function MyLibraryContent() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load borrowed books");
       setBorrowedBooks(data.items || []);
+      
+      // Only update total count when not searching
+      if (!searchInput) {
+        setTotalBorrowedBooks(data.items?.length || 0);
+      }
 
       // Load bookmark status for borrowed books
       if (data.items && data.items.length > 0) {
@@ -230,6 +302,11 @@ function MyLibraryContent() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load bookmarked books");
       setBookmarkedBooks(data.books || []);
+      
+      // Only update total count when not searching
+      if (!searchInput) {
+        setTotalBookmarkedBooks(data.books?.length || 0);
+      }
     } catch (e) {
       console.error("Failed to load bookmarked books:", e);
     }
@@ -475,29 +552,29 @@ function MyLibraryContent() {
           <button
             onClick={() => setActiveTab("personal")}
             className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "personal"
-                ? "border-black text-black"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+              ? "border-black text-black"
+              : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
           >
-            Personal Collection ({myBooks.length})
+            Personal Collection ({totalMyBooks})
           </button>
           <button
             onClick={() => setActiveTab("borrowed")}
             className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "borrowed"
-                ? "border-black text-black"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+              ? "border-black text-black"
+              : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
           >
-            Borrowed Books ({borrowedBooks.length})
+            Borrowed Books ({totalBorrowedBooks})
           </button>
           <button
             onClick={() => setActiveTab("bookmarked")}
             className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === "bookmarked"
-                ? "border-black text-black"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+              ? "border-black text-black"
+              : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
           >
-            Bookmarked ({bookmarkedBooks.length})
+            Bookmarked ({totalBookmarkedBooks})
           </button>
         </div>
 
@@ -548,8 +625,8 @@ function MyLibraryContent() {
                   key={idx}
                   onClick={() => handleSuggestionClick(suggestion)}
                   className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-b-0 ${idx === selectedSuggestionIndex
-                      ? "bg-gray-100"
-                      : "hover:bg-gray-50"
+                    ? "bg-gray-100"
+                    : "hover:bg-gray-50"
                     }`}
                 >
                   <svg className="h-4 w-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -725,8 +802,8 @@ function MyLibraryContent() {
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`p-1.5 rounded ${viewMode === "grid"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
                     }`}
                 >
                   <svg
@@ -740,8 +817,8 @@ function MyLibraryContent() {
                 <button
                   onClick={() => setViewMode("list")}
                   className={`p-1.5 rounded ${viewMode === "list"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
                     }`}
                 >
                   <svg
@@ -892,8 +969,8 @@ function MyLibraryContent() {
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`p-1.5 rounded ${viewMode === "grid"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
                     }`}
                 >
                   <svg
@@ -907,8 +984,8 @@ function MyLibraryContent() {
                 <button
                   onClick={() => setViewMode("list")}
                   className={`p-1.5 rounded ${viewMode === "list"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
                     }`}
                 >
                   <svg
@@ -1096,8 +1173,8 @@ function MyLibraryContent() {
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`p-1.5 rounded ${viewMode === "grid"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
                     }`}
                 >
                   <svg
@@ -1111,8 +1188,8 @@ function MyLibraryContent() {
                 <button
                   onClick={() => setViewMode("list")}
                   className={`p-1.5 rounded ${viewMode === "list"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
                     }`}
                 >
                   <svg
@@ -1158,7 +1235,7 @@ function MyLibraryContent() {
                       <Link
                         key={transaction._id}
                         href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
-                        className={`rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                        className={`block rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
                           }`}
                       >
                         <div className="flex gap-6">
@@ -1237,8 +1314,8 @@ function MyLibraryContent() {
                                   onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
                                   disabled={bookmarking === transaction.bookId}
                                   className={`p-2 rounded-full transition-colors ${bookmarkStatus.get(transaction.bookId)
-                                      ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                                      : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                                    ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                                    : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
                                     } disabled:opacity-50`}
                                   title={bookmarkStatus.get(transaction.bookId) ? "Remove bookmark" : "Bookmark this book"}
                                 >
@@ -1340,8 +1417,8 @@ function MyLibraryContent() {
                               onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
                               disabled={bookmarking === transaction.bookId}
                               className={`w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-xs font-medium transition-colors ${bookmarkStatus.get(transaction.bookId)
-                                  ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                 } disabled:opacity-50`}
                             >
                               <Bookmark className={`h-3.5 w-3.5 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />

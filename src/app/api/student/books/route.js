@@ -22,10 +22,13 @@ export async function GET(request) {
     const sortBy = searchParams.get("sortBy") || "relevance";
     
     // Parse filter parameters
+    const resourceTypes = searchParams.get("resourceTypes")?.split(",").filter(Boolean) || [];
     const formats = searchParams.get("formats")?.split(",").filter(Boolean) || [];
     const categories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
-    const yearMin = parseInt(searchParams.get("yearMin") || "0", 10);
-    const yearMax = parseInt(searchParams.get("yearMax") || "9999", 10);
+    const yearMinParam = searchParams.get("yearMin");
+    const yearMaxParam = searchParams.get("yearMax");
+    const yearMin = yearMinParam ? parseInt(yearMinParam, 10) : null;
+    const yearMax = yearMaxParam ? parseInt(yearMaxParam, 10) : null;
     const availability = searchParams.get("availability")?.split(",").filter(Boolean) || [];
 
     const client = await clientPromise;
@@ -41,9 +44,51 @@ export async function GET(request) {
     // Use advanced search parser for search query
     const query = search ? buildSearchQuery(search, baseQuery) : baseQuery;
 
-    // Apply format filter
+    // Apply resource type filter
+    if (resourceTypes.length > 0) {
+      // Map frontend labels to database field values
+      const resourceTypeMap = {
+        "Books": "book",
+        "Articles": "article",
+        "Journals": "journal",
+        "Theses": "thesis"
+      };
+      const mappedTypes = resourceTypes.map(rt => resourceTypeMap[rt] || rt.toLowerCase());
+      
+      // If "Books" is included, also match documents without resourceType field
+      // (most books in DB don't have this field)
+      if (mappedTypes.includes("book")) {
+        // If query already has $or (from search), wrap it in $and
+        if (query.$or) {
+          const existingOr = query.$or;
+          delete query.$or;
+          query.$and = [
+            { $or: existingOr },
+            {
+              $or: [
+                { resourceType: { $in: mappedTypes } },
+                { resourceType: { $exists: false } },
+                { resourceType: null }
+              ]
+            }
+          ];
+        } else {
+          query.$or = [
+            { resourceType: { $in: mappedTypes } },
+            { resourceType: { $exists: false } },
+            { resourceType: null }
+          ];
+        }
+      } else {
+        query.resourceType = { $in: mappedTypes };
+      }
+    }
+
+    // Apply format filter (case-insensitive, partial match)
     if (formats.length > 0) {
-      query.format = { $in: formats };
+      // Create regex patterns for case-insensitive partial matching
+      // This matches "Physical" in "Physical Book" and "eBook" in "eBook" or "E-Book"
+      query.format = { $in: formats.map(f => new RegExp(f, 'i')) };
     }
 
     // Apply category filter (check both category and categories fields)
@@ -52,9 +97,11 @@ export async function GET(request) {
       query.categories = { $in: categories };
     }
 
-    // Apply year range filter
-    if (yearMin > 0 || yearMax < 9999) {
-      query.year = { $gte: yearMin, $lte: yearMax };
+    // Apply year range filter (only if explicitly provided)
+    if (yearMin !== null || yearMax !== null) {
+      query.year = {};
+      if (yearMin !== null) query.year.$gte = yearMin;
+      if (yearMax !== null) query.year.$lte = yearMax;
     }
 
     // Apply availability filter

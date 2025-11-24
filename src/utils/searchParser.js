@@ -1,4 +1,11 @@
 /**
+ * Escape special regex characters in user input
+ */
+function escapeRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * Parse advanced search syntax like:
  * - author: J.K. Rowling
  * - subject: Artificial Intelligence
@@ -64,7 +71,7 @@ export function parseSearchQuery(searchText) {
 
 /**
  * Build MongoDB query from parsed search filters
- * For books catalog - only supports title, author, year
+ * For books catalog - supports title, author, year, ISBN
  */
 export function buildSearchQuery(searchText, additionalQuery = {}) {
   const { filters, freeText } = parseSearchQuery(searchText);
@@ -72,9 +79,9 @@ export function buildSearchQuery(searchText, additionalQuery = {}) {
 
   const orConditions = [];
 
-  // Add specific field filters (only title, author, year for catalog)
+  // Add specific field filters (only title, author, year, ISBN for catalog)
   if (filters.author) {
-    orConditions.push({ author: { $regex: filters.author, $options: 'i' } });
+    orConditions.push({ author: { $regex: escapeRegex(filters.author), $options: 'i' } });
   }
   
   if (filters.year) {
@@ -82,15 +89,28 @@ export function buildSearchQuery(searchText, additionalQuery = {}) {
   }
   
   if (filters.title) {
-    orConditions.push({ title: { $regex: filters.title, $options: 'i' } });
+    orConditions.push({ title: { $regex: escapeRegex(filters.title), $options: 'i' } });
   }
 
-  // Add free text search across title and author only
+  if (filters.isbn) {
+    orConditions.push({ isbn: { $regex: escapeRegex(filters.isbn), $options: 'i' } });
+  }
+
+  // Add free text search across title, author, ISBN, and year
   if (freeText) {
+    const escapedText = escapeRegex(freeText);
     orConditions.push(
-      { title: { $regex: freeText, $options: 'i' } },
-      { author: { $regex: freeText, $options: 'i' } }
+      { title: { $regex: escapedText, $options: 'i' } },
+      { author: { $regex: escapedText, $options: 'i' } },
+      { isbn: { $regex: escapedText, $options: 'i' } }
     );
+    
+    // Check if free text contains a 4-digit year (1900-2099)
+    const yearMatch = freeText.match(/\b(19\d{2}|20\d{2})\b/);
+    if (yearMatch) {
+      const yearValue = parseInt(yearMatch[1], 10);
+      orConditions.push({ year: yearValue });
+    }
   }
 
   // Combine OR conditions if any exist
@@ -112,12 +132,12 @@ export function buildShelfBooksSearchQuery(searchText, additionalQuery = {}) {
 
   // Add specific field filters
   if (filters.author) {
-    orConditions.push({ author: { $regex: filters.author, $options: 'i' } });
+    orConditions.push({ author: { $regex: escapeRegex(filters.author), $options: 'i' } });
   }
   
   if (filters.subject || filters.category) {
     const categoryValue = filters.subject || filters.category;
-    orConditions.push({ category: { $regex: categoryValue, $options: 'i' } });
+    orConditions.push({ category: { $regex: escapeRegex(categoryValue), $options: 'i' } });
   }
   
   if (filters.year) {
@@ -125,28 +145,29 @@ export function buildShelfBooksSearchQuery(searchText, additionalQuery = {}) {
   }
   
   if (filters.title) {
-    orConditions.push({ title: { $regex: filters.title, $options: 'i' } });
+    orConditions.push({ title: { $regex: escapeRegex(filters.title), $options: 'i' } });
   }
   
   if (filters.isbn) {
-    orConditions.push({ isbn: { $regex: filters.isbn, $options: 'i' } });
+    orConditions.push({ isbn: { $regex: escapeRegex(filters.isbn), $options: 'i' } });
   }
   
   if (filters.publisher) {
-    orConditions.push({ publisher: { $regex: filters.publisher, $options: 'i' } });
+    orConditions.push({ publisher: { $regex: escapeRegex(filters.publisher), $options: 'i' } });
   }
   
   if (filters.shelf) {
-    query.shelf = { $regex: filters.shelf, $options: 'i' };
+    query.shelf = { $regex: escapeRegex(filters.shelf), $options: 'i' };
   }
 
   // Add free text search across all fields
   if (freeText) {
+    const escapedText = escapeRegex(freeText);
     orConditions.push(
-      { title: { $regex: freeText, $options: 'i' } },
-      { author: { $regex: freeText, $options: 'i' } },
-      { isbn: { $regex: freeText, $options: 'i' } },
-      { publisher: { $regex: freeText, $options: 'i' } }
+      { title: { $regex: escapedText, $options: 'i' } },
+      { author: { $regex: escapedText, $options: 'i' } },
+      { isbn: { $regex: escapedText, $options: 'i' } },
+      { publisher: { $regex: escapedText, $options: 'i' } }
     );
   }
 

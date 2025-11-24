@@ -123,8 +123,8 @@ export default function StudentShelvesPage() {
             <div className="rounded-full bg-white p-3 shadow text-zinc-500">
               <LibraryIcon className="h-6 w-6" />
             </div>
-            <h2 className="text-lg font-semibold text-zinc-900">No shelves available</h2>
-            <p className="text-sm text-zinc-600">Check back later for shelf information.</p>
+            <h2 className="text-lg font-semibold text-zinc-900">No existing shelf</h2>
+            <p className="text-sm text-zinc-600">Try searching for other shelf codes or locations, or consult with the librarian for assistance.</p>
           </div>
         ) : (
           <section className="space-y-4">

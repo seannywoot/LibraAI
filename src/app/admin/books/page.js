@@ -301,8 +301,8 @@ export default function AdminBooksListPage() {
             <div className="rounded-full bg-white p-3 shadow text-zinc-500">
               <BookIcon className="h-6 w-6" />
             </div>
-            <h2 className="text-lg font-semibold text-zinc-900">No books yet</h2>
-            <p className="text-sm text-zinc-600">Get started by adding your first title to the catalog.</p>
+            <h2 className="text-lg font-semibold text-zinc-900">No existing book</h2>
+            <p className="text-sm text-zinc-600">Get started by adding your first book to the catalog.</p>
             <Link href="/admin/books/add" className="mt-1 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-100">Add a book</Link>
           </div>
         ) : (
