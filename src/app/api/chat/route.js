@@ -48,12 +48,8 @@ function parseFunctionCallsFromText(text) {
 // Helper function to extract text from PDF using pdfjs-dist (Node.js compatible)
 async function extractTextFromPDF(base64Data) {
   try {
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
-
-    // Completely disable worker for serverless
-    if (pdfjs.GlobalWorkerOptions) {
-      pdfjs.GlobalWorkerOptions.workerSrc = false;
-    }
+    // Use the Node.js ESM build which does not require a separate worker file
+    const pdfjs = await import("pdfjs-dist/build/pdf.mjs");
     // Convert base64 to Uint8Array
     const pdfBytes = Uint8Array.from(Buffer.from(base64Data, "base64"));
 

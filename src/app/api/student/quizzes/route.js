@@ -104,13 +104,8 @@ export async function POST(request) {
 
         let pdfText = "";
         try {
-            // Use the same PDF extraction as the chatbot
-            const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
-
-            // Completely disable worker for serverless
-            if (pdfjs.GlobalWorkerOptions) {
-                pdfjs.GlobalWorkerOptions.workerSrc = false;
-            }
+            // Use the Node.js ESM build which does not require a separate worker file
+            const pdfjs = await import("pdfjs-dist/build/pdf.mjs");
 
             // Convert to Uint8Array
             const pdfBytes = new Uint8Array(buffer);
