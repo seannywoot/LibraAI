@@ -104,11 +104,12 @@ export async function POST(request) {
 
         let pdfText = "";
         try {
-            // Use the legacy build and explicitly disable workers for Node/serverless
-            const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
+            // Use the main pdfjs-dist entry and force worker-less operation in Node/serverless
+            const pdfjsModule = await import("pdfjs-dist");
+            const pdfjs = pdfjsModule.default || pdfjsModule;
 
             if (pdfjs.GlobalWorkerOptions) {
-                pdfjs.GlobalWorkerOptions.workerSrc = undefined;
+                pdfjs.GlobalWorkerOptions.workerSrc = null;
             }
 
             // Convert to Uint8Array
@@ -116,6 +117,7 @@ export async function POST(request) {
 
             const loadingTask = pdfjs.getDocument({ 
                 data: pdfBytes,
+                disableWorker: true,
                 useWorkerFetch: false,
                 isEvalSupported: false,
                 useSystemFonts: true

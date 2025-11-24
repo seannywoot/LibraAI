@@ -48,17 +48,19 @@ function parseFunctionCallsFromText(text) {
 // Helper function to extract text from PDF using pdfjs-dist (Node.js compatible)
 async function extractTextFromPDF(base64Data) {
   try {
-    // Use the legacy build and explicitly disable workers for Node/serverless
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.js");
+    // Use the main pdfjs-dist entry and force worker-less operation in Node/serverless
+    const pdfjsModule = await import("pdfjs-dist");
+    const pdfjs = pdfjsModule.default || pdfjsModule;
 
     if (pdfjs.GlobalWorkerOptions) {
-      pdfjs.GlobalWorkerOptions.workerSrc = undefined;
+      pdfjs.GlobalWorkerOptions.workerSrc = null;
     }
     // Convert base64 to Uint8Array
     const pdfBytes = Uint8Array.from(Buffer.from(base64Data, "base64"));
 
     const loadingTask = pdfjs.getDocument({ 
       data: pdfBytes,
+      disableWorker: true,
       useWorkerFetch: false,
       isEvalSupported: false,
       useSystemFonts: true
