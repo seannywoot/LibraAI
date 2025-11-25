@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Search, HelpCircle, AlertTriangle, FileText, ThumbsUp, ThumbsDown, ChevronLeft, ChevronRight, BookOpen, RotateCcw, Clock, X, Trash2 } from "lucide-react";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import ConfirmDialog from "@/components/confirm-dialog";
+import { AdminTransactionChart } from "@/components/admin-transaction-chart";
 
 export default function DashboardClient() {
   const [analytics, setAnalytics] = useState(null);
@@ -208,70 +209,9 @@ export default function DashboardClient() {
     <>
       <ToastContainer />
       <div className="space-y-8">
-      {/* Transaction Overview - First Row */}
+      {/* Transaction Trends Chart */}
       <section>
-        <h2 className="text-xl font-semibold text-zinc-900 mb-4">Transaction Overview</h2>
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* Pending Borrow Requests Card */}
-          <div className={`relative rounded-2xl border bg-white p-6 shadow-sm transition-all ${
-            newDataIndicator.borrowRequests ? 'border-purple-400 shadow-purple-100' : 'border-zinc-200'
-          }`}>
-            {newDataIndicator.borrowRequests && (
-              <div className="absolute -top-2 -right-2 flex h-6 w-6">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-6 w-6 bg-purple-500"></span>
-              </div>
-            )}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-zinc-600">Borrow Requests</span>
-              <BookOpen className="h-5 w-5 text-zinc-400" />
-            </div>
-            <div className="text-3xl font-bold text-zinc-900">{analytics.pendingBorrowRequests}</div>
-            <p className="text-sm text-purple-600 mt-2">
-              +{analytics.recentPendingRequests} in last 24h
-            </p>
-          </div>
-
-          {/* Return Requests Card */}
-          <div className={`relative rounded-2xl border bg-white p-6 shadow-sm transition-all ${
-            newDataIndicator.returnRequests ? 'border-indigo-400 shadow-indigo-100' : 'border-zinc-200'
-          }`}>
-            {newDataIndicator.returnRequests && (
-              <div className="absolute -top-2 -right-2 flex h-6 w-6">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-6 w-6 bg-indigo-500"></span>
-              </div>
-            )}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-zinc-600">Return Requests</span>
-              <RotateCcw className="h-5 w-5 text-zinc-400" />
-            </div>
-            <div className="text-3xl font-bold text-zinc-900">{analytics.returnRequests}</div>
-            <p className="text-sm text-indigo-600 mt-2">
-              +{analytics.recentReturnRequests} in last 24h
-            </p>
-          </div>
-
-          {/* Active Transactions Card */}
-          <div className={`relative rounded-2xl border bg-white p-6 shadow-sm transition-all ${
-            newDataIndicator.activeTransactions ? 'border-teal-400 shadow-teal-100' : 'border-zinc-200'
-          }`}>
-            {newDataIndicator.activeTransactions && (
-              <div className="absolute -top-2 -right-2 flex h-6 w-6">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-6 w-6 bg-teal-500"></span>
-              </div>
-            )}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-zinc-600">Active Loans</span>
-              <Clock className="h-5 w-5 text-zinc-400" />
-            </div>
-            <div className="text-3xl font-bold text-zinc-900">{analytics.activeTransactions}</div>
-            <p className="text-sm text-teal-600 mt-2">
-              +{analytics.recentTransactions} in last 24h
-            </p>
-          </div>
-        </div>
+        <AdminTransactionChart data={analytics?.transactionTrends || []} />
       </section>
 
       {/* FAQ & Support Overview - Second Row */}

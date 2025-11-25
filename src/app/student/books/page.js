@@ -1144,7 +1144,7 @@ export default function StudentBooksPage() {
                         >
                           <div className="flex gap-6">
                             {/* Book Cover */}
-                            <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                            <div className="w-24 h-32 shrink-0 rounded bg-gray-100 flex flex-col items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
                               {book.coverImage || book.coverImageUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
@@ -1153,11 +1153,15 @@ export default function StudentBooksPage() {
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
                                     e.target.style.display = 'none';
-                                    e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
+                                    const parent = e.target.parentElement;
+                                    parent.innerHTML = '<svg class="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg><span class="text-xs text-gray-400">No Cover</span>';
                                   }}
                                 />
                               ) : (
-                                <span>No Cover</span>
+                                <>
+                                  <BookOpen className="w-8 h-8 mb-1" />
+                                  <span>No Cover</span>
+                                </>
                               )}
                             </div>
 
@@ -1341,7 +1345,7 @@ export default function StudentBooksPage() {
                             className="flex flex-col h-full cursor-pointer"
                           >
                             {/* Book Cover */}
-                            <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-medium mb-2 overflow-hidden">
+                            <div className="w-full aspect-2/3 rounded bg-gray-100 flex flex-col items-center justify-center text-gray-400 text-[10px] font-medium mb-2 overflow-hidden">
                               {book.coverImage || book.coverImageUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
@@ -1350,11 +1354,15 @@ export default function StudentBooksPage() {
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
                                     e.target.style.display = 'none';
-                                    e.target.parentElement.innerHTML = '<span class="text-gray-400 text-[10px] font-medium">No Cover</span>';
+                                    const parent = e.target.parentElement;
+                                    parent.innerHTML = '<svg class="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg><span class="text-[10px] text-gray-400">No Cover</span>';
                                   }}
                                 />
                               ) : (
-                                <span>No Cover</span>
+                                <>
+                                  <BookOpen className="w-6 h-6 mb-1" />
+                                  <span>No Cover</span>
+                                </>
                               )}
                             </div>
 
