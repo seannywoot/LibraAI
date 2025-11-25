@@ -104,17 +104,17 @@ export async function GET(request) {
       { $unwind: "$bookCategories" },
       { $group: { _id: "$bookCategories", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 3 }
+      { $limit: 4 }
     ]).toArray();
 
     // Get favorite authors from interactions
     const favoriteAuthors = await interactions.aggregate([
-      { 
-        $match: { 
-          userId: user._id, 
+      {
+        $match: {
+          userId: user._id,
           eventType: "view",
           bookAuthor: { $exists: true, $ne: null }
-        } 
+        }
       },
       { $group: { _id: "$bookAuthor", count: { $sum: 1 } } },
       { $sort: { count: -1 } },

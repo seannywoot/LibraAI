@@ -6,6 +6,7 @@ import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { Book, Clock, AlertCircle } from "@/components/icons";
+import { ChartBarDefault } from "@/components/student-bar-chart";
 
 function formatDate(dateStr) {
   if (!dateStr) return "—";
@@ -242,37 +243,62 @@ export default function StudentDashboardPage() {
           </section>
         )}
 
-        {/* Favorite Categories */}
-        {!statsLoading && stats && stats.favoriteCategories.length > 0 && (
-          <section>
-            <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                Your Favorite Categories
-              </h3>
-              <div className="space-y-2">
-                {stats.favoriteCategories.map((category, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between"
-                  >
-                    <span className="text-sm text-gray-700">
-                      {category.name}
-                    </span>
-                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                      {category.count} views
-                    </span>
-                  </div>
-                ))}
+        {/* Bar Chart and Quick Actions Section */}
+        <section className="grid gap-4 md:grid-cols-2">
+          <ChartBarDefault
+            favoriteCategories={stats?.favoriteCategories || []}
+          />
+
+          {/* Quick Actions */}
+          <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+            <h3 className="text-base font-semibold text-gray-900">Quick Actions</h3>
+
+            <Link
+              href="/student/books"
+              className="block rounded-lg border border-gray-200 bg-gray-50 p-4 hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-gray-200 p-2">
+                  <Book className="h-5 w-5 text-gray-700" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900">Browse Catalog</h4>
+                  <p className="text-xs text-gray-600">Explore available books</p>
+                </div>
               </div>
-              <Link
-                href="/student/books"
-                className="inline-block mt-3 text-xs font-medium text-gray-600 hover:text-gray-900"
-              >
-                Explore more →
-              </Link>
-            </div>
-          </section>
-        )}
+            </Link>
+
+            <Link
+              href="/student/library"
+              className="block rounded-lg border border-gray-200 bg-gray-50 p-4 hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-gray-200 p-2">
+                  <Book className="h-5 w-5 text-gray-700" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900">My Library</h4>
+                  <p className="text-xs text-gray-600">View your collection</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/student/shelves"
+              className="block rounded-lg border border-gray-200 bg-gray-50 p-4 hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-gray-200 p-2">
+                  <Book className="h-5 w-5 text-gray-700" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900">Browse Shelves</h4>
+                  <p className="text-xs text-gray-600">Explore by category</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </section>
 
         {/* Alerts Section */}
         {!loading && (criticalBooks.length > 0 || dueSoonBooks.length > 0) && (
@@ -576,53 +602,7 @@ export default function StudentDashboardPage() {
           )}
         </section>
 
-        {/* Quick Actions */}
-        <section className="grid gap-4 md:grid-cols-3">
-          <Link
-            href="/student/books"
-            className="rounded-lg border border-gray-200 bg-white p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-gray-100 p-3">
-                <Book className="h-6 w-6 text-gray-700" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Browse Catalog</h3>
-                <p className="text-sm text-gray-600">Explore available books</p>
-              </div>
-            </div>
-          </Link>
 
-          <Link
-            href="/student/library"
-            className="rounded-lg border border-gray-200 bg-white p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-gray-100 p-3">
-                <Book className="h-6 w-6 text-gray-700" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">My Library</h3>
-                <p className="text-sm text-gray-600">View your collection</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/student/shelves"
-            className="rounded-lg border border-gray-200 bg-white p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-gray-100 p-3">
-                <Book className="h-6 w-6 text-gray-700" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Browse Shelves</h3>
-                <p className="text-sm text-gray-600">Explore by category</p>
-              </div>
-            </div>
-          </Link>
-        </section>
       </main>
     </div>
   );
