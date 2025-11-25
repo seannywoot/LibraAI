@@ -11,6 +11,9 @@ export default function FAQContent() {
   const [faqData, setFaqData] = useState({});
   const [loading, setLoading] = useState(true);
   const [feedbackGiven, setFeedbackGiven] = useState({});
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [selectedFaq, setSelectedFaq] = useState(null);
+  const [feedbackReason, setFeedbackReason] = useState("");
 
   const categories = [
     { id: "general", label: "General Overview" },
@@ -29,7 +32,7 @@ export default function FAQContent() {
       try {
         const response = await fetch("/api/faq");
         const data = await response.json();
-        
+
         if (data.success) {
           // Group FAQs by category
           const grouped = data.faqs.reduce((acc, faq) => {
@@ -56,6 +59,14 @@ export default function FAQContent() {
   );
 
   const handleFeedback = async (faqId, feedbackType) => {
+    // If "not-helpful", show modal to collect reason
+    if (feedbackType === "not-helpful") {
+      setSelectedFaq(faqId);
+      setShowReasonModal(true);
+      return;
+    }
+
+    // For "helpful", submit directly
     try {
       const response = await fetch("/api/faq/feedback", {
         method: "POST",
@@ -74,6 +85,38 @@ export default function FAQContent() {
           ...prev,
           [faqId]: feedbackType
         }));
+      }
+    } catch (error) {
+      console.error("Failed to submit feedback:", error);
+    }
+  };
+
+  const handleSubmitReason = async () => {
+    if (!selectedFaq) return;
+
+    try {
+      const response = await fetch("/api/faq/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          faqId: selectedFaq,
+          feedback: "not-helpful",
+          reason: feedbackReason.trim() || undefined
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Mark this FAQ as having feedback given
+        setFeedbackGiven(prev => ({
+          ...prev,
+          [selectedFaq]: "not-helpful"
+        }));
+        // Close modal and reset
+        setShowReasonModal(false);
+        setSelectedFaq(null);
+        setFeedbackReason("");
       }
     } catch (error) {
       console.error("Failed to submit feedback:", error);
@@ -112,11 +155,10 @@ export default function FAQContent() {
           <button
             key={category.id}
             onClick={() => setActiveCategory(category.id)}
-            className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-              activeCategory === category.id
+            className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${activeCategory === category.id
                 ? "bg-white text-zinc-900 shadow-sm"
                 : "text-zinc-600 hover:text-zinc-900 hover:bg-white/50"
-            }`}
+              }`}
           >
             {category.label}
           </button>
@@ -194,6 +236,52 @@ export default function FAQContent() {
           libraaismartlibraryassistant@gmail.com
         </p>
       </div>
+
+      {/* Feedback Reason Modal */}
+      {showReasonModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-xl">
+            <div className="p-6 border-b border-zinc-200">
+              <h3 className="text-lg font-semibold text-zinc-900">
+                Help us improve
+              </h3>
+              <p className="text-sm text-zinc-600 mt-1">
+                What could we do better? (Optional)
+              </p>
+            </div>
+            <div className="p-6">
+              <textarea
+                value={feedbackReason}
+                onChange={(e) => setFeedbackReason(e.target.value)}
+                placeholder="Tell us what was missing or unclear..."
+                className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent min-h-[120px] resize-none text-sm"
+                maxLength={500}
+              />
+              <p className="text-xs text-zinc-500 mt-2">
+                {feedbackReason.length}/500 characters
+              </p>
+            </div>
+            <div className="p-6 pt-0 flex gap-3">
+              <button
+                onClick={handleSubmitReason}
+                className="flex-1 px-4 py-2.5 bg-zinc-900 text-white rounded-lg font-medium hover:bg-zinc-800 transition-colors text-sm"
+              >
+                Submit Feedback
+              </button>
+              <button
+                onClick={() => {
+                  setShowReasonModal(false);
+                  setSelectedFaq(null);
+                  setFeedbackReason("");
+                }}
+                className="px-4 py-2.5 border border-zinc-300 text-zinc-700 rounded-lg font-medium hover:bg-zinc-50 transition-colors text-sm"
+              >
+                Skip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

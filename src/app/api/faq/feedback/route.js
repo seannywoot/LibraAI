@@ -7,7 +7,7 @@ import { ObjectId } from "mongodb";
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -15,7 +15,7 @@ export async function POST(request) {
       );
     }
 
-    const { faqId, feedback } = await request.json();
+    const { faqId, feedback, reason } = await request.json();
 
     if (!faqId || !feedback) {
       return NextResponse.json(
@@ -57,6 +57,7 @@ export async function POST(request) {
         {
           $set: {
             feedback,
+            ...(reason && { reason }),
             updatedAt: new Date()
           }
         }
@@ -68,6 +69,7 @@ export async function POST(request) {
         userId: session.user.email,
         userName: session.user.name || "Anonymous",
         feedback,
+        ...(reason && { reason }),
         question: faq.question,
         category: faq.category,
         createdAt: new Date(),
@@ -83,6 +85,55 @@ export async function POST(request) {
     console.error("Error submitting feedback:", error);
     return NextResponse.json(
       { success: false, error: "Failed to submit feedback" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Only admins can delete feedback
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { feedbackId } = await request.json();
+
+    if (!feedbackId) {
+      return NextResponse.json(
+        { success: false, error: "Feedback ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const db = await getDb();
+    const feedbackCollection = db.collection("faq_feedback");
+
+    // Delete the feedback entry
+    const result = await feedbackCollection.deleteOne({
+      _id: new ObjectId(feedbackId)
+    });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { success: false, error: "Feedback not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Feedback deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error deleting feedback:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to delete feedback" },
       { status: 500 }
     );
   }

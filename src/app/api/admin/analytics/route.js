@@ -185,6 +185,96 @@ export async function GET(request) {
       borrowedAt: { $gte: oneDayAgo }
     });
 
+    // Get top books, searches, and users
+    const interactionsCollection = db.collection("user_interactions");
+    const booksCollection = db.collection("books");
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    // Top 10 Books by Views (last 30 days)
+    const topBooksByViews = await interactionsCollection.aggregate([
+      {
+        $match: {
+          eventType: "view",
+          timestamp: { $gte: thirtyDaysAgo }
+        }
+      },
+      {
+        $group: {
+          _id: "$bookId",
+          title: { $first: "$bookTitle" },
+          author: { $first: "$bookAuthor" },
+          viewCount: { $sum: 1 }
+        }
+      },
+      { $sort: { viewCount: -1 } },
+      { $limit: 10 }
+    ]).toArray();
+
+    // Top 10 Books by Borrows (all time)
+    const topBooksByBorrows = await transactionsCollection.aggregate([
+      {
+        $match: {
+          status: { $in: ["borrowed", "returned"] }
+        }
+      },
+      {
+        $group: {
+          _id: "$bookId",
+          title: { $first: "$bookTitle" },
+          author: { $first: "$bookAuthor" },
+          borrowCount: { $sum: 1 }
+        }
+      },
+      { $sort: { borrowCount: -1 } },
+      { $limit: 10 }
+    ]).toArray();
+
+    // Top 10 Search Terms (last 30 days)
+    const topSearches = await interactionsCollection.aggregate([
+      {
+        $match: {
+          eventType: "search",
+          timestamp: { $gte: thirtyDaysAgo },
+          searchQuery: { $exists: true, $ne: "" }
+        }
+      },
+      {
+        $group: {
+          _id: { $toLower: "$searchQuery" },
+          searchCount: { $sum: 1 },
+          lastSearched: { $max: "$timestamp" }
+        }
+      },
+      { $sort: { searchCount: -1 } },
+      { $limit: 10 }
+    ]).toArray();
+
+    // Top 10 Active Users (last 30 days)
+    const topUsers = await interactionsCollection.aggregate([
+      {
+        $match: {
+          timestamp: { $gte: thirtyDaysAgo }
+        }
+      },
+      {
+        $group: {
+          _id: "$userEmail",
+          totalInteractions: { $sum: 1 },
+          views: {
+            $sum: { $cond: [{ $eq: ["$eventType", "view"] }, 1, 0] }
+          },
+          searches: {
+            $sum: { $cond: [{ $eq: ["$eventType", "search"] }, 1, 0] }
+          },
+          bookmarks: {
+            $sum: { $cond: [{ $eq: ["$eventType", "bookmark_add"] }, 1, 0] }
+          }
+        }
+      },
+      { $sort: { totalInteractions: -1 } },
+      { $limit: 10 }
+    ]).toArray();
+
     // Get transaction trends for the last 90 days
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
@@ -309,7 +399,8 @@ export async function GET(request) {
           category: f.category,
           feedback: f.feedback,
           userName: f.userName,
-          createdAt: f.createdAt
+          createdAt: f.createdAt,
+          reason: f.reason
         })),
         feedbackPagination: {
           currentPage: feedbackPage,
@@ -325,7 +416,32 @@ export async function GET(request) {
         activeTransactions,
         recentTransactions,
         // Transaction trends (time-series data)
-        transactionTrends: transactionTrendsData
+        transactionTrends: transactionTrendsData,
+        // Top items
+        topBooksByViews: topBooksByViews.map(b => ({
+          bookId: b._id,
+          title: b.title || "Unknown",
+          author: b.author || "Unknown",
+          viewCount: b.viewCount
+        })),
+        topBooksByBorrows: topBooksByBorrows.map(b => ({
+          bookId: b._id,
+          title: b.title || "Unknown",
+          author: b.author || "Unknown",
+          borrowCount: b.borrowCount
+        })),
+        topSearches: topSearches.map(s => ({
+          query: s._id,
+          searchCount: s.searchCount,
+          lastSearched: s.lastSearched
+        })),
+        topUsers: topUsers.map(u => ({
+          email: u._id,
+          totalInteractions: u.totalInteractions,
+          views: u.views,
+          searches: u.searches,
+          bookmarks: u.bookmarks
+        }))
       }
     });
   } catch (error) {
