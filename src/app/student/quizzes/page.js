@@ -272,7 +272,7 @@ export default function QuizzesPage() {
                         <button
                             type="submit"
                             disabled={!selectedFile || uploading}
-                            className="w-full sm:w-auto px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                            className="w-full px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                         >
                             {uploading ? (
                                 <>
