@@ -247,8 +247,8 @@ export default function QuizzesPage() {
                                         onClick={() => setQuestionCount(count)}
                                         disabled={uploading}
                                         className={`flex-1 px-4 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${questionCount === count
-                                                ? "border-blue-500 bg-blue-50 text-blue-700"
-                                                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                                             }`}
                                     >
                                         {count} Questions
@@ -337,15 +337,15 @@ export default function QuizzesPage() {
 
                                     <div className="space-y-1 text-xs text-gray-600">
                                         <p>Created: {formatDate(quiz.createdAt)}</p>
-                                        {quiz.attemptCount > 0 && (
-                                            <>
-                                                <p>Attempts: {quiz.attemptCount}</p>
-                                                {quiz.latestPercentage !== null && (
-                                                    <p className="font-medium text-gray-900">
-                                                        Latest Score: {quiz.latestScore}/{quiz.questionCount} ({quiz.latestPercentage}%)
-                                                    </p>
-                                                )}
-                                            </>
+                                        <p className={quiz.attemptCount === 0 ? "text-gray-400 italic" : ""}>
+                                            {quiz.attemptCount > 0 ? `Attempts: ${quiz.attemptCount}` : "No attempts yet"}
+                                        </p>
+                                        {quiz.attemptCount > 0 && quiz.latestPercentage !== null ? (
+                                            <p className="font-medium text-gray-900">
+                                                Latest Score: {quiz.latestScore}/{quiz.questionCount} ({quiz.latestPercentage}%)
+                                            </p>
+                                        ) : (
+                                            <p className="text-gray-400 italic">No score yet</p>
                                         )}
                                     </div>
                                 </Link>
