@@ -67,12 +67,12 @@ export async function POST(request) {
         console.log("========== POST /api/student/quizzes ==========");
         const session = await getServerSession(authOptions);
         console.log("Session user:", session?.user?.email);
-        
+
         if (!session || session.user?.role !== "student") {
             console.log("❌ Unauthorized");
             return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
         }
-        
+
         console.log("✅ User authorized:", session.user.id);
 
         const formData = await request.formData();
@@ -104,59 +104,60 @@ export async function POST(request) {
 
         let pdfText = "";
         try {
-            // Use the main pdfjs-dist entry and force worker-less operation in Node/serverless
-            const pdfjsModule = await import("pdfjs-dist");
-            const pdfjs = pdfjsModule.default || pdfjsModule;
+            // Dynamic import of pdf-parse v1.1.1 (which correctly exports as a function)
+            const pdfParseModule = await import('pdf-parse');
+            // v1.1.1 has a default export that's the function
+            const pdfParse = pdfParseModule.default;
 
-            if (pdfjs.GlobalWorkerOptions) {
-                pdfjs.GlobalWorkerOptions.workerSrc = null;
-            }
+            console.log('Starting PDF text extraction with pdf-parse...');
 
-            // Convert to Uint8Array
-            const pdfBytes = new Uint8Array(buffer);
-
-            const loadingTask = pdfjs.getDocument({ 
-                data: pdfBytes,
-                disableWorker: true,
-                useWorkerFetch: false,
-                isEvalSupported: false,
-                useSystemFonts: true
+            // Parse PDF - call as function with buffer
+            const data = await pdfParse(buffer, {
+                max: 0, // Parse all pages
             });
-            const doc = await loadingTask.promise;
 
-            console.log("✅ PDF loaded, pages:", doc.numPages);
+            console.log(`✅ PDF parsed. Pages: ${data.numpages || 'unknown'}, Raw text length: ${data.text?.length || 0}`);
 
-            const numPages = doc.numPages || 1;
-            const maxPages = Math.min(numPages, 20);
-
-            let fullText = "";
-
-            for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
-                const page = await doc.getPage(pageNum);
-                const content = await page.getTextContent();
-                const pageText = content.items
-                    .map((item) => ("str" in item ? item.str : ""))
-                    .join(" ");
-                fullText += `\n\n${pageText}`;
-                console.log(`✅ Extracted page ${pageNum}/${maxPages}`);
+            // Validate extracted text
+            if (!data.text) {
+                throw new Error('PDF parsing returned no text content');
             }
 
-            pdfText = fullText.trim();
-            console.log("✅ Total text extracted:", pdfText.length, "characters");
+            // Clean and normalize the extracted text
+            const cleanText = data.text
+                .replace(/\r\n/g, '\n')  // Normalize line endings
+                .replace(/\n\s*\n\s*\n/g, '\n\n')  // Clean up excessive line breaks
+                .replace(/\s+/g, ' ')  // Normalize whitespace
+                .trim();
 
-            if (!pdfText || pdfText.length < 100) {
-                console.error("❌ Insufficient text extracted:", pdfText.length, "characters");
-                return NextResponse.json({ 
-                    ok: false, 
-                    error: "PDF does not contain enough readable text content" 
+            if (cleanText.length < 100) {
+                console.error("❌ Insufficient text extracted:", cleanText.length, "characters");
+                return NextResponse.json({
+                    ok: false,
+                    error: "PDF does not contain enough readable text content (minimum 100 characters required)"
                 }, { status: 400 });
             }
+
+            pdfText = cleanText;
+            console.log("✅ Total text extracted:", pdfText.length, "characters");
+
         } catch (pdfError) {
             console.error("❌ PDF text extraction error:", pdfError);
             console.error("Error stack:", pdfError.stack);
-            return NextResponse.json({ 
-                ok: false, 
-                error: `Failed to extract text from PDF: ${pdfError.message}` 
+
+            // Provide user-friendly error messages
+            let errorMessage = pdfError.message;
+            if (pdfError.message.includes('Invalid PDF') || pdfError.message.includes('not a valid PDF')) {
+                errorMessage = 'Invalid or corrupted PDF file. Please ensure the file is a valid PDF document.';
+            } else if (pdfError.message.includes('password') || pdfError.message.includes('encrypted')) {
+                errorMessage = 'Password-protected or encrypted PDF detected. Please remove protection and try again.';
+            } else if (pdfError.message.includes('no readable text') || pdfError.message.includes('no text content')) {
+                errorMessage = 'No text found in PDF. This might be a scanned document or image-only PDF.';
+            }
+
+            return NextResponse.json({
+                ok: false,
+                error: `Failed to extract text from PDF: ${errorMessage}`
             }, { status: 500 });
         }
 
@@ -200,9 +201,9 @@ The correctAnswer field should be the index (0-3) of the correct option. Make su
             if (error) {
                 console.error("❌ Bytez AI generation error:", error);
                 console.error("Error details:", JSON.stringify(error, null, 2));
-                return NextResponse.json({ 
-                    ok: false, 
-                    error: `AI generation failed: ${error.message || JSON.stringify(error)}` 
+                return NextResponse.json({
+                    ok: false,
+                    error: `AI generation failed: ${error.message || JSON.stringify(error)}`
                 }, { status: 500 });
             }
 
@@ -217,9 +218,9 @@ The correctAnswer field should be the index (0-3) of the correct option. Make su
         } catch (aiError) {
             console.error("❌ Bytez AI call failed:", aiError);
             console.error("Error stack:", aiError.stack);
-            return NextResponse.json({ 
-                ok: false, 
-                error: `AI call failed: ${aiError.message}` 
+            return NextResponse.json({
+                ok: false,
+                error: `AI call failed: ${aiError.message}`
             }, { status: 500 });
         }
 

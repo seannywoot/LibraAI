@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // External packages for serverless compatibility
+  serverExternalPackages: ['canvas', 'pdf-parse'],
+
   // Configure body size limit for file uploads
   experimental: {
     serverActions: {
@@ -20,7 +23,7 @@ const nextConfig = {
         canvas: false,
       };
     }
-    
+
     // PDF.js configuration for serverless
     if (isServer) {
       config.resolve.alias = {
@@ -28,7 +31,7 @@ const nextConfig = {
         canvas: false,
       };
     }
-    
+
     return config;
   },
 };

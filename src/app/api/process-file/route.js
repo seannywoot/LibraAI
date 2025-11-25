@@ -1,0 +1,246 @@
+import { NextResponse } from 'next/server';
+
+export async function POST(request) {
+    try {
+        const formData = await request.formData();
+        const file = formData.get('file');
+
+        if (!file) {
+            return NextResponse.json(
+                { error: 'No file provided' },
+                { status: 400 }
+            );
+        }
+
+        // Validate file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+            return NextResponse.json(
+                { error: 'File size must be less than 10MB' },
+                { status: 400 }
+            );
+        }
+
+        let text;
+        const fileName = file.name.toLowerCase();
+        const fileType = file.type;
+
+        console.log(`Processing file: ${file.name}, Type: ${fileType}, Size: ${file.size} bytes`);
+
+        try {
+            if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
+                console.log('Processing as TXT file');
+                text = await extractFromTxt(file);
+            } else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+                console.log('Processing as PDF file');
+                text = await extractFromPdf(file);
+            } else if (
+                fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                fileName.endsWith('.docx')
+            ) {
+                console.log('Processing as DOCX file');
+                text = await extractFromDocx(file);
+            } else {
+                console.log(`Unsupported file type: ${fileType} for file: ${fileName}`);
+                return NextResponse.json(
+                    { error: `Unsupported file type: ${fileType}. Please upload .txt, .pdf, or .docx files.` },
+                    { status: 400 }
+                );
+            }
+        } catch (error) {
+            console.error('File processing error:', error);
+            return NextResponse.json(
+                { error: `Failed to process ${fileName.split('.').pop()?.toUpperCase()} file. Please ensure the file contains readable text.` },
+                { status: 500 }
+            );
+        }
+
+        if (!text || text.trim().length < 50) {
+            return NextResponse.json(
+                { error: 'File contains insufficient text for analysis (minimum 50 characters required)' },
+                { status: 400 }
+            );
+        }
+
+        return NextResponse.json({
+            success: true,
+            text: text.trim(),
+            metadata: {
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
+                textLength: text.length,
+                wordCount: text.split(/\s+/).length
+            }
+        });
+
+    } catch (error) {
+        console.error('File processing error:', error);
+        return NextResponse.json(
+            { error: 'Failed to process file. Please try again.' },
+            { status: 500 }
+        );
+    }
+}
+
+async function extractFromTxt(file) {
+    const text = await file.text();
+    return text;
+}
+
+async function extractFromPdf(file) {
+    console.log(`Processing PDF file: ${file.name}, size: ${file.size} bytes`);
+
+    try {
+        // Get file as array buffer
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        console.log(`PDF buffer created: ${buffer.length} bytes`);
+
+        // Validate buffer
+        if (buffer.length === 0) {
+            throw new Error('Empty PDF file detected');
+        }
+
+        // Check if it looks like a PDF (starts with %PDF)
+        const pdfHeader = buffer.slice(0, 4).toString();
+        if (pdfHeader !== '%PDF') {
+            throw new Error('File does not appear to be a valid PDF (missing PDF header)');
+        }
+
+        // Dynamic import of pdf-parse
+        const pdfParse = await import('pdf-parse');
+        const parseFunction = pdfParse.default || pdfParse;
+
+        console.log('Starting PDF text extraction...');
+
+        // Parse PDF with minimal options for better Vercel compatibility
+        const data = await parseFunction(buffer, {
+            max: 0, // Parse all pages
+            version: 'v1.10.100' // Use stable version
+        });
+
+        console.log(`PDF parsing completed. Pages: ${data.numpages || 'unknown'}, Raw text length: ${data.text?.length || 0}`);
+
+        // Validate extracted text
+        if (!data.text) {
+            throw new Error('PDF parsing returned no text content');
+        }
+
+        // Clean and normalize the extracted text
+        const cleanText = data.text
+            .replace(/\r\n/g, '\n')  // Normalize line endings
+            .replace(/\n\s*\n\s*\n/g, '\n\n')  // Clean up excessive line breaks
+            .replace(/\s+/g, ' ')  // Normalize whitespace
+            .trim();
+
+        if (cleanText.length === 0) {
+            throw new Error('PDF contains no readable text content');
+        }
+
+        console.log(`PDF processing successful. Final text length: ${cleanText.length} characters`);
+        return cleanText;
+
+    } catch (error) {
+        console.error('PDF processing error:', error);
+
+        // Handle specific error types with user-friendly messages
+        if (error.message.includes('Invalid PDF') || error.message.includes('not a valid PDF') || error.message.includes('PDF header')) {
+            throw new Error('Invalid or corrupted PDF file. Please ensure the file is a valid PDF document.');
+        }
+
+        if (error.message.includes('password') || error.message.includes('encrypted') || error.message.includes('decrypt')) {
+            throw new Error('Password-protected or encrypted PDF detected. Please remove protection and try again.');
+        }
+
+        if (error.message.includes('no readable text') || error.message.includes('no text content')) {
+            throw new Error('No text found in PDF. This might be a scanned document or image-only PDF. Please convert to text format or use OCR.');
+        }
+
+        if (error.message.includes('Empty PDF')) {
+            throw new Error('The PDF file appears to be empty or corrupted.');
+        }
+
+        // Generic error with helpful context
+        throw new Error(`Failed to process PDF file. Please ensure the file contains readable text.`);
+    }
+}
+
+async function extractFromDocx(file) {
+    console.log(`Processing DOCX file: ${file.name}, size: ${file.size} bytes`);
+
+    try {
+        // Dynamic import of mammoth library
+        const mammoth = await import('mammoth');
+
+        // Get file as array buffer
+        const arrayBuffer = await file.arrayBuffer();
+        console.log(`DOCX arrayBuffer size: ${arrayBuffer.byteLength} bytes`);
+
+        // Validate that we have data
+        if (arrayBuffer.byteLength === 0) {
+            throw new Error('Empty file detected');
+        }
+
+        // Convert to Buffer for mammoth (it expects a Buffer, not ArrayBuffer)
+        const buffer = Buffer.from(arrayBuffer);
+        console.log(`DOCX buffer created: ${buffer.length} bytes`);
+
+        // Extract raw text from DOCX using buffer
+        const result = await mammoth.extractRawText({ buffer });
+
+        console.log(`DOCX extraction completed. Text length: ${result.value?.length || 0} characters`);
+
+        // Log any processing messages (warnings, etc.)
+        if (result.messages && result.messages.length > 0) {
+            const messages = result.messages.map(m => `${m.type}: ${m.message}`);
+            console.log('DOCX processing messages:', messages);
+        }
+
+        // Check if we got any text
+        if (!result.value) {
+            throw new Error('No text content extracted from DOCX file');
+        }
+
+        // Clean and validate the extracted text
+        const cleanText = result.value
+            .replace(/\r\n/g, '\n')  // Normalize line endings
+            .replace(/\n\s*\n\s*\n/g, '\n\n')  // Clean up excessive line breaks
+            .replace(/\s+/g, ' ')  // Normalize spaces
+            .trim();
+
+        if (cleanText.length === 0) {
+            throw new Error('DOCX file contains no readable text content');
+        }
+
+        console.log(`DOCX processing successful. Final text length: ${cleanText.length} characters`);
+        return cleanText;
+
+    } catch (error) {
+        console.error('DOCX processing error:', error);
+
+        // Handle specific error types with user-friendly messages
+        if (error.message.includes('not a valid zip file') || error.message.includes('zip')) {
+            throw new Error('Invalid DOCX file. The file appears to be corrupted or is not a valid Word document.');
+        }
+
+        if (error.message.includes('Cannot read properties') || error.message.includes('undefined')) {
+            throw new Error('Corrupted DOCX file structure. Please try re-saving the document and uploading again.');
+        }
+
+        if (error.message.includes('Empty file') || error.message.includes('no readable text')) {
+            throw new Error('The DOCX file is empty or contains no text. Please ensure the document has written content.');
+        }
+
+        if (error.message.includes('No text content extracted')) {
+            throw new Error('Unable to extract text from DOCX. The document might contain only images, tables, or unsupported content.');
+        }
+
+        if (error.message.includes('Could not find file')) {
+            throw new Error('DOCX file format issue. Please ensure the file is a valid Word document and try again.');
+        }
+
+        // For any other error, provide a helpful generic message
+        throw new Error(`DOCX processing failed. Please ensure the file is a valid Word document (.docx) with readable text content. Error: ${error.message}`);
+    }
+}

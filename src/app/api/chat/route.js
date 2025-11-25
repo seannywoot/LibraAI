@@ -45,47 +45,43 @@ function parseFunctionCallsFromText(text) {
   return null;
 }
 
-// Helper function to extract text from PDF using pdfjs-dist (Node.js compatible)
+// Helper function to extract text from PDF using pdf-parse (serverless-friendly)
 async function extractTextFromPDF(base64Data) {
   try {
-    // Use the main pdfjs-dist entry and force worker-less operation in Node/serverless
-    const pdfjsModule = await import("pdfjs-dist");
-    const pdfjs = pdfjsModule.default || pdfjsModule;
+    // Dynamic import of pdf-parse v1.1.1 (which correctly exports as a function)
+    const pdfParseModule = await import('pdf-parse');
+    // v1.1.1 has a default export that's the function
+    const pdfParse = pdfParseModule.default;
 
-    if (pdfjs.GlobalWorkerOptions) {
-      pdfjs.GlobalWorkerOptions.workerSrc = null;
-    }
-    // Convert base64 to Uint8Array
-    const pdfBytes = Uint8Array.from(Buffer.from(base64Data, "base64"));
+    // Convert base64 to Buffer
+    const buffer = Buffer.from(base64Data, 'base64');
 
-    const loadingTask = pdfjs.getDocument({ 
-      data: pdfBytes,
-      disableWorker: true,
-      useWorkerFetch: false,
-      isEvalSupported: false,
-      useSystemFonts: true
+    console.log('Starting PDF text extraction with pdf-parse...');
+
+    // Parse PDF - call as function with buffer
+    const data = await pdfParse(buffer, {
+      max: 50, // Limit to first 50 pages for chat context
     });
-    const doc = await loadingTask.promise;
 
-    const numPages = doc.numPages || 1;
-    const maxPages = 50;
-    const pagesToRead = Math.min(numPages, maxPages);
+    console.log(`✅ PDF parsed. Pages: ${data.numpages || 'unknown'}, Raw text length: ${data.text?.length || 0}`);
 
-    let fullText = "";
-
-    for (let pageNum = 1; pageNum <= pagesToRead; pageNum++) {
-      const page = await doc.getPage(pageNum);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((item) => ("str" in item ? item.str : ""))
-        .join(" ");
-      fullText += `\n\n[Page ${pageNum}]\n${pageText}`;
+    // Validate extracted text
+    if (!data.text) {
+      throw new Error('PDF parsing returned no text content');
     }
 
-    fullText = fullText.trim();
-    const wordCount = fullText ? fullText.split(/\s+/).length : 0;
+    // Clean and normalize the extracted text
+    const cleanText = data.text
+      .replace(/\r\n/g, '\n')  // Normalize line endings
+      .replace(/\n\s*\n\s*\n/g, '\n\n')  // Clean up excessive line breaks
+      .replace(/\s+/g, ' ')  // Normalize whitespace
+      .trim();
 
-    let formattedText = fullText;
+    const wordCount = cleanText ? cleanText.split(/\s+/).length : 0;
+    const numPages = data.numpages || 1;
+    const pagesExtracted = Math.min(numPages, 50);
+
+    let formattedText = cleanText;
     if (numPages > 50) {
       formattedText += `\n\n[Note: Document has ${numPages} pages. Only first 50 pages were extracted for analysis.]`;
     }
@@ -94,7 +90,7 @@ async function extractTextFromPDF(base64Data) {
       success: true,
       text: formattedText.trim(),
       pageCount: numPages,
-      pagesExtracted: Math.min(numPages, 50),
+      pagesExtracted: pagesExtracted,
       wordCount: wordCount
     };
   } catch (error) {
