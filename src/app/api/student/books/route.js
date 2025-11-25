@@ -163,6 +163,7 @@ export async function GET(request) {
       coverImage: 1,
       thumbnail: 1,
       description: 1,
+      resourceType: 1,
     };
 
     // Fetch all items first (without pagination) to sort by availability

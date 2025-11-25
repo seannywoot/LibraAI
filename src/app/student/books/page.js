@@ -676,7 +676,7 @@ export default function StudentBooksPage() {
                           >
                             <input
                               type="checkbox"
-                              checked={filters.resourceTypes.includes(label)}
+                              checked={tempFilters.resourceTypes.includes(label)}
                               onChange={() => toggleResourceType(label)}
                               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
@@ -1121,12 +1121,12 @@ export default function StudentBooksPage() {
                       <BookIcon className="h-6 w-6" />
                     </div>
                     <h2 className="text-lg font-semibold text-gray-900">
-                      {searchInput ? "No books found" : "No books available"}
+                      No matches found
                     </h2>
                     <p className="text-sm text-gray-600">
                       {searchInput
-                        ? "Try adjusting your search terms."
-                        : "Check back later for new additions to the catalog."}
+                        ? "Try adjusting your search terms or filters."
+                        : "Try adjusting your filters or check back later for new additions."}
                     </p>
                   </div>
                 ) : viewMode === "list" ? (

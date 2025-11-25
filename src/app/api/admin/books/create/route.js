@@ -110,6 +110,7 @@ export async function POST(request) {
   const statusRaw = body?.status;
   const loanPolicyRaw = body?.loanPolicy;
   const coverImageRaw = body?.coverImage;
+  const resourceTypeRaw = body?.resourceType;
 
   const title = normalizeString(titleRaw);
   const author = normalizeString(authorRaw);
@@ -122,6 +123,7 @@ export async function POST(request) {
   const category = normalizeString(categoryRaw);
   const coverImage = normalizeString(coverImageRaw);
   const description = normalizeString(descriptionRaw);
+  const resourceType = normalizeString(resourceTypeRaw);
   
   // Handle categories and tags arrays
   const categories = Array.isArray(categoriesRaw) && categoriesRaw.length > 0 
@@ -327,6 +329,7 @@ export async function POST(request) {
       tags: finalTags, // Tags for better discoverability
       status,
       loanPolicy: format === "eBook" ? null : loanPolicy,
+      resourceType: resourceType || null, // article, journal, thesis, or null for regular books
       slug,
       createdAt: now,
       updatedAt: now,

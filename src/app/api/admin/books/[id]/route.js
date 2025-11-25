@@ -172,6 +172,7 @@ export async function PUT(request, context) {
     const categoryRaw = body?.category;
     const statusRaw = body?.status;
     const loanPolicyRaw = body?.loanPolicy;
+    const resourceTypeRaw = body?.resourceType;
 
     const title = normalizeString(titleRaw);
     const author = normalizeString(authorRaw);
@@ -182,6 +183,7 @@ export async function PUT(request, context) {
     const ebookUrl = normalizeString(ebookUrlRaw);
     const barcode = normalizeString(barcodeRaw);
     const category = normalizeString(categoryRaw);
+    const resourceType = normalizeString(resourceTypeRaw);
 
     const yearNum = typeof yearRaw === "number" ? yearRaw : parseInt(yearRaw, 10);
     const year = Number.isFinite(yearNum) ? yearNum : NaN;
@@ -331,6 +333,7 @@ export async function PUT(request, context) {
       tags, // For recommendations
       status,
       loanPolicy: format === "eBook" ? null : loanPolicy,
+      resourceType: resourceType || null,
       updatedAt: now,
       updatedBy: session.user?.email || null,
     };

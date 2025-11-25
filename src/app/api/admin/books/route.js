@@ -36,6 +36,7 @@ export async function GET(request) {
       createdAt: 1,
       coverImage: 1,
       thumbnail: 1,
+      resourceType: 1,
     };
 
     // Build search query with advanced syntax support (e.g., "author: Rowling", "year: 2023")
