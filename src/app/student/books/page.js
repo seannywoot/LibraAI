@@ -76,19 +76,19 @@ export default function StudentBooksPage() {
   const [sortBy, setSortBy] = useState("relevance");
   const [filters, setFilters] = useState({
     resourceTypes: ["Books"],
-    yearRange: [1950, 2025],
+    yearRange: [null, null],
     availability: [],
     formats: [],
     categories: [],
   });
   const [tempFilters, setTempFilters] = useState({
     resourceTypes: ["Books"],
-    yearRange: [1950, 2025],
+    yearRange: [null, null],
     availability: [],
     formats: [],
     categories: [],
   });
-  const [yearInputs, setYearInputs] = useState({ from: "1950", to: "2025" });
+  const [yearInputs, setYearInputs] = useState({ from: "", to: "" });
   const [showFilters, setShowFilters] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -109,15 +109,34 @@ export default function StudentBooksPage() {
   useEffect(() => {
     if (isInitialized) return;
     
-    // Try to restore from sessionStorage first
+    // FORCE CLEAR old sessionStorage with year range values
+    // This ensures clean state for all users
     const savedState = sessionStorage.getItem('catalogState');
-    let initialState = null;
-    
     if (savedState) {
       try {
-        initialState = JSON.parse(savedState);
+        const parsed = JSON.parse(savedState);
+        // If it has any year range values, clear it completely
+        if (parsed?.filters?.yearRange && 
+            (parsed.filters.yearRange[0] !== null || parsed.filters.yearRange[1] !== null)) {
+          console.log('Clearing old catalog state with year range values');
+          sessionStorage.removeItem('catalogState');
+        }
       } catch (e) {
         console.error('Failed to parse saved catalog state:', e);
+        sessionStorage.removeItem('catalogState');
+      }
+    }
+    
+    // Now try to restore from sessionStorage (should be clean now)
+    const cleanState = sessionStorage.getItem('catalogState');
+    let initialState = null;
+    
+    if (cleanState) {
+      try {
+        initialState = JSON.parse(cleanState);
+      } catch (e) {
+        console.error('Failed to parse saved catalog state:', e);
+        sessionStorage.removeItem('catalogState');
       }
     }
     
@@ -128,21 +147,25 @@ export default function StudentBooksPage() {
       setPage(initialState.page || 1);
       setFilters(initialState.filters || {
         resourceTypes: ["Books"],
-        yearRange: [1950, 2025],
+        yearRange: [null, null],
         availability: [],
         formats: [],
         categories: [],
       });
       setTempFilters(initialState.filters || {
         resourceTypes: ["Books"],
-        yearRange: [1950, 2025],
+        yearRange: [null, null],
         availability: [],
         formats: [],
         categories: [],
       });
       setYearInputs({
-        from: initialState.filters?.yearRange?.[0]?.toString() || "1950",
-        to: initialState.filters?.yearRange?.[1]?.toString() || "2025",
+        from: initialState.filters?.yearRange?.[0] !== null && initialState.filters?.yearRange?.[0] !== undefined 
+          ? initialState.filters.yearRange[0].toString() 
+          : "",
+        to: initialState.filters?.yearRange?.[1] !== null && initialState.filters?.yearRange?.[1] !== undefined
+          ? initialState.filters.yearRange[1].toString()
+          : "",
       });
       setViewMode(initialState.viewMode || "grid");
     } else {
@@ -154,8 +177,10 @@ export default function StudentBooksPage() {
       const urlFormats = searchParams.get("formats")?.split(",").filter(Boolean) || [];
       const urlCategories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
       const urlAvailability = searchParams.get("availability")?.split(",").filter(Boolean) || [];
-      const urlYearMin = parseInt(searchParams.get("yearMin") || "1950", 10);
-      const urlYearMax = parseInt(searchParams.get("yearMax") || "2025", 10);
+      const urlYearMinStr = searchParams.get("yearMin");
+      const urlYearMaxStr = searchParams.get("yearMax");
+      const urlYearMin = urlYearMinStr ? parseInt(urlYearMinStr, 10) : null;
+      const urlYearMax = urlYearMaxStr ? parseInt(urlYearMaxStr, 10) : null;
 
       setSearchInput(urlSearch);
       setSortBy(urlSortBy);
@@ -169,6 +194,10 @@ export default function StudentBooksPage() {
       };
       setFilters(initialFilters);
       setTempFilters(initialFilters);
+      setYearInputs({
+        from: urlYearMin !== null ? urlYearMin.toString() : "",
+        to: urlYearMax !== null ? urlYearMax.toString() : "",
+      });
     }
     
     setIsInitialized(true);
@@ -191,8 +220,8 @@ export default function StudentBooksPage() {
     if (filters.formats.length > 0) params.set("formats", filters.formats.join(","));
     if (filters.categories.length > 0) params.set("categories", filters.categories.join(","));
     if (filters.availability.length > 0) params.set("availability", filters.availability.join(","));
-    if (filters.yearRange[0] !== 1950) params.set("yearMin", filters.yearRange[0].toString());
-    if (filters.yearRange[1] !== 2025) params.set("yearMax", filters.yearRange[1].toString());
+    if (filters.yearRange[0] !== null) params.set("yearMin", filters.yearRange[0].toString());
+    if (filters.yearRange[1] !== null) params.set("yearMax", filters.yearRange[1].toString());
 
     const queryString = params.toString();
     const newUrl = queryString ? `?${queryString}` : window.location.pathname;
@@ -233,7 +262,7 @@ export default function StudentBooksPage() {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [items]);
 
   // Clear sessionStorage when navigating away (except for back/forward navigation)
@@ -368,9 +397,11 @@ export default function StudentBooksPage() {
       if (filters.categories.length > 0) {
         params.append("categories", filters.categories.join(","));
       }
-      // Only send year range if it's not the default range
-      if (filters.yearRange && (filters.yearRange[0] !== 1950 || filters.yearRange[1] !== 2025)) {
+      // Only send year range if values are set
+      if (filters.yearRange[0] !== null) {
         params.append("yearMin", filters.yearRange[0].toString());
+      }
+      if (filters.yearRange[1] !== null) {
         params.append("yearMax", filters.yearRange[1].toString());
       }
       if (filters.availability.length > 0) {
@@ -514,20 +545,23 @@ export default function StudentBooksPage() {
   function handleClearFilters() {
     const defaultFilters = {
       resourceTypes: ["Books"],
-      yearRange: [1950, 2025],
+      yearRange: [null, null],
       availability: [],
       formats: [],
       categories: [],
     };
     setTempFilters(defaultFilters);
     setFilters(defaultFilters);
-    setYearInputs({ from: "1950", to: "2025" });
+    setYearInputs({ from: "", to: "" });
     setPage(1);
   }
 
   function handleCancelFilters() {
     setTempFilters(filters);
-    setYearInputs({ from: filters.yearRange[0].toString(), to: filters.yearRange[1].toString() });
+    setYearInputs({ 
+      from: filters.yearRange[0] !== null ? filters.yearRange[0].toString() : "", 
+      to: filters.yearRange[1] !== null ? filters.yearRange[1].toString() : "" 
+    });
     setShowFilters(false);
   }
 
@@ -790,15 +824,29 @@ export default function StudentBooksPage() {
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            placeholder="1950"
+                            placeholder="Any year"
+                            maxLength={4}
                             value={yearInputs.from}
                             onChange={(e) => {
                               const value = e.target.value;
-                              // Allow empty string or valid numbers
-                              if (value === "" || /^\d+$/.test(value)) {
+                              const currentYear = new Date().getFullYear();
+                              
+                              // Allow empty string or valid numbers up to 4 digits
+                              if (value === "") {
+                                setYearInputs((prev) => ({ ...prev, from: "" }));
+                                setTempFilters((prev) => ({
+                                  ...prev,
+                                  yearRange: [null, prev.yearRange[1]],
+                                }));
+                              } else if (/^\d+$/.test(value) && value.length <= 4) {
+                                const numValue = parseInt(value);
+                                
+                                // Prevent typing future years
+                                if (numValue > currentYear) {
+                                  return; // Don't update if trying to type future year
+                                }
+                                
                                 setYearInputs((prev) => ({ ...prev, from: value }));
-                                // Update filter with parsed value or default
-                                const numValue = value === "" ? 1950 : parseInt(value);
                                 setTempFilters((prev) => ({
                                   ...prev,
                                   yearRange: [numValue, prev.yearRange[1]],
@@ -806,16 +854,34 @@ export default function StudentBooksPage() {
                               }
                             }}
                             onBlur={(e) => {
-                              const value = e.target.value === "" ? "1950" : e.target.value;
-                              const numValue = parseInt(value);
-                              const clampedValue = Math.max(1950, Math.min(numValue, tempFilters.yearRange[1]));
-                              setYearInputs((prev) => ({ ...prev, from: clampedValue.toString() }));
-                              setTempFilters((prev) => ({
-                                ...prev,
-                                yearRange: [clampedValue, prev.yearRange[1]],
-                              }));
+                              const value = e.target.value.trim();
+                              if (value === "") {
+                                // Allow empty - no minimum year
+                                setYearInputs((prev) => ({ ...prev, from: "" }));
+                                setTempFilters((prev) => ({
+                                  ...prev,
+                                  yearRange: [null, prev.yearRange[1]],
+                                }));
+                              } else {
+                                const numValue = parseInt(value);
+                                const currentYear = new Date().getFullYear();
+                                
+                                // Validate: must be a valid year, not exceed current year, and not exceed "to" year
+                                let clampedValue = Math.min(numValue, currentYear);
+                                
+                                // Don't exceed "to" year if set
+                                if (tempFilters.yearRange[1] !== null && clampedValue > tempFilters.yearRange[1]) {
+                                  clampedValue = tempFilters.yearRange[1];
+                                }
+                                
+                                setYearInputs((prev) => ({ ...prev, from: clampedValue.toString() }));
+                                setTempFilters((prev) => ({
+                                  ...prev,
+                                  yearRange: [clampedValue, prev.yearRange[1]],
+                                }));
+                              }
                             }}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                           />
                         </div>
                         <span className="text-gray-400 mt-6">—</span>
@@ -827,15 +893,29 @@ export default function StudentBooksPage() {
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            placeholder="2025"
+                            placeholder={`Max ${new Date().getFullYear()}`}
+                            maxLength={4}
                             value={yearInputs.to}
                             onChange={(e) => {
                               const value = e.target.value;
-                              // Allow empty string or valid numbers
-                              if (value === "" || /^\d+$/.test(value)) {
+                              const currentYear = new Date().getFullYear();
+                              
+                              // Allow empty string or valid numbers up to 4 digits
+                              if (value === "") {
+                                setYearInputs((prev) => ({ ...prev, to: "" }));
+                                setTempFilters((prev) => ({
+                                  ...prev,
+                                  yearRange: [prev.yearRange[0], null],
+                                }));
+                              } else if (/^\d+$/.test(value) && value.length <= 4) {
+                                const numValue = parseInt(value);
+                                
+                                // Prevent typing future years
+                                if (numValue > currentYear) {
+                                  return; // Don't update if trying to type future year
+                                }
+                                
                                 setYearInputs((prev) => ({ ...prev, to: value }));
-                                // Update filter with parsed value or default
-                                const numValue = value === "" ? 2025 : parseInt(value);
                                 setTempFilters((prev) => ({
                                   ...prev,
                                   yearRange: [prev.yearRange[0], numValue],
@@ -843,19 +923,40 @@ export default function StudentBooksPage() {
                               }
                             }}
                             onBlur={(e) => {
-                              const value = e.target.value === "" ? "2025" : e.target.value;
-                              const numValue = parseInt(value);
-                              const clampedValue = Math.min(2025, Math.max(numValue, tempFilters.yearRange[0]));
-                              setYearInputs((prev) => ({ ...prev, to: clampedValue.toString() }));
-                              setTempFilters((prev) => ({
-                                ...prev,
-                                yearRange: [prev.yearRange[0], clampedValue],
-                              }));
+                              const value = e.target.value.trim();
+                              if (value === "") {
+                                // Allow empty - no maximum year
+                                setYearInputs((prev) => ({ ...prev, to: "" }));
+                                setTempFilters((prev) => ({
+                                  ...prev,
+                                  yearRange: [prev.yearRange[0], null],
+                                }));
+                              } else {
+                                const numValue = parseInt(value);
+                                const currentYear = new Date().getFullYear();
+                                
+                                // Validate: must not exceed current year and must not be less than "from" year
+                                let clampedValue = Math.min(numValue, currentYear);
+                                
+                                // Don't go below "from" year if set
+                                if (tempFilters.yearRange[0] !== null && clampedValue < tempFilters.yearRange[0]) {
+                                  clampedValue = tempFilters.yearRange[0];
+                                }
+                                
+                                setYearInputs((prev) => ({ ...prev, to: clampedValue.toString() }));
+                                setTempFilters((prev) => ({
+                                  ...prev,
+                                  yearRange: [prev.yearRange[0], clampedValue],
+                                }));
+                              }
                             }}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                           />
                         </div>
                       </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Leave empty to search all years
+                      </p>
                     </div>
 
                     {/* Category */}
