@@ -315,7 +315,7 @@ export default function AdminEditBookPage() {
   }
 
   return (
-    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-24 pb-20 lg:p-8 lg:pl-[300px] text-(--text)">
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} onNavigate={handleNavigation} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
@@ -327,10 +327,10 @@ export default function AdminEditBookPage() {
           </div>
         </header>
 
-        <form onSubmit={handleSubmit} className="grid gap-8">
-          <section className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
+        <form onSubmit={handleSubmit} className="grid gap-6 md:gap-8">
+          <section className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 md:p-6">
             <h2 className="text-base font-semibold text-zinc-900">Book details</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2 sm:gap-4">
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
                   Title <span className="text-rose-600">*</span>
@@ -670,18 +670,18 @@ export default function AdminEditBookPage() {
             </div>
           </section>
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={() => navigateTo("/admin/books")}
-              className="rounded-xl border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+              className="rounded-xl border border-zinc-200 bg-white px-5 py-3 sm:py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 text-center"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-xl border border-zinc-900 bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl border border-zinc-900 bg-zinc-900 px-5 py-3 sm:py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 text-center"
             >
               {submitting ? "Updating…" : "Update book"}
             </button>

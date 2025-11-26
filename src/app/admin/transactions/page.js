@@ -343,16 +343,16 @@ export default function AdminTransactionsPage() {
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-6 border-b border-(--stroke) pb-6">
-          <div className="flex items-end justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div className="space-y-2">
               <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
               <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Borrow Transactions</h1>
               <p className="text-sm text-zinc-600">View all borrowing and return activity.</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
               <button
                 onClick={() => router.push("/admin/transactions/archives")}
-                className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100"
+                className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 whitespace-nowrap"
               >
                 View Archives
               </button>
@@ -362,7 +362,7 @@ export default function AdminTransactionsPage() {
                   setStatusFilter(e.target.value);
                   setPage(1);
                 }}
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700"
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 w-full md:w-auto"
               >
                 <option value="">All Status</option>
                 <option value="borrowed">Borrowed</option>

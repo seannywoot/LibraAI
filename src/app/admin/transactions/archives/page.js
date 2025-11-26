@@ -13,9 +13,9 @@ import { Trash2 } from "@/components/icons";
 function formatDate(dateStr) {
   if (!dateStr) return "—";
   const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", { 
-    month: "short", 
-    day: "numeric", 
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
     year: "numeric",
     timeZone: "Asia/Manila"
   });
@@ -89,14 +89,14 @@ export default function AdminTransactionArchivesPage() {
       setLoading(true);
       setError("");
       try {
-        const params = new URLSearchParams({ 
-          page: page.toString(), 
+        const params = new URLSearchParams({
+          page: page.toString(),
           pageSize: pageSize.toString(),
           showArchived: "true"
         });
         if (statusFilter) params.append("status", statusFilter);
         if (searchInput) params.append("search", searchInput);
-        
+
         const url = `/api/admin/transactions?${params}`;
         const res = await fetch(url, { cache: "no-store" });
         const data = await res.json().catch(() => ({}));
@@ -196,14 +196,14 @@ export default function AdminTransactionArchivesPage() {
       setPendingDelete(null);
       // Reload the list
       setPage(1);
-      const params = new URLSearchParams({ 
-        page: "1", 
+      const params = new URLSearchParams({
+        page: "1",
         pageSize: pageSize.toString(),
         showArchived: "true"
       });
       if (statusFilter) params.append("status", statusFilter);
       if (searchInput) params.append("search", searchInput);
-      
+
       const url = `/api/admin/transactions?${params}`;
       const res2 = await fetch(url, { cache: "no-store" });
       const data2 = await res2.json().catch(() => ({}));
@@ -212,7 +212,7 @@ export default function AdminTransactionArchivesPage() {
         setItems(archivedItems);
         setTotal(archivedItems.length);
       }
-    } catch (e) { 
+    } catch (e) {
       showToast(e?.message || "Failed to delete transaction", "error");
     } finally {
       setDeletingId(null);
@@ -223,22 +223,22 @@ export default function AdminTransactionArchivesPage() {
   const isDeletingCurrent = pendingDelete ? deletingId === pendingDelete._id : false;
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <ToastContainer position="top-right" />
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-6 border-b border-(--stroke) pb-6">
-          <div className="flex items-end justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div className="space-y-2">
               <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
               <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Transaction Archives</h1>
               <p className="text-sm text-zinc-600">View archived transactions that have been completed or rejected.</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
               <button
                 onClick={() => router.push("/admin/transactions")}
-                className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100"
+                className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 whitespace-nowrap"
               >
                 ← Back to Transactions
               </button>
@@ -248,7 +248,7 @@ export default function AdminTransactionArchivesPage() {
                   setStatusFilter(e.target.value);
                   setPage(1);
                 }}
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700"
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 w-full md:w-auto"
               >
                 <option value="">All Status</option>
                 <option value="returned">Returned</option>
@@ -303,11 +303,10 @@ export default function AdminTransactionArchivesPage() {
                   <button
                     key={idx}
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${
-                      idx === selectedSuggestionIndex
-                        ? "bg-zinc-100"
-                        : "hover:bg-zinc-50"
-                    }`}
+                    className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${idx === selectedSuggestionIndex
+                      ? "bg-zinc-100"
+                      : "hover:bg-zinc-50"
+                      }`}
                   >
                     <svg className="h-4 w-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       {suggestion.type === "book" ? (
@@ -341,7 +340,7 @@ export default function AdminTransactionArchivesPage() {
           </div>
         ) : (
           <section className="space-y-4">
-            <div className="overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full border-separate" style={{ borderSpacing: "0 12px" }}>
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-zinc-500">
@@ -403,13 +402,12 @@ export default function AdminTransactionArchivesPage() {
                             {t.status === "returned" && t.bookCondition && (
                               <div className="mt-2">
                                 <span
-                                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                    t.bookCondition === "good"
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : t.bookCondition === "fair"
+                                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${t.bookCondition === "good"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : t.bookCondition === "fair"
                                       ? "bg-amber-100 text-amber-800"
                                       : "bg-rose-100 text-rose-800"
-                                  }`}
+                                    }`}
                                 >
                                   {t.bookCondition === "good" && "✓"}
                                   {t.bookCondition === "fair" && "⚠"}
@@ -443,6 +441,118 @@ export default function AdminTransactionArchivesPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="grid gap-4 md:hidden">
+              {items.map((t) => {
+                const startDateValue = t.borrowedAt || t.requestedAt;
+                const startDate = startDateValue ? new Date(startDateValue) : null;
+                const dueDateValue = t.dueDate || t.requestedDueDate;
+                const dueDateObj = dueDateValue ? new Date(dueDateValue) : null;
+                let durationLabel = "";
+                if (startDate && dueDateObj && !Number.isNaN(startDate.getTime()) && !Number.isNaN(dueDateObj.getTime())) {
+                  const diffMs = dueDateObj.getTime() - startDate.getTime();
+                  const diffDays = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+                  durationLabel = `${diffDays} day${diffDays === 1 ? "" : "s"}`;
+                } else if (t.requestedLoanDays) {
+                  const days = Math.max(1, t.requestedLoanDays);
+                  durationLabel = `${days} day${days === 1 ? "" : "s"}`;
+                }
+
+                return (
+                  <div key={t._id} className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <h3 className="font-medium text-zinc-900 line-clamp-2">{t.bookTitle}</h3>
+                        <p className="text-sm text-zinc-600">{t.bookAuthor}</p>
+                      </div>
+                      <StatusBadge status={t.status} />
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      <div className="flex-1 rounded-lg bg-zinc-50 p-2 border border-zinc-100">
+                        <span className="block font-medium text-zinc-700 mb-0.5">User</span>
+                        <div className="font-medium text-zinc-900">{t.userName}</div>
+                        <div className="truncate">{t.userId}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-zinc-500">
+                      <div>
+                        <span className="block font-medium text-zinc-700">Requested</span>
+                        {formatDate(t.requestedAt)}
+                      </div>
+                      <div>
+                        <span className="block font-medium text-zinc-700">Borrowed</span>
+                        {formatDate(t.borrowedAt)}
+                      </div>
+                      <div>
+                        <span className="block font-medium text-zinc-700">Due Date</span>
+                        {formatDate(dueDateValue)}
+                        {durationLabel && <span className="ml-1 text-zinc-400">({durationLabel})</span>}
+                      </div>
+                      <div>
+                        <span className="block font-medium text-zinc-700">Returned</span>
+                        {formatDate(t.returnedAt)}
+                      </div>
+                      <div>
+                        <span className="block font-medium text-zinc-700">Archived</span>
+                        {formatDate(t.archivedAt)}
+                      </div>
+                      {t.archivedBy && (
+                        <div className="min-w-0">
+                          <span className="block font-medium text-zinc-700">Archived By</span>
+                          <span className="block truncate" title={t.archivedBy}>{t.archivedBy}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Status Details (Rejection/Condition) */}
+                    {t.status === "rejected" && t.rejectionReason && (
+                      <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                        <span className="font-semibold block mb-1">Rejection Reason:</span>
+                        {t.rejectionReason}
+                      </div>
+                    )}
+                    {t.status === "returned" && t.bookCondition && (
+                      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-zinc-700">Condition:</span>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${t.bookCondition === "good"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : t.bookCondition === "fair"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-rose-100 text-rose-800"
+                              }`}
+                          >
+                            {t.bookCondition === "good" && "✓"}
+                            {t.bookCondition === "fair" && "⚠"}
+                            {t.bookCondition === "damaged" && "✕"}
+                            {" "}
+                            {t.bookCondition.charAt(0).toUpperCase() + t.bookCondition.slice(1)}
+                          </span>
+                        </div>
+                        {t.conditionNotes && (
+                          <p className="text-zinc-600 italic">"{t.conditionNotes}"</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="pt-2 border-t border-zinc-100 flex justify-end">
+                      <button
+                        onClick={() => setPendingDelete(t)}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-500 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-100 transition-colors w-full sm:w-auto"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete Transaction
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex items-center justify-between">

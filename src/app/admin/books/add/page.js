@@ -36,9 +36,10 @@ export default function AdminAddBookPage() {
   const [loadingAuthors, setLoadingAuthors] = useState(true);
   const [pdfFile, setPdfFile] = useState(null);
   const [extractingMetadata, setExtractingMetadata] = useState(false);
+  const [showAuthorSuggestions, setShowAuthorSuggestions] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [fetchingFromGoogle, setFetchingFromGoogle] = useState(false);
   const [coverImage, setCoverImage] = useState("");
+  const [fetchingFromGoogle, setFetchingFromGoogle] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
   const [tagSearch, setTagSearch] = useState("");
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
@@ -948,59 +949,57 @@ export default function AdminAddBookPage() {
                 <span className="text-zinc-700">
                   Author <span className="text-rose-600">*</span>
                 </span>
-                {loadingAuthors ? (
+                <div className="relative">
                   <input
-                    className="rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
-                    type="text"
-                    value="Loading authors..."
-                    disabled
-                  />
-                ) : authors.length > 0 ? (
-                  <div className="relative">
-                    <select
-                      className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
-                      value={author}
-                      onChange={(e) => handleFieldChange(setAuthor)(e.target.value)}
-                      aria-invalid={!!errors.author}
-                      data-field="author"
-                    >
-                      <option value="">Select an author or type custom</option>
-                      {authors.map((a) => (
-                        <option key={a._id} value={a.name}>
-                          {a.name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="mt-2">
-                      <input
-                        className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
-                        type="text"
-                        value={author}
-                        onChange={(e) => setAuthor(e.target.value)}
-                        placeholder="Or type custom author name"
-                        aria-invalid={!!errors.author}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <input
-                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"}`}
+                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
                     type="text"
                     value={author}
-                    onChange={(e) => setAuthor(e.target.value)}
+                    onChange={(e) => {
+                      setAuthor(e.target.value);
+                      setShowAuthorSuggestions(true);
+                    }}
+                    onFocus={() => setShowAuthorSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowAuthorSuggestions(false), 200)}
                     placeholder="e.g., François Chollet"
                     aria-invalid={!!errors.author}
                     data-field="author"
+                    required
                   />
-                )}
+                  {showAuthorSuggestions && author && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                      {authors
+                        .filter(a => a.name.toLowerCase().includes(author.toLowerCase()) && a.name !== author)
+                        .slice(0, 10)
+                        .map((a) => (
+                          <button
+                            key={a._id}
+                            type="button"
+                            onClick={() => {
+                              setAuthor(a.name);
+                              setShowAuthorSuggestions(false);
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm text-zinc-900 transition-colors"
+                          >
+                            {a.name}
+                          </button>
+                        ))}
+                      {authors.filter(a => a.name.toLowerCase().includes(author.toLowerCase()) && a.name !== author).length === 0 && (
+                        <div className="px-4 py-2 text-sm text-zinc-500 italic">
+                          No matching authors found. Using custom name.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {fieldError("author")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Year <span className="text-rose-600">*</span>
                 </span>
                 <input
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.year ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.year ? "border-rose-400" : "border-zinc-200"} w-full`}
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -1008,7 +1007,6 @@ export default function AdminAddBookPage() {
                   value={year}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Only allow numeric input
                     if (value === '' || /^\d{0,4}$/.test(value)) {
                       setYear(value);
                     }
@@ -1037,6 +1035,7 @@ export default function AdminAddBookPage() {
                 />
                 {fieldError("year")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Shelf {format !== "eBook" && <span className="text-rose-600">*</span>}
@@ -1079,6 +1078,7 @@ export default function AdminAddBookPage() {
                 )}
                 {fieldError("shelf")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   ISBN / Identifier <span className="text-zinc-500">(optional)</span>
@@ -1099,6 +1099,7 @@ export default function AdminAddBookPage() {
                 />
                 {fieldError("isbn")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Publisher <span className="text-zinc-500">(optional)</span>
@@ -1114,6 +1115,7 @@ export default function AdminAddBookPage() {
                 />
                 {fieldError("publisher")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Barcode / Item ID <span className="text-zinc-500">(optional)</span>
@@ -1129,6 +1131,7 @@ export default function AdminAddBookPage() {
                 />
                 {fieldError("barcode")}
               </label>
+
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
                   Categories <span className="text-rose-600">*</span>
@@ -1210,10 +1213,8 @@ export default function AdminAddBookPage() {
                   </div>
                 </div>
                 {fieldError("categories")}
-                <p className="text-xs text-zinc-500">
-                  💡 Type to search from 60+ categories. Selected: {categories.length}
-                </p>
               </label>
+
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
                   Tags <span className="text-zinc-500">(optional, for better discoverability)</span>
@@ -1291,10 +1292,8 @@ export default function AdminAddBookPage() {
                     )}
                   </div>
                 </div>
-                <p className="text-xs text-zinc-500">
-                  💡 Type to search from 200+ tags. Selected: {tags.length}
-                </p>
               </label>
+
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
                   Description <span className="text-zinc-500">(optional but recommended)</span>
@@ -1306,10 +1305,8 @@ export default function AdminAddBookPage() {
                   placeholder="Enter a brief description of the book's content, themes, and key topics. This helps students discover books through the chatbot and improves search results."
                   rows={4}
                 />
-                <p className="text-xs text-zinc-500">
-                  💡 Tip: Include main themes, key concepts, and target audience. This description is searchable and helps the AI chatbot recommend this book to students.
-                </p>
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Status <span className="text-rose-600">*</span>
@@ -1326,6 +1323,7 @@ export default function AdminAddBookPage() {
                 </select>
                 {fieldError("status")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Loan Policy {format !== "eBook" && <span className="text-rose-600">*</span>}
