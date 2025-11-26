@@ -26,10 +26,10 @@ function sanitizeText(text) {
  * Parse inline formatting from HTML element
  * Returns array of text segments with styling info: { text, bold, italic, underline }
  */
-function parseInlineFormatting(element) {
+function parseInlineFormatting(element, initialStyle = { bold: false, italic: false, underline: false }) {
   const segments = [];
 
-  function traverse(node, inherited = { bold: false, italic: false, underline: false }) {
+  function traverse(node, inherited = initialStyle) {
     if (node.nodeType === Node.TEXT_NODE) {
       const text = node.textContent;
       if (text) {
@@ -66,7 +66,7 @@ function parseInlineFormatting(element) {
     }
   }
 
-  traverse(element);
+  traverse(element, initialStyle);
   return segments;
 }
 

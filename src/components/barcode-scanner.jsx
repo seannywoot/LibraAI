@@ -58,7 +58,7 @@ export default function BarcodeScanner({ onDetected, onError }) {
       },
       (err) => {
         if (!mounted) return;
-        
+
         if (err) {
           console.error("Barcode scanner init error:", err);
           if (onErrorRef.current) {
@@ -79,26 +79,26 @@ export default function BarcodeScanner({ onDetected, onError }) {
         console.log("Component unmounted, ignoring detection");
         return;
       }
-      
+
       if (hasDetected) {
         console.log("Already detected a code, ignoring");
         return;
       }
-      
+
       if (result?.codeResult?.code) {
         const code = result.codeResult.code;
         console.log("Barcode detected:", code, "Format:", result.codeResult.format);
-        
+
         // Validate ISBN format (10 or 13 digits)
         if (/^\d{10}(\d{3})?$/.test(code)) {
           hasDetected = true;
           setDetectedCode(code);
           Quagga.stop();
           setStatus("detected");
-          
+
           console.log("Valid ISBN detected, calling onDetected callback");
           console.log("onDetectedRef.current exists:", !!onDetectedRef.current);
-          
+
           if (onDetectedRef.current) {
             onDetectedRef.current(code);
           } else {
@@ -162,7 +162,7 @@ export default function BarcodeScanner({ onDetected, onError }) {
           <li>Hold the barcode steady within the camera view</li>
           <li>Ensure good lighting on the barcode</li>
           <li>Keep the barcode flat and avoid glare</li>
-          <li>Position the barcode 6-8 inches from the camera</li>
+          <li>Make sure that the barcode is clear and not faded or damaged.</li>
         </ul>
       </div>
     </div>
