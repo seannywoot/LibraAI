@@ -355,6 +355,7 @@ export default function PersonalBookDetailPage({ params }) {
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -512,7 +512,7 @@ export default function BookDetailPage({ params }) {
                 ) : book.status === "reserved" &&
                   book.reservedForCurrentUser ? (
                   <span className="text-sm font-medium text-gray-500">
-                    Awaiting approval
+                    Pending Approval
                   </span>
                 ) : book.loanPolicy === "reference-only" ? (
                   <span className="text-sm text-gray-500">
@@ -524,7 +524,7 @@ export default function BookDetailPage({ params }) {
                   </span>
                 ) : (
                   <span className="text-sm text-gray-500">
-                    Currently unavailable
+                    Borrowed
                   </span>
                 )}
               </div>

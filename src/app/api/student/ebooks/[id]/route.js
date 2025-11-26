@@ -8,51 +8,66 @@ export async function GET(request, { params }) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.email) {
-            return NextResponse.json(
-                { ok: false, error: "Unauthorized" },
-                { status: 401 }
+            return new NextResponse(
+                JSON.stringify({ error: "Unauthorized - Please sign in" }),
+                {
+                    status: 401,
+                    headers: { "Content-Type": "application/json" }
+                }
             );
         }
 
-        const { id } = params;
+        // Next.js 15+ requires params to be awaited
+        const { id } = await params;
 
-        // Validate ObjectId
         if (!ObjectId.isValid(id)) {
-            return NextResponse.json(
-                { ok: false, error: "Invalid PDF ID" },
-                { status: 400 }
+            return new NextResponse(
+                JSON.stringify({ error: "Invalid PDF ID format" }),
+                {
+                    status: 400,
+                    headers: { "Content-Type": "application/json" }
+                }
             );
         }
 
         const client = await clientPromise;
         const db = client.db();
 
-        // Get user
+        // Get user to verify ownership
         const user = await db
             .collection("users")
             .findOne({ email: session.user.email });
 
         if (!user) {
-            return NextResponse.json(
-                { ok: false, error: "User not found" },
-                { status: 404 }
+            return new NextResponse(
+                JSON.stringify({ error: "User not found" }),
+                {
+                    status: 404,
+                    headers: { "Content-Type": "application/json" }
+                }
             );
         }
 
-        // Fetch PDF from database
+        // Fetch PDF - ensure user owns it
         const pdf = await db.collection("student_ebooks").findOne({
             _id: new ObjectId(id),
-            userId: user._id, // Ensure user owns this PDF
+            userId: user._id
         });
 
         if (!pdf) {
-            return NextResponse.json(
-                { ok: false, error: "PDF not found or access denied" },
-                { status: 404 }
+            return new NextResponse(
+                JSON.stringify({
+                    error: "PDF not found or access denied",
+                    hint: "You can only access PDFs you uploaded."
+                }),
+                {
+                    status: 404,
+                    headers: { "Content-Type": "application/json" }
+                }
             );
         }
 
-        // Return PDF as blob
+        // Return the PDF file - using pdf.data.buffer like admin route
         return new NextResponse(pdf.data.buffer, {
             status: 200,
             headers: {
@@ -62,11 +77,17 @@ export async function GET(request, { params }) {
                 "Cache-Control": "private, max-age=3600",
             },
         });
-    } catch (error) {
-        console.error("Error serving PDF:", error);
-        return NextResponse.json(
-            { ok: false, error: error.message || "Failed to serve PDF" },
-            { status: 500 }
+    } catch (err) {
+        console.error("PDF retrieval failed:", err);
+        return new NextResponse(
+            JSON.stringify({
+                error: "Failed to retrieve PDF",
+                details: err.message
+            }),
+            {
+                status: 500,
+                headers: { "Content-Type": "application/json" }
+            }
         );
     }
 }

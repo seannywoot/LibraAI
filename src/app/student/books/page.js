@@ -1390,21 +1390,14 @@ export default function StudentBooksPage() {
                                   ) : book.status === "reserved" &&
                                     book.reservedForCurrentUser ? (
                                     <span className="text-sm font-medium text-gray-500">
-                                      Awaiting approval
+                                      Pending Approval
                                     </span>
-                                  ) : book.status === "reserved" ? (
+                                  ) : book.status === "reserved" || book.status === "checked-out" ? (
                                     <button
                                       disabled
                                       className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
                                     >
-                                      Reserved
-                                    </button>
-                                  ) : book.status === "checked-out" ? (
-                                    <button
-                                      disabled
-                                      className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
-                                    >
-                                      Unavailable
+                                      Borrowed
                                     </button>
                                   ) : book.loanPolicy === "reference-only" ? (
                                     <span className="text-sm text-gray-500">
@@ -1570,15 +1563,11 @@ export default function StudentBooksPage() {
                                 ) : book.status === "reserved" &&
                                   book.reservedForCurrentUser ? (
                                   <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
-                                    Awaiting approval
+                                    Pending Approval
                                   </div>
-                                ) : book.status === "reserved" ? (
+                                ) : book.status === "reserved" || book.status === "checked-out" ? (
                                   <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
-                                    Reserved
-                                  </div>
-                                ) : book.status === "checked-out" ? (
-                                  <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">
-                                    Unavailable
+                                    Borrowed
                                   </div>
                                 ) : book.loanPolicy === "reference-only" ? (
                                   <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 text-center">

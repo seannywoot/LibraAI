@@ -377,20 +377,13 @@ export default function ShelfBooksPage() {
                                 busyLabel="Borrowing..."
                               />
                             ) : book.status === "reserved" && book.reservedForCurrentUser ? (
-                              <span className="text-sm font-medium text-gray-500">Awaiting approval</span>
-                            ) : book.status === "reserved" ? (
+                              <span className="text-sm font-medium text-gray-500">Pending Approval</span>
+                            ) : book.status === "reserved" || book.status === "checked-out" ? (
                               <button
                                 disabled
                                 className="flex-1 sm:flex-none rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
                               >
-                                Reserved
-                              </button>
-                            ) : book.status === "checked-out" ? (
-                              <button
-                                disabled
-                                className="flex-1 sm:flex-none rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
-                              >
-                                Unavailable
+                                Borrowed
                               </button>
                             ) : book.loanPolicy === "reference-only" ? (
                               <span className="text-sm text-gray-500">Reference only</span>
