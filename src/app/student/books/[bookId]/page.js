@@ -480,7 +480,7 @@ export default function BookDetailPage({ params }) {
                   <button
                     type="button"
                     onClick={() => setShowPDFModal(true)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-(--btn-primary) px-6 py-3 text-sm font-medium text-white hover:bg-(--btn-primary-hover) transition-colors"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[var(--btn-primary)] px-6 py-3 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)] transition-colors"
                   >
                     <BookOpen className="h-4 w-4" />
                     Access eBook
@@ -493,7 +493,7 @@ export default function BookDetailPage({ params }) {
                     onConfirm={handleBorrow}
                     disabled={borrowing}
                     busy={borrowing}
-                    className="inline-flex items-center gap-2 rounded-lg bg-(--btn-primary) px-6 py-3 text-sm font-medium text-white hover:bg-(--btn-primary-hover) disabled:opacity-50 transition-colors"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[var(--btn-primary)] px-6 py-3 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition-colors"
                     borrowLabel="Borrow Book"
                     confirmingLabel="Confirm?"
                     confirmingTitle="Submit Borrow Request"

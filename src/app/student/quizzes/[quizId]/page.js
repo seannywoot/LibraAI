@@ -95,7 +95,7 @@ export default function QuizTakingPage({ params }) {
                 initializeNewAttempt();
             }
         }
-    }, [quiz, quizId]);
+    }, [initializeNewAttempt, quiz, quizId, showResults]);
 
     // Save state whenever answers or current question changes
     useEffect(() => {
@@ -396,7 +396,7 @@ export default function QuizTakingPage({ params }) {
                                 ) : (
                                     <button
                                         onClick={handleNext}
-                                        className="px-4 py-2 bg-(--btn-primary) text-white rounded-lg hover:bg-(--btn-primary-hover) flex items-center gap-2"
+                                        className="px-4 py-2 bg-[var(--btn-primary)] text-white rounded-lg hover:bg-[var(--btn-primary-hover)] flex items-center gap-2"
                                     >
                                         Next
                                         <ArrowRight className="h-4 w-4" />
@@ -455,7 +455,7 @@ export default function QuizTakingPage({ params }) {
                                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
                                     <button
                                         onClick={handleRetake}
-                                        className="px-6 py-2 bg-(--btn-primary) text-white rounded-lg font-medium hover:bg-(--btn-primary-hover)"
+                                        className="px-6 py-2 bg-[var(--btn-primary)] text-white rounded-lg font-medium hover:bg-[var(--btn-primary-hover)]"
                                     >
                                         Retake Quiz
                                     </button>
@@ -544,7 +544,7 @@ export default function QuizTakingPage({ params }) {
                                 <button
                                     onClick={() => setReviewCurrentQuestion(prev => Math.min(quiz.questions.length - 1, prev + 1))}
                                     disabled={reviewCurrentQuestion === quiz.questions.length - 1}
-                                    className="px-4 py-2 bg-(--btn-primary) text-white rounded-lg hover:bg-(--btn-primary-hover) disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="px-4 py-2 bg-[var(--btn-primary)] text-white rounded-lg hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     Next
                                     <ArrowRight className="h-4 w-4" />

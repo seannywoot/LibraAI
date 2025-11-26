@@ -361,7 +361,7 @@ export default function StudentAuthorBooksPage() {
                                   const url = isPdfId ? `/api/ebooks/${book.ebookUrl}` : book.ebookUrl;
                                   window.open(url, "_blank", "noopener,noreferrer");
                                 }}
-                                className="flex-1 sm:flex-none justify-center rounded-md bg-(--btn-primary) px-6 py-2 text-sm font-medium text-white hover:bg-(--btn-primary-hover) transition-colors"
+                                className="flex-1 sm:flex-none justify-center rounded-md bg-[var(--btn-primary)] px-6 py-2 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)] transition-colors"
                               >
                                 Access
                               </button>
@@ -370,7 +370,7 @@ export default function StudentAuthorBooksPage() {
                                 onConfirm={() => handleBorrow(book._id)}
                                 disabled={lockedByOther}
                                 busy={isBorrowingThis}
-                                className="flex-1 sm:flex-none justify-center rounded-md bg-(--btn-primary) px-6 py-2 text-sm font-medium text-white hover:bg-(--btn-primary-hover) disabled:opacity-50 transition-colors"
+                                className="flex-1 sm:flex-none justify-center rounded-md bg-[var(--btn-primary)] px-6 py-2 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition-colors"
                                 borrowLabel="Borrow"
                                 confirmingLabel="Confirm?"
                                 confirmingTitle="Submit Borrow Request"

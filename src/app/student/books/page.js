@@ -687,7 +687,7 @@ export default function StudentBooksPage() {
           </div>
           <Link
             href="/student/library"
-            className="inline-flex items-center gap-2 rounded-lg bg-(--btn-primary) px-5 py-2.5 text-sm font-medium text-white hover:bg-(--btn-primary-hover) transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-[var(--btn-primary)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)] transition-colors"
           >
             <BookOpen className="h-4 w-4" />
             My Library
@@ -1009,7 +1009,7 @@ export default function StudentBooksPage() {
                     </button>
                     <button
                       onClick={handleApplyFilters}
-                      className="px-6 py-2.5 rounded-lg bg-(--btn-primary) text-white text-sm font-medium hover:bg-(--btn-primary-hover) transition-colors"
+                      className="px-6 py-2.5 rounded-lg bg-[var(--btn-primary)] text-white text-sm font-medium hover:bg-[var(--btn-primary-hover)] transition-colors"
                     >
                       Apply Filters
                     </button>
@@ -1080,7 +1080,7 @@ export default function StudentBooksPage() {
                   </div>
                   <button
                     onClick={loadBooks}
-                    className="p-2.5 rounded-lg bg-(--btn-primary) text-white hover:bg-(--btn-primary-hover) transition-colors"
+                    className="p-2.5 rounded-lg bg-[var(--btn-primary)] text-white hover:bg-[var(--btn-primary-hover)] transition-colors"
                     title="Search"
                   >
                     <svg
@@ -1118,7 +1118,7 @@ export default function StudentBooksPage() {
                     {(filters.formats.length > 0 ||
                       filters.categories.length > 0 ||
                       filters.availability.length > 0) && (
-                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-(--btn-primary) rounded-full">
+                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-[var(--btn-primary)] rounded-full">
                           {filters.formats.length +
                             filters.categories.length +
                             filters.availability.length}
@@ -1369,7 +1369,7 @@ export default function StudentBooksPage() {
                                           "noopener,noreferrer"
                                         );
                                       }}
-                                      className="rounded-md bg-(--btn-primary) px-6 py-2 text-sm font-medium text-white hover:bg-(--btn-primary-hover) transition-colors"
+                                      className="rounded-md bg-[var(--btn-primary)] px-6 py-2 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)] transition-colors"
                                     >
                                       Access
                                     </button>
@@ -1381,7 +1381,7 @@ export default function StudentBooksPage() {
                                       onConfirm={() => handleBorrow(book._id)}
                                       disabled={lockedByOther}
                                       busy={isBorrowingThis}
-                                      className="rounded-md bg-(--btn-primary) px-6 py-2 text-sm font-medium text-white hover:bg-(--btn-primary-hover) disabled:opacity-50 transition-colors"
+                                      className="rounded-md bg-[var(--btn-primary)] px-6 py-2 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition-colors"
                                       borrowLabel="Borrow"
                                       confirmingLabel="Confirm?"
                                       confirmingTitle="Submit Borrow Request"
@@ -1541,7 +1541,7 @@ export default function StudentBooksPage() {
                                         "noopener,noreferrer"
                                       );
                                     }}
-                                    className="block w-full text-center rounded-md bg-(--btn-primary) px-4 py-2 text-xs font-medium text-white hover:bg-(--btn-primary-hover) transition-colors"
+                                    className="block w-full text-center rounded-md bg-[var(--btn-primary)] px-4 py-2 text-xs font-medium text-white hover:bg-[var(--btn-primary-hover)] transition-colors"
                                   >
                                     Access
                                   </button>
@@ -1553,7 +1553,7 @@ export default function StudentBooksPage() {
                                     onConfirm={() => handleBorrow(book._id)}
                                     disabled={lockedByOther}
                                     busy={isBorrowingThis}
-                                    className="w-full rounded-md bg-(--btn-primary) px-4 py-2 text-xs font-medium text-white hover:bg-(--btn-primary-hover) disabled:opacity-50 transition-colors"
+                                    className="w-full rounded-md bg-[var(--btn-primary)] px-4 py-2 text-xs font-medium text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition-colors"
                                     wrapperClassName="w-full"
                                     borrowLabel="Borrow"
                                     confirmingLabel="Confirm?"
@@ -1642,7 +1642,7 @@ export default function StudentBooksPage() {
                           key={pageNum}
                           onClick={() => setPage(pageNum)}
                           className={`min-w-10 h-10 rounded text-sm font-medium transition-colors ${page === pageNum
-                            ? "bg-(--btn-primary) text-white"
+                            ? "bg-[var(--btn-primary)] text-white"
                             : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
                             }`}
                         >
@@ -1657,7 +1657,7 @@ export default function StudentBooksPage() {
                         <button
                           onClick={() => setPage(totalPages)}
                           className={`min-w-10 h-10 rounded text-sm font-medium transition-colors ${page === totalPages
-                            ? "bg-(--btn-primary) text-white"
+                            ? "bg-[var(--btn-primary)] text-white"
                             : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
                             }`}
                         >

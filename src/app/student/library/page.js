@@ -726,7 +726,7 @@ function MyLibraryContent() {
               <button
                 onClick={() => setShowManualForm(true)}
                 disabled={uploading}
-                className="inline-flex items-center gap-2 rounded-lg bg-(--btn-primary) px-3 sm:px-5 py-2.5 text-sm font-medium text-white hover:bg-(--btn-primary-hover) transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-[var(--btn-primary)] px-3 sm:px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)] transition-colors disabled:opacity-50"
                 title="Add Manually"
               >
                 <BookIcon className="h-4 w-4" />
@@ -982,7 +982,7 @@ function MyLibraryContent() {
                       <button
                         type="submit"
                         disabled={uploading}
-                        className="flex-1 rounded-lg bg-(--btn-primary) px-4 py-2 text-sm font-medium text-white hover:bg-(--btn-primary-hover) disabled:opacity-50 transition-colors"
+                        className="flex-1 rounded-lg bg-[var(--btn-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition-colors"
                       >
                         {uploading ? "Adding..." : "Add Book"}
                       </button>
@@ -1408,7 +1408,7 @@ function MyLibraryContent() {
                           {/* Action Button */}
                           <div className="mt-auto space-y-2">
                             {book.fileType === "application/pdf" && book.fileUrl ? (
-                              <div className="w-full rounded-md bg-(--btn-primary) px-4 py-2 text-xs font-medium text-white text-center">
+                              <div className="w-full rounded-md bg-[var(--btn-primary)] px-4 py-2 text-xs font-medium text-white text-center">
                                 Read PDF
                               </div>
                             ) : (
@@ -1557,7 +1557,7 @@ function MyLibraryContent() {
                                       handleReturn(transaction.bookId);
                                     }}
                                     disabled={returning === transaction.bookId}
-                                    className="rounded-md bg-(--btn-primary) px-6 py-2 text-sm font-medium text-white hover:bg-(--btn-primary-hover) disabled:opacity-50 transition-colors"
+                                    className="rounded-md bg-[var(--btn-primary)] px-6 py-2 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition-colors"
                                   >
                                     {returning === transaction.bookId ? "Submitting..." : "Request Return"}
                                   </button>
@@ -1660,7 +1660,7 @@ function MyLibraryContent() {
                                   handleReturn(transaction.bookId);
                                 }}
                                 disabled={returning === transaction.bookId}
-                                className="w-full rounded-md bg-(--btn-primary) px-4 py-2 text-xs font-medium text-white hover:bg-(--btn-primary-hover) disabled:opacity-50 transition-colors"
+                                className="w-full rounded-md bg-[var(--btn-primary)] px-4 py-2 text-xs font-medium text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition-colors"
                               >
                                 {returning === transaction.bookId ? "Submitting..." : "Request Return"}
                               </button>

@@ -254,7 +254,7 @@ export default function StudentAuthorsPage() {
               <button
                 onClick={() => setViewMode("grid")}
                 className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "grid"
-                  ? "bg-(--btn-primary) text-white"
+                  ? "bg-[var(--btn-primary)] text-white"
                   : "text-zinc-700 hover:bg-zinc-50"
                   }`}
               >
@@ -265,7 +265,7 @@ export default function StudentAuthorsPage() {
               <button
                 onClick={() => setViewMode("list")}
                 className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "list"
-                  ? "bg-(--btn-primary) text-white"
+                  ? "bg-[var(--btn-primary)] text-white"
                   : "text-zinc-700 hover:bg-zinc-50"
                   }`}
               >

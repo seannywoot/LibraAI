@@ -41,6 +41,9 @@
   /* muted text */
   --text: var(--text-primary);
   /* primary text */
+  /* Button colors */
+  --btn-primary: #C86F26;
+  --btn-primary-hover: #A65C20;
 }
 
 .dark {
@@ -73,6 +76,9 @@
   --dark-stroke: #7aa2ff;
   --subtext: var(--text-muted);
   --text: var(--text-primary);
+  /* Button colors - dark mode uses blue */
+  --btn-primary: #60a5fa;
+  --btn-primary-hover: #3b82f6;
 }
 
 @media (prefers-color-scheme: dark) {
