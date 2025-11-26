@@ -24,7 +24,10 @@ export default function QuizzesPage() {
     const [generationStage, setGenerationStage] = useState(0);
     const [showProgressModal, setShowProgressModal] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
     const [quizToDelete, setQuizToDelete] = useState(null);
+
+
 
     useEffect(() => {
         loadQuizzes();
@@ -81,10 +84,12 @@ export default function QuizzesPage() {
         setShowProgressModal(true);
         setGenerationStage(1);
 
+        // Prepare FormData outside try so it's available in catch
+        const formData = new FormData();
+        formData.append("pdf", selectedFile);
+        formData.append("questionCount", questionCount.toString());
+
         try {
-            const formData = new FormData();
-            formData.append("pdf", selectedFile);
-            formData.append("questionCount", questionCount.toString());
 
             setTimeout(() => setGenerationStage(2), 2000);
 
@@ -94,6 +99,14 @@ export default function QuizzesPage() {
             });
 
             const data = await res.json();
+
+            // Handle duplicate PDF error without throwing to avoid re-posting
+            if (data && data.error === "duplicate_pdf" && data.existingQuiz) {
+                setShowProgressModal(false);
+                setGenerationStage(0);
+                setError("There is already an existing quiz for this file");
+                return;
+            }
 
             if (!res.ok || !data.ok) {
                 throw new Error(data.error || "Failed to generate quiz");
@@ -116,6 +129,7 @@ export default function QuizzesPage() {
                 router.push(`/student/quizzes/${data.quizId}`);
             }, 500);
         } catch (err) {
+            // Show error
             setError(err.message || "Failed to generate quiz");
             setShowProgressModal(false);
             setGenerationStage(0);
@@ -123,6 +137,8 @@ export default function QuizzesPage() {
             setUploading(false);
         }
     }
+
+
 
     function openDeleteModal(quiz, e) {
         e.preventDefault();
@@ -472,6 +488,8 @@ export default function QuizzesPage() {
                         </div>
                     </div>
                 )}
+
+
             </main>
         </div>
     );

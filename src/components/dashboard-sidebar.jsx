@@ -126,7 +126,10 @@ export default function DashboardSidebar({
           >
             <Menu className="h-6 w-6 text-zinc-900" />
           </button>
-          <h1 className="text-lg font-semibold text-zinc-900">LibraAI</h1>
+          <div className="flex items-center gap-2">
+            <img src="/libraai-logo.png" alt="LibraAI" className="h-6 w-auto object-contain" />
+            <h1 className="text-lg font-semibold text-zinc-900">LibraAI</h1>
+          </div>
           <div className="w-10" /> {/* Spacer for center alignment */}
         </div>
       </nav>
@@ -167,7 +170,10 @@ export default function DashboardSidebar({
           <p className={`text-xs font-semibold uppercase tracking-[0.3em] ${theme.headerAccent}`}>
             {tagline ?? (session?.user?.role === "admin" ? "Admin" : "Student")}
           </p>
-          <h1 className={`text-2xl font-semibold tracking-tight ${theme.title}`}>LibraAI</h1>
+          <div className="flex items-center gap-3">
+            <img src="/libraai-logo.png" alt="LibraAI" className="h-8 w-auto object-contain" />
+            <h1 className={`text-2xl font-semibold tracking-tight ${theme.title}`}>LibraAI</h1>
+          </div>
         </header>
 
         {/* Remove horizontal padding from the nav container to align with header */}

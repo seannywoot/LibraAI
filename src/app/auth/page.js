@@ -295,7 +295,7 @@ function AuthContent() {
         <section className="relative hidden w-full md:max-w-xs lg:max-w-sm flex-col justify-between bg-zinc-900 p-10 text-zinc-100 md:flex">
           <div className="absolute inset-0 bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900" aria-hidden />
           <div className="relative z-10">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">LibraAI</p>
+            <img src="/libraai-logo.png" alt="LibraAI" className="h-12 w-auto object-contain mb-4" />
             <h2 className="mt-6 text-3xl font-semibold leading-snug">
               Your AI-powered digital library companion.
             </h2>

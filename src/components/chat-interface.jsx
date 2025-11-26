@@ -1134,8 +1134,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         <div className="border-b border-(--border-subtle) p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-blue-600">
-                <MessageCircle className="h-5 w-5" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full overflow-hidden bg-[#18181b] dark:bg-(--surface-2)">
+                <img src="/libraai-chatbot.png" alt="LibraAI" className="h-full w-full object-cover" style={{ transform: 'scaleX(-1)' }} />
               </div>
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg font-semibold text-(--text-primary) truncate">{autoTitle || 'LibraAI Assistant'}</h1>
@@ -1330,8 +1330,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
               {msg.role === "assistant" && (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
-                  <MessageCircle className="h-4 w-4" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full overflow-hidden bg-[#18181b] dark:bg-(--surface-2) mt-2">
+                  <img src="/libraai-chatbot.png" alt="LibraAI" className="h-full w-full object-cover" style={{ transform: 'scaleX(-1)' }} />
                 </div>
               )}
               <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.role === "user"
@@ -1401,16 +1401,16 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                 </span>
               </div>
               {msg.role === "user" && (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-700">
-                  <span className="text-xs font-semibold">{userName?.[0] || "U"}</span>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e4e4e7] dark:bg-(--bg-2) text-zinc-700 dark:text-zinc-200 mt-2">
+                  <span className="text-sm font-semibold">{userName?.[0] || "U"}</span>
                 </div>
               )}
             </div>
           ))}
           {isTyping && (
             <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
-                <MessageCircle className="h-4 w-4" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full overflow-hidden bg-[#18181b] dark:bg-(--surface-2) mt-2">
+                <img src="/libraai-chatbot.png" alt="LibraAI" className="h-full w-full object-cover" style={{ transform: 'scaleX(-1)' }} />
               </div>
               <div className="max-w-[70%] rounded-2xl bg-zinc-100 px-4 py-3">
                 <div className="flex items-start">
@@ -1424,8 +1424,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           )}
           {isLoading && !isTyping && (
             <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
-                <MessageCircle className="h-4 w-4" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full overflow-hidden bg-[#18181b] dark:bg-(--surface-2) mt-2">
+                <img src="/libraai-chatbot.png" alt="LibraAI" className="h-full w-full object-cover" style={{ transform: 'scaleX(-1)' }} />
               </div>
               <div className="max-w-[70%] rounded-2xl bg-zinc-100 px-4 py-3">
                 <div className="flex gap-1">
