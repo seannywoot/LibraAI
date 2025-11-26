@@ -42,15 +42,15 @@ export default function Toast({
 
   const content = (
     <div
-      className={`flex max-w-sm items-start gap-3 rounded-xl border border-zinc-200 bg-white/95 px-4 py-3 shadow-[0_6px_30px_rgba(0,0,0,0.08)] backdrop-blur ring-1 ${colorMap.ring}`}
+      className={`flex max-w-md items-start gap-3 rounded-xl border border-zinc-200 bg-white/95 px-4 py-3 shadow-[0_6px_30px_rgba(0,0,0,0.08)] backdrop-blur ring-1 ${colorMap.ring}`}
     >
       <span className={`mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full ${colorMap.badge}`} aria-hidden />
       <div className="min-w-0 flex-1">
         {title ? (
-          <p className={`truncate text-sm font-semibold ${colorMap.text}`}>{title}</p>
+          <p className={`text-sm font-semibold ${colorMap.text} break-words`}>{title}</p>
         ) : null}
         {description ? (
-          <p className="mt-0.5 truncate text-xs text-zinc-600">{description}</p>
+          <p className="mt-0.5 text-xs text-zinc-600 break-words">{description}</p>
         ) : null}
       </div>
       <button

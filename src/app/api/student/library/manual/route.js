@@ -14,7 +14,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { title, author, isbn, publisher, year } = body;
+    const { title, author, isbn, publisher, year, description, thumbnail, categories, tags } = body;
 
     if (!title?.trim()) {
       return NextResponse.json(
@@ -73,6 +73,10 @@ export async function POST(request) {
       isbn: isbn?.trim() || null,
       publisher: publisher?.trim() || null,
       year: year?.trim() || null,
+      description: description?.trim() || null,
+      thumbnail: thumbnail?.trim() || null,
+      categories: Array.isArray(categories) ? categories : [],
+      tags: Array.isArray(tags) ? tags : [],
       addedAt: new Date(),
       addedMethod: "manual",
     });

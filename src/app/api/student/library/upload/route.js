@@ -134,6 +134,23 @@ export async function POST(request) {
       const pdfResult = await db.collection("student_ebooks").insertOne(pdfDoc);
       const pdfId = pdfResult.insertedId;
 
+      // Check for duplicates in personal library
+      // Check by title (case-insensitive) to catch duplicates
+      const existingBook = await db.collection("personal_libraries").findOne({
+        userId: user._id,
+        title: { $regex: new RegExp(`^${bookInfo.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+      });
+
+      if (existingBook) {
+        // Delete the uploaded PDF since it's a duplicate
+        await db.collection("student_ebooks").deleteOne({ _id: pdfId });
+
+        return NextResponse.json(
+          { ok: false, error: `This book "${bookInfo.title}" is already in your library.` },
+          { status: 400 }
+        );
+      }
+
       // Add to personal library with reference to PDF
       const libraryResult = await db.collection("personal_libraries").insertOne({
         userId: user._id,
