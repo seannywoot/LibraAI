@@ -57,7 +57,7 @@ function buildDueReminderTemplateParams(input) {
     bookAuthor,
     borrowDate,
     dueDate,
-  daysUntilDue,
+    daysUntilDue,
     viewBorrowedUrl,
     libraryName = DEFAULT_LIBRARY_NAME,
     supportEmail = DEFAULT_SUPPORT_EMAIL,
@@ -79,7 +79,7 @@ function buildDueReminderTemplateParams(input) {
     phase,
     phase_label: phaseLabel(phase, daysUntilDue),
 
-  // Helpful links
+    // Helpful links
     view_borrowed_url: viewBorrowedUrl,
 
     // Org details
@@ -99,8 +99,8 @@ function buildDueReminderHTML(params) {
     book_author,
     borrow_date,
     due_date,
-  days_until_due,
-  phase_label,
+    days_until_due,
+    phase_label,
     view_borrowed_url,
     library_name,
     support_email,
@@ -110,17 +110,17 @@ function buildDueReminderHTML(params) {
 
   const whenText = typeof days_until_due === 'number'
     ? (days_until_due > 1
-        ? `in ${days_until_due} days`
-        : days_until_due === 1
-          ? 'tomorrow'
-          : days_until_due === 0
-            ? 'today'
-            : `overdue by ${Math.abs(days_until_due)} day${Math.abs(days_until_due) === 1 ? '' : 's'}`)
+      ? `in ${days_until_due} days`
+      : days_until_due === 1
+        ? 'tomorrow'
+        : days_until_due === 0
+          ? 'today'
+          : `overdue by ${Math.abs(days_until_due)} day${Math.abs(days_until_due) === 1 ? '' : 's'}`)
     : 'soon';
 
   const authorPart = book_author ? ` by ${escapeHTML(book_author)}` : '';
   const borrowPart = borrow_date ? `<p style="margin:0;color:#1e40af;">Borrowed: ${escapeHTML(borrow_date)}</p>` : '';
-  
+
   // Determine color based on urgency
   const headerColor = days_until_due <= 1 ? '#dc2626' : days_until_due <= 3 ? '#ea580c' : '#2563eb';
   const boxColor = days_until_due <= 1 ? '#fef2f2' : days_until_due <= 3 ? '#fff7ed' : '#eff6ff';
@@ -128,11 +128,11 @@ function buildDueReminderHTML(params) {
   const textColor = days_until_due <= 1 ? '#991b1b' : days_until_due <= 3 ? '#9a3412' : '#1e40af';
 
   // Create optimized heading (avoid redundancy like "Due tomorrow: Due tomorrow")
-  const heading = days_until_due === 1 ? 'Due Tomorrow' 
+  const heading = days_until_due === 1 ? 'Due Tomorrow'
     : days_until_due === 0 ? 'Due Today'
-    : days_until_due === 3 ? 'Due in 3 Days'
-    : days_until_due === 7 ? 'Due in 7 Days'
-    : `${phase_label}`;
+      : days_until_due === 3 ? 'Due in 3 Days'
+        : days_until_due === 7 ? 'Due in 7 Days'
+          : `${phase_label}`;
 
   return `
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111827;max-width:640px;margin:0 auto;padding:24px;">
@@ -165,7 +165,7 @@ function buildDueReminderText(params) {
     book_author,
     borrow_date,
     due_date,
-  days_until_due,
+    days_until_due,
     view_borrowed_url,
     library_name,
     support_email,
@@ -173,19 +173,19 @@ function buildDueReminderText(params) {
 
   const whenText = typeof days_until_due === 'number'
     ? (days_until_due > 1
-        ? `in ${days_until_due} days`
-        : days_until_due === 1
-          ? 'tomorrow'
-          : days_until_due === 0
-            ? 'today'
-            : `overdue by ${Math.abs(days_until_due)} days`)
+      ? `in ${days_until_due} days`
+      : days_until_due === 1
+        ? 'tomorrow'
+        : days_until_due === 0
+          ? 'today'
+          : `overdue by ${Math.abs(days_until_due)} days`)
     : 'soon';
 
   return [
     `${library_name || DEFAULT_LIBRARY_NAME} — Due reminder`,
     `Hi ${student_name || 'there'},`,
     `The book "${book_title}"${book_author ? ` by ${book_author}` : ''} is due on ${due_date} (due ${whenText}).`,
-  borrow_date ? `Borrowed on ${borrow_date}.` : null,
+    borrow_date ? `Borrowed on ${borrow_date}.` : null,
     view_borrowed_url ? `View borrowed books: ${view_borrowed_url}` : null,
     `If you’ve already returned this book, you can ignore this message.`,
     `Questions? Contact ${support_email || DEFAULT_SUPPORT_EMAIL}.`,
@@ -441,6 +441,8 @@ export function buildReturnConfirmationEmail(input) {
     bookAuthor,
     borrowDate,
     returnDate,
+    bookCondition,
+    conditionNotes,
     viewHistoryUrl,
     libraryName = DEFAULT_LIBRARY_NAME,
     supportEmail = DEFAULT_SUPPORT_EMAIL,
@@ -455,6 +457,8 @@ export function buildReturnConfirmationEmail(input) {
     book_author: bookAuthor || '',
     borrow_date: borrowDate || '',
     return_date: returnDate,
+    book_condition: bookCondition || '',
+    condition_notes: conditionNotes || '',
     view_history_url: viewHistoryUrl || '',
     library_name: libraryName,
     support_email: supportEmail,
@@ -462,6 +466,30 @@ export function buildReturnConfirmationEmail(input) {
 
   const authorPart = bookAuthor ? ` by ${escapeHTML(bookAuthor)}` : '';
   const borrowPart = borrowDate ? `<p style="margin:0;color:#1e40af;">Borrowed: ${escapeHTML(borrowDate)}</p>` : '';
+
+  let conditionColor = '#1e40af'; // Default blue
+  let conditionBg = '#eff6ff';
+  let conditionBorder = '#93c5fd';
+
+  if (bookCondition === 'good') {
+    conditionColor = '#166534'; // Green
+    conditionBg = '#f0fdf4';
+    conditionBorder = '#86efac';
+  } else if (bookCondition === 'fair') {
+    conditionColor = '#854d0e'; // Yellow/Orange
+    conditionBg = '#fefce8';
+    conditionBorder = '#fde047';
+  } else if (bookCondition === 'damaged') {
+    conditionColor = '#991b1b'; // Red
+    conditionBg = '#fef2f2';
+    conditionBorder = '#fecaca';
+  }
+
+  const conditionPart = bookCondition ? `
+    <div style="margin-top:12px;padding-top:12px;border-top:1px dashed ${conditionBorder};">
+      <p style="margin:0;color:${conditionColor};"><strong>Condition:</strong> ${escapeHTML(bookCondition.charAt(0).toUpperCase() + bookCondition.slice(1))}</p>
+      ${conditionNotes ? `<p style="margin:4px 0 0;font-size:14px;color:#4b5563;"><em>Note: ${escapeHTML(conditionNotes)}</em></p>` : ''}
+    </div>` : '';
 
   const html = `
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:#111827;max-width:640px;margin:0 auto;padding:24px;">
@@ -474,6 +502,7 @@ export function buildReturnConfirmationEmail(input) {
     <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:16px;margin:16px 0;">
       ${borrowPart}
       <p style="margin:${borrowPart ? '8px' : '0'} 0 0;color:#1e40af;"><strong>Returned:</strong> ${escapeHTML(returnDate)}</p>
+      ${conditionPart}
     </div>
 
     ${viewHistoryUrl ? `<div style="margin:16px 0;">
@@ -494,6 +523,8 @@ export function buildReturnConfirmationEmail(input) {
     `Thank you for returning "${bookTitle}"${bookAuthor ? ` by ${bookAuthor}` : ''}.`,
     borrowDate ? `Borrowed: ${borrowDate}` : null,
     `Returned: ${returnDate}`,
+    bookCondition ? `Condition: ${bookCondition}` : null,
+    conditionNotes ? `Notes: ${conditionNotes}` : null,
     viewHistoryUrl ? `View Borrowing History: ${viewHistoryUrl}` : null,
     `We hope you enjoyed the book! Feel free to borrow more anytime.`,
     `Questions? Contact ${supportEmail}.`,

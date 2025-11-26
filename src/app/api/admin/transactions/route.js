@@ -3,10 +3,10 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { sendMail } from "@/lib/email";
-import { 
-  buildRequestApprovedEmail, 
-  buildRequestDeniedEmail, 
-  buildReturnConfirmationEmail 
+import {
+  buildRequestApprovedEmail,
+  buildRequestDeniedEmail,
+  buildReturnConfirmationEmail
 } from "@/lib/email-templates";
 import { parseSearchQuery, escapeRegex } from "@/utils/searchParser";
 
@@ -33,17 +33,17 @@ export async function GET(request) {
 
     // Build query
     const query = {};
-    
+
     // By default, exclude archived transactions unless explicitly requested
     const showArchived = searchParams.get("showArchived") === "true";
     if (!showArchived) {
       query.archived = { $ne: true };
     }
-    
+
     if (statusFilter) {
       query.status = statusFilter;
     }
-    
+
     // Add search filter with advanced syntax support
     if (search) {
       const { filters, freeText } = parseSearchQuery(search);
@@ -85,7 +85,7 @@ export async function GET(request) {
     }
 
     // Sort by archivedAt if showing archived, otherwise by requestedAt/borrowedAt
-    const sortOrder = showArchived 
+    const sortOrder = showArchived
       ? { archivedAt: -1, requestedAt: -1 }
       : { requestedAt: -1, borrowedAt: -1 };
 
@@ -117,8 +117,8 @@ export async function POST(request) {
       });
     }
 
-  const body = await request.json().catch(() => ({}));
-  const { transactionId, action, dueDate, reason, bookCondition, conditionNotes } = body;
+    const body = await request.json().catch(() => ({}));
+    const { transactionId, action, dueDate, reason, bookCondition, conditionNotes } = body;
 
     if (!transactionId || !ObjectId.isValid(transactionId)) {
       return new Response(
@@ -204,11 +204,11 @@ export async function POST(request) {
       try {
         const users = db.collection("users");
         const user = await users.findOne({ email: transaction.userId });
-        
+
         // Only send if user has notifications enabled
         if (!user || user.emailNotifications !== false) {
           const book = await books.findOne({ _id: bookObjectId });
-          
+
           if (book) {
             const formatDate = (date) => {
               return new Date(date).toLocaleDateString("en-US", {
@@ -304,11 +304,11 @@ export async function POST(request) {
       try {
         const users = db.collection("users");
         const user = await users.findOne({ email: transaction.userId });
-        
+
         // Only send if user has notifications enabled
         if (!user || user.emailNotifications !== false) {
           const book = await books.findOne({ _id: bookObjectId });
-          
+
           if (book) {
             const emailData = buildRequestDeniedEmail({
               studentName: user?.name || "Student",
@@ -397,11 +397,11 @@ export async function POST(request) {
       try {
         const users = db.collection("users");
         const user = await users.findOne({ email: transaction.userId });
-        
+
         // Only send if user has notifications enabled
         if (!user || user.emailNotifications !== false) {
           const book = await books.findOne({ _id: bookObjectId });
-          
+
           if (book) {
             const formatDate = (date, useLocalTime = false) => {
               return new Date(date).toLocaleDateString("en-US", {
@@ -419,6 +419,8 @@ export async function POST(request) {
               bookAuthor: book.author,
               borrowDate: transaction.borrowedAt ? formatDate(transaction.borrowedAt, true) : "",
               returnDate: formatDate(now, true),
+              bookCondition: condition,
+              conditionNotes: notes,
               viewHistoryUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/student/library`,
               libraryName: "LibraAI Library",
               supportEmail: process.env.EMAIL_FROM || "support@libra.ai",
