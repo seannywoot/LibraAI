@@ -1,9 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useTheme } from "@/contexts/ThemeContext";
+
+function useForceLightTheme() {
+  const { setDarkModePreference, darkMode } = useTheme();
+  const initialDarkMode = useRef(darkMode);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return undefined;
+    }
+
+    const root = document.documentElement;
+    const hadDarkClass = root.classList.contains("dark");
+    const initialDatasetTheme = root.dataset.theme === "dark" ? "dark" : "light";
+    const initialDarkPreference = initialDarkMode.current;
+    // Force the auth route to render with the light theme while preserving the original preference for later pages.
+
+    if (initialDatasetTheme !== "light" || hadDarkClass || initialDarkPreference) {
+      setDarkModePreference(false, { persist: false });
+    }
+
+    return () => {
+      const restoreDark = initialDarkPreference || initialDatasetTheme === "dark" || hadDarkClass;
+      setDarkModePreference(restoreDark, { persist: false });
+    };
+  }, [setDarkModePreference]);
+}
 
 export default function ForgotPasswordPage() {
+  useForceLightTheme();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
