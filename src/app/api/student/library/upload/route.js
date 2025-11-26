@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 
 export async function POST(request) {
   try {
@@ -65,21 +62,6 @@ export async function POST(request) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // Create uploads directory if it doesn't exist
-      const uploadsDir = join(process.cwd(), "public", "uploads", "ebooks");
-      if (!existsSync(uploadsDir)) {
-        await mkdir(uploadsDir, { recursive: true });
-      }
-
-      // Generate unique filename
-      const timestamp = Date.now();
-      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const filename = `${timestamp}_${sanitizedName}`;
-      const filepath = join(uploadsDir, filename);
-
-      // Save file
-      await writeFile(filepath, buffer);
-
       // Extract title from filename (remove extension and timestamp)
       const extractedTitle = file.name.replace(/\.pdf$/i, "").replace(/_/g, " ");
 
@@ -100,23 +82,23 @@ export async function POST(request) {
 
         if (googleData.items && googleData.items.length > 0) {
           const volumeInfo = googleData.items[0].volumeInfo;
-          
+
           // Extract and process categories
           let categories = [];
           if (volumeInfo.categories && Array.isArray(volumeInfo.categories)) {
-            categories = volumeInfo.categories.flatMap(cat => 
+            categories = volumeInfo.categories.flatMap(cat =>
               cat.split('/').map(c => c.trim())
             ).filter(c => c.length > 0);
             categories = [...new Set(categories)];
           }
-          
+
           // Extract subjects as tags
           let tags = [];
           if (volumeInfo.subjects && Array.isArray(volumeInfo.subjects)) {
             tags = volumeInfo.subjects.map(s => s.trim()).filter(s => s.length > 0);
             tags = [...new Set(tags)];
           }
-          
+
           bookInfo = {
             title: volumeInfo.title || extractedTitle,
             author: volumeInfo.authors?.[0] || "Unknown Author",
@@ -128,7 +110,7 @@ export async function POST(request) {
             categories: categories.length > 0 ? categories : ["General"],
             tags: tags.length > 0 ? tags : [],
           };
-          
+
           console.log(`Found book: "${bookInfo.title}" by ${bookInfo.author}`);
           console.log(`Categories: ${bookInfo.categories.join(", ")}`);
         } else {
@@ -139,8 +121,21 @@ export async function POST(request) {
         // Continue with extracted title if API fails
       }
 
-      // Add to personal library
-      const result = await db.collection("personal_libraries").insertOne({
+      // Store PDF in MongoDB (student_ebooks collection)
+      const pdfDoc = {
+        userId: user._id,
+        filename: file.name,
+        contentType: file.type,
+        size: buffer.length,
+        data: buffer,
+        uploadedAt: new Date(),
+      };
+
+      const pdfResult = await db.collection("student_ebooks").insertOne(pdfDoc);
+      const pdfId = pdfResult.insertedId;
+
+      // Add to personal library with reference to PDF
+      const libraryResult = await db.collection("personal_libraries").insertOne({
         userId: user._id,
         title: bookInfo.title,
         author: bookInfo.author,
@@ -153,8 +148,9 @@ export async function POST(request) {
         tags: bookInfo.tags,
         fileType: "application/pdf",
         fileName: file.name,
-        fileUrl: `/uploads/ebooks/${filename}`,
+        fileUrl: `/api/student/ebooks/${pdfId.toString()}`, // Point to new API endpoint
         fileSize: buffer.length,
+        pdfId: pdfId, // Store reference to PDF document
         addedAt: new Date(),
         addedMethod: "pdf-upload",
       });
@@ -163,9 +159,9 @@ export async function POST(request) {
         ok: true,
         message: "PDF uploaded successfully",
         book: {
-          _id: result.insertedId.toString(),
+          _id: libraryResult.insertedId.toString(),
           title: bookInfo.title,
-          fileUrl: `/uploads/ebooks/${filename}`,
+          fileUrl: `/api/student/ebooks/${pdfId.toString()}`,
         },
       });
     }
