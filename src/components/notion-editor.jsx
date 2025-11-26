@@ -89,12 +89,15 @@ export default function NotionEditor({ content, onChange }) {
     setActiveFormats(formats);
   }
 
-  function handleInput() {
+  function handleInput(e) {
     if (editorRef.current && !isUpdatingRef.current) {
       isUpdatingRef.current = true;
 
       // Ensure we always have a trailing paragraph if the last element is a block
-      ensureTrailingParagraph();
+      // Skip this check during undo/redo to prevent breaking the history stack
+      if (e?.inputType !== 'historyUndo' && e?.inputType !== 'historyRedo') {
+        ensureTrailingParagraph();
+      }
 
       const newContent = editorRef.current.innerHTML;
       onChange(newContent);
@@ -138,29 +141,28 @@ export default function NotionEditor({ content, onChange }) {
 
   function insertBlock(type) {
     editorRef.current?.focus();
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
-    const range = selection.getRangeAt(0);
 
-    // Get selected text
-    const selectedText = range.toString();
+    // Check if we should toggle off
+    if (activeFormats[type]) {
+      document.execCommand('formatBlock', false, 'p');
+      handleInput();
+      return;
+    }
 
-    let element;
+    // Use formatBlock for headings and blockquote to avoid inserting default text
+    // This applies the format to the current line/selection
     switch (type) {
       case "h1":
-        element = document.createElement("h1");
-        element.className = "text-3xl font-bold text-gray-900 mb-4";
-        element.textContent = selectedText || "Heading 1";
+        document.execCommand('formatBlock', false, 'h1');
         break;
       case "h2":
-        element = document.createElement("h2");
-        element.className = "text-2xl font-bold text-gray-900 mb-3";
-        element.textContent = selectedText || "Heading 2";
+        document.execCommand('formatBlock', false, 'h2');
         break;
       case "h3":
-        element = document.createElement("h3");
-        element.className = "text-xl font-bold text-gray-900 mb-2";
-        element.textContent = selectedText || "Heading 3";
+        document.execCommand('formatBlock', false, 'h3');
+        break;
+      case "quote":
+        document.execCommand('formatBlock', false, 'blockquote');
         break;
       case "ul":
         execCommand("insertUnorderedList");
@@ -168,32 +170,31 @@ export default function NotionEditor({ content, onChange }) {
       case "ol":
         execCommand("insertOrderedList");
         return;
-      case "quote":
-        element = document.createElement("blockquote");
-        element.className = "border-l-4 border-gray-300 pl-4 py-2 my-4 text-gray-700 italic";
-        element.textContent = selectedText || "Quote";
-        break;
       case "code":
-        element = document.createElement("pre");
-        element.className = "bg-gray-100 rounded-lg p-4 my-4 overflow-x-auto";
-        const code = document.createElement("code");
-        code.textContent = selectedText || "// Code block";
-        element.appendChild(code);
+        // For code blocks, we still need insertHTML to get the pre/code structure
+        // But we'll remove the default text
+        const selection = window.getSelection();
+        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+        const selectedText = range ? range.toString() : "";
+        const html = `<pre class="bg-gray-100 rounded-lg p-4 my-4 overflow-x-auto"><code>${selectedText || ""}</code></pre>`;
+        document.execCommand("insertHTML", false, html);
         break;
-      default:
-        return;
     }
 
-    range.deleteContents();
-    range.insertNode(element);
-
-    // Place cursor at the end of the inserted element
-    range.setStartAfter(element);
-    range.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(range);
-
     handleInput();
+  }
+
+  function handlePaste(e) {
+    const text = e.clipboardData.getData("text/plain");
+    // Simple URL regex
+    const urlRegex = /^(https?:\/\/[^\s]+)$/;
+
+    if (urlRegex.test(text)) {
+      e.preventDefault();
+      const html = `<a href="${text}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${text}</a>`;
+      document.execCommand("insertHTML", false, html);
+      handleInput();
+    }
   }
 
   return (
@@ -285,6 +286,7 @@ export default function NotionEditor({ content, onChange }) {
         onKeyUp={checkFormatting}
         onMouseUp={checkFormatting}
         onClick={checkFormatting}
+        onPaste={handlePaste}
         className="min-h-[500px] text-gray-900 focus:outline-none prose prose-lg max-w-none p-4"
         style={{
           wordWrap: "break-word",
@@ -334,6 +336,12 @@ export default function NotionEditor({ content, onChange }) {
         [contenteditable] p {
           margin-bottom: 1rem;
           line-height: 1.75;
+        }
+        
+        [contenteditable] a {
+          color: #2563eb;
+          text-decoration: underline;
+          cursor: pointer;
         }
         
         [contenteditable] ul,

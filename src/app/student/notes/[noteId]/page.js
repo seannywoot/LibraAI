@@ -10,6 +10,17 @@ import { ArrowLeft, Trash2, Download } from "@/components/icons";
 import { generateNotePDF, generateNotePDFFromElement } from "@/utils/pdfExport";
 import PDFPreviewModal from "@/components/pdf-preview-modal";
 
+function isContentEmpty(html) {
+  if (!html) return true;
+  // Strip HTML tags
+  const stripped = html.replace(/<[^>]+>/g, "");
+  // Check for images
+  const hasImages = html.includes("<img");
+  // Check if text is only whitespace (handling &nbsp;)
+  const text = stripped.replace(/&nbsp;/g, " ").trim();
+  return !text && !hasImages;
+}
+
 export default function NoteEditorPage() {
   const router = useRouter();
   const params = useParams();
@@ -216,8 +227,12 @@ export default function NoteEditorPage() {
             )}
             <button
               onClick={handleExportPDF}
-              className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-              title="Export to PDF"
+              disabled={isContentEmpty(content)}
+              className={`p-2 rounded transition-colors ${isContentEmpty(content)
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                }`}
+              title={isContentEmpty(content) ? "Cannot export empty note" : "Export to PDF"}
             >
               <Download className="h-5 w-5" />
             </button>
@@ -256,46 +271,44 @@ export default function NoteEditorPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
-        <>
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+          onClick={cancelDelete}
+        >
           <div
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
-            onClick={cancelDelete}
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Delete Note?
-                </h3>
-                <p className="text-sm text-gray-600 mb-1">
-                  Are you sure you want to delete this note?
-                </p>
-                <p className="text-sm font-medium text-gray-900 mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                  {title || "Untitled"}
-                </p>
-                <p className="text-sm text-gray-500 mt-3">
-                  This action cannot be undone.
-                </p>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={cancelDelete}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition"
-                >
-                  Delete
-                </button>
-              </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Delete Note?
+              </h3>
+              <p className="text-sm text-gray-600 mb-1">
+                Are you sure you want to delete this note?
+              </p>
+              <p className="text-sm font-medium text-gray-900 mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                {title || "Untitled"}
+              </p>
+              <p className="text-sm text-gray-500 mt-3">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={cancelDelete}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition"
+              >
+                Delete
+              </button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

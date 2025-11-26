@@ -216,11 +216,22 @@ function parseContent(html) {
  * Render styled text segments on a line
  * Returns the final Y position after rendering
  */
-function renderStyledText(doc, segments, x, y, maxWidth, lineHeight = 7) {
+function renderStyledText(doc, segments, x, y, maxWidth, lineHeight = 7, pageHeight, margin) {
   if (!segments || segments.length === 0) return y;
 
   let currentX = x;
-  const underlineSegments = []; // Track segments that need underlines
+  let underlineSegments = []; // Track segments that need underlines
+
+  const drawUnderlines = () => {
+    if (underlineSegments.length > 0) {
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.3);
+      underlineSegments.forEach(u => {
+        doc.line(u.x, u.lineY, u.x + u.width, u.lineY);
+      });
+      underlineSegments = [];
+    }
+  };
 
   segments.forEach((segment) => {
     if (!segment.text) return;
@@ -252,6 +263,14 @@ function renderStyledText(doc, segments, x, y, maxWidth, lineHeight = 7) {
         // Move to next line
         y += lineHeight;
         currentX = x;
+
+        // Check for page break
+        if (pageHeight && margin && y > pageHeight - margin) {
+          drawUnderlines(); // Draw underlines for the current page
+          doc.addPage();
+          y = margin;
+        }
+
         // Don't add space at start of new line
         const wordText = word;
         const wordW = doc.getTextWidth(wordText);
@@ -273,14 +292,8 @@ function renderStyledText(doc, segments, x, y, maxWidth, lineHeight = 7) {
     });
   });
 
-  // Draw all underlines
-  if (underlineSegments.length > 0) {
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.3);
-    underlineSegments.forEach(u => {
-      doc.line(u.x, u.lineY, u.x + u.width, u.lineY);
-    });
-  }
+  // Draw remaining underlines
+  drawUnderlines();
 
   return y;
 }
@@ -321,7 +334,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         doc.setFontSize(20);
         doc.setTextColor(17, 17, 17);
         // Render headings with bold font by default, unless unbolded
-        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 8);
+        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 8, pageHeight, margin);
         y += 10; // Increased from 8 to match 1rem spacing
         break;
 
@@ -331,7 +344,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         checkPageBreak(12);
         doc.setFontSize(16);
         doc.setTextColor(17, 17, 17);
-        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 7);
+        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 7, pageHeight, margin);
         y += 8; // Increased from 6 to match 0.75rem spacing
         break;
 
@@ -341,7 +354,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         checkPageBreak(10);
         doc.setFontSize(14);
         doc.setTextColor(17, 17, 17);
-        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 6);
+        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 6, pageHeight, margin);
         y += 6; // Increased from 5 to match 0.5rem spacing
         break;
 
@@ -350,7 +363,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         checkPageBreak(7);
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
-        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 6);
+        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 6, pageHeight, margin);
         y += 10; // Increased from 6 to match 1rem spacing
         break;
 
@@ -363,8 +376,11 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         const quoteStartY = y;
         // Make quote text italic by default
         const quoteSegments = block.segments.map(s => ({ ...s, italic: true }));
-        y = renderStyledText(doc, quoteSegments, margin + 10, y, maxWidth - 10, 6);
+        y = renderStyledText(doc, quoteSegments, margin + 10, y, maxWidth - 10, 6, pageHeight, margin);
         // Draw left border for blockquote (thicker and more visible)
+        // Note: This border drawing might need adjustment if the quote spans multiple pages
+        // For now, we'll draw it from start to end, but if it breaks pages, the line won't continue on the next page automatically
+        // A full fix for multi-page quote borders would require more complex logic
         doc.line(margin + 3, quoteStartY - 1, margin + 3, y + 1);
         y += 10; // Increased from 6 to match 1rem spacing
         // Reset text color for subsequent blocks
@@ -383,13 +399,24 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         // Split on actual newlines to preserve formatting
         const codeLines = codeText.split('\n');
         const codeHeight = codeLines.length * 5 + 8;
-        checkPageBreak(codeHeight);
+
+        // For code blocks, we might want to break them if they are too long, 
+        // but for now let's keep the checkPageBreak behavior which pushes the whole block to next page if it fits
+        // If it's larger than a page, this logic is still imperfect but better than nothing
+        if (codeHeight < pageHeight - 2 * margin) {
+          checkPageBreak(codeHeight);
+        } else {
+          // If code block is huge, just let it start and we'll handle page breaks manually if we were rendering line by line
+          // But here we are rendering line by line below, so we should add page break logic there too
+          checkPageBreak(20); // Ensure at least some space to start
+        }
 
         // Set colors for the code block background
         doc.setFillColor(243, 244, 246); // Light gray background
         doc.setDrawColor(243, 244, 246); // Same color for border (no visible border)
 
         // Draw background rectangle with padding
+        // Note: Background rect won't span pages automatically
         doc.rect(margin, y - 2, maxWidth, codeHeight, "F");
 
         // Set text color to black for the code text
@@ -397,10 +424,17 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
 
         // Draw each line exactly as it appears, preserving indentation
         codeLines.forEach((line, idx) => {
+          // Check for page break within code block
+          if (y + 5 > pageHeight - margin) {
+            doc.addPage();
+            y = margin;
+            // Redraw background for the new page? Ideally yes, but simplified for now
+          }
           // Don't trim - preserve exact spacing and indentation
-          doc.text(line, margin + 4, y + 3 + (idx * 5));
+          doc.text(line, margin + 4, y + 3);
+          y += 5;
         });
-        y += codeHeight + 10; // Increased from +2 to match 1rem spacing
+        y += 10; // Spacing after code block
         break;
 
       case 'bullet':
@@ -409,7 +443,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         doc.setTextColor(0, 0, 0);
         // Draw bullet with proper indentation (smaller bullet size)
         doc.circle(margin + 5, y - 1.5, 0.75, "F");
-        y = renderStyledText(doc, block.segments, margin + 12, y, maxWidth - 12, 6);
+        y = renderStyledText(doc, block.segments, margin + 12, y, maxWidth - 12, 6, pageHeight, margin);
         y += 4; // Spacing between list items
         break;
 
@@ -420,7 +454,7 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
         doc.setFont("helvetica", "normal");
         // Draw number with proper indentation
         doc.text(`${block.number}.`, margin + 5, y);
-        y = renderStyledText(doc, block.segments, margin + 15, y, maxWidth - 15, 6);
+        y = renderStyledText(doc, block.segments, margin + 15, y, maxWidth - 15, 6, pageHeight, margin);
         y += 4; // Spacing between list items
         break;
 
