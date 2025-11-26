@@ -98,7 +98,7 @@ export async function POST(request) {
 
     // Requirement 2.3: Accept conversationId, title, and messages in the request body
     const body = await request.json();
-    const { conversationId, title, messages } = body;
+    const { conversationId, title, messages, lastUpdated } = body;
 
     // Requirement 2.8: Validate request data
     if (!conversationId || typeof conversationId !== 'number') {
@@ -190,12 +190,14 @@ export async function POST(request) {
 
     // Prepare conversation document
     const now = new Date();
+    // Use provided lastUpdated if available (for migration), otherwise use current time
+    const timestamp = lastUpdated ? new Date(lastUpdated) : now;
     const conversationDoc = {
       userId: userId,
       conversationId: conversationId,
       title: title.trim(),
       messages: messages,
-      lastUpdated: now
+      lastUpdated: timestamp
     };
 
     // Requirement 2.4 & 2.5: Implement upsert logic

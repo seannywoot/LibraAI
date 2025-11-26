@@ -460,6 +460,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
 
       let successCount = 0;
       let failCount = 0;
+      let currentToastId = migrationToastId;
 
       for (let i = 0; i < conversations.length; i++) {
         const conv = conversations[i];
@@ -473,14 +474,15 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
               conversationId: conv.id,
               title: conv.title,
               messages: conv.messages,
+              lastUpdated: conv.lastUpdated, // Preserve original timestamp
             }),
           });
 
           if (response.ok) {
             successCount++;
-            // Update progress
-            dismissToast(migrationToastId);
-            showToast(
+            // Update progress - dismiss old and create new with same tracking
+            dismissToast(currentToastId);
+            currentToastId = showToast(
               `Migrating conversations... ${successCount + failCount}/${conversations.length}`,
               'info',
               0
@@ -498,7 +500,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
       console.log(`Migration complete: ${successCount} succeeded, ${failCount} failed`);
 
       // Dismiss progress toast
-      dismissToast(migrationToastId);
+      dismissToast(currentToastId);
 
       // Show completion message
       if (successCount > 0 && failCount === 0) {
