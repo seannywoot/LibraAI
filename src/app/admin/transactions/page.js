@@ -399,7 +399,7 @@ export default function AdminTransactionsPage() {
               }}
               onKeyDown={handleKeyDown}
               placeholder="Search transactions..."
-              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-[var(--btn-primary)] focus:outline-none focus:ring-1 focus:ring-zinc-900"
             />
             {searchInput && (
               <button
@@ -587,7 +587,7 @@ export default function AdminTransactionsPage() {
                           )}
                           {t.status === "return-requested" && (
                             <button
-                              className="rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+                              className="rounded-lg border border-[var(--btn-primary)] bg-[var(--btn-primary)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50"
                               disabled={actionLoading === `${t._id}:return`}
                               onClick={() => {
                                 setReturnTarget(t);
@@ -769,7 +769,7 @@ export default function AdminTransactionsPage() {
 
                       {t.status === "return-requested" && (
                         <button
-                          className="w-full rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+                          className="w-full rounded-lg border border-[var(--btn-primary)] bg-[var(--btn-primary)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50"
                           disabled={actionLoading === `${t._id}:return`}
                           onClick={() => {
                             setReturnTarget(t);
@@ -1007,7 +1007,7 @@ export default function AdminTransactionsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg border border-zinc-900 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+                  className="rounded-lg border border-[var(--btn-primary)] bg-[var(--btn-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50"
                   disabled={returnProcessing}
                 >
                   {returnProcessing ? "Processing…" : "Confirm Return"}

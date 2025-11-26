@@ -229,7 +229,7 @@ export default function FAQSetupClient() {
             </div>
             <button
               onClick={openAddModal}
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--btn-primary)] bg-[var(--btn-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--btn-primary-hover)]"
             >
               <Plus className="h-4 w-4" />
               Add New FAQ
@@ -362,7 +362,7 @@ export default function FAQSetupClient() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 disabled:opacity-50 transition"
+                  className="flex-1 px-4 py-2 bg-[var(--btn-primary)] text-white rounded-xl font-medium hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition"
                 >
                   {loading ? "Saving..." : editingFaq ? "Update FAQ" : "Add FAQ"}
                 </button>

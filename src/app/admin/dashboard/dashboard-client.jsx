@@ -318,33 +318,30 @@ export default function DashboardClient() {
               <div className="flex gap-1 p-2">
                 <button
                   onClick={() => setActiveTopItemsTab('books')}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                    activeTopItemsTab === 'books'
-                      ? 'bg-white text-zinc-900 shadow-sm'
-                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/50'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTopItemsTab === 'books'
+                    ? 'bg-white text-zinc-900 shadow-sm'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/50'
+                    }`}
                 >
                   <BookOpen className="h-4 w-4" />
                   <span>Most Viewed Books</span>
                 </button>
                 <button
                   onClick={() => setActiveTopItemsTab('searches')}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                    activeTopItemsTab === 'searches'
-                      ? 'bg-white text-zinc-900 shadow-sm'
-                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/50'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTopItemsTab === 'searches'
+                    ? 'bg-white text-zinc-900 shadow-sm'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/50'
+                    }`}
                 >
                   <Search className="h-4 w-4" />
                   <span>Top Search Terms</span>
                 </button>
                 <button
                   onClick={() => setActiveTopItemsTab('users')}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                    activeTopItemsTab === 'users'
-                      ? 'bg-white text-zinc-900 shadow-sm'
-                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/50'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTopItemsTab === 'users'
+                    ? 'bg-white text-zinc-900 shadow-sm'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/50'
+                    }`}
                 >
                   <HelpCircle className="h-4 w-4" />
                   <span>Most Active Users</span>
@@ -563,7 +560,7 @@ export default function DashboardClient() {
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => handleConvertToFAQ(question)}
-                            className="px-3 py-1 text-xs font-medium text-white bg-zinc-900 rounded-lg hover:bg-zinc-800 transition-colors"
+                            className="px-3 py-1 text-xs font-medium text-white bg-[var(--btn-primary)] rounded-lg hover:bg-[var(--btn-primary-hover)] transition-colors"
                           >
                             Convert to FAQ
                           </button>
@@ -838,7 +835,7 @@ export default function DashboardClient() {
                 <button
                   type="submit"
                   disabled={convertLoading}
-                  className="flex-1 px-4 py-2 bg-zinc-900 text-white rounded-lg font-medium hover:bg-zinc-800 disabled:opacity-50 transition"
+                  className="flex-1 px-4 py-2 bg-[var(--btn-primary)] text-white rounded-lg font-medium hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition"
                 >
                   {convertLoading ? "Creating..." : "Create FAQ"}
                 </button>

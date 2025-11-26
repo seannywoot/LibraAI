@@ -240,7 +240,7 @@ export default function AdminAuthorsPage() {
             </div>
             <button
               onClick={openAddModal}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--btn-primary)] text-white rounded-xl font-medium hover:bg-[var(--btn-primary-hover)] transition"
             >
               <Plus className="h-4 w-4" />
               Add Author
@@ -442,7 +442,7 @@ export default function AdminAuthorsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-4 py-2 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 disabled:opacity-50 transition"
+                  className="flex-1 px-4 py-2 bg-[var(--btn-primary)] text-white rounded-xl font-medium hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition"
                 >
                   {submitting ? "Saving..." : editingAuthor ? "Update Author" : "Add Author"}
                 </button>

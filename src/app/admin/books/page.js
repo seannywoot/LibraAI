@@ -226,7 +226,7 @@ export default function AdminBooksListPage() {
               <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Books</h1>
               <p className="text-sm text-zinc-600">View recent additions and their availability.</p>
             </div>
-            <Link href="/admin/books/add" className="inline-flex items-center gap-2 rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">
+            <Link href="/admin/books/add" className="inline-flex items-center gap-2 rounded-xl border border-[var(--btn-primary)] bg-[var(--btn-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--btn-primary-hover)]">
               <Plus className="h-4 w-4" />
               Add book
             </Link>
@@ -257,7 +257,7 @@ export default function AdminBooksListPage() {
               }}
               onKeyDown={handleKeyDown}
               placeholder="Search books..."
-              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-[var(--btn-primary)] focus:outline-none focus:ring-1 focus:ring-zinc-900"
             />
             {searchInput && (
               <button

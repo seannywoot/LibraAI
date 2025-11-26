@@ -169,7 +169,7 @@ export default function AdminSeedPage() {
             <button
               onClick={handleSeedAuthors}
               disabled={authorsLoading}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-lg bg-[var(--btn-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50"
             >
               {authorsLoading ? "Seeding..." : "Seed Authors"}
             </button>
@@ -192,7 +192,7 @@ export default function AdminSeedPage() {
             <button
               onClick={handleSeed}
               disabled={loading}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+              className="rounded-lg bg-[var(--btn-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50"
             >
               {loading ? "Seeding..." : "Seed Books & Shelves"}
             </button>

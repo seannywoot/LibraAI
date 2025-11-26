@@ -336,7 +336,7 @@ export default function AdminEditBookPage() {
                   Title <span className="text-rose-600">*</span>
                 </span>
                 <input
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.title ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.title ? "border-rose-400" : "border-zinc-200"}`}
                   type="text"
                   value={title}
                   onChange={(e) => {
@@ -364,7 +364,7 @@ export default function AdminEditBookPage() {
                 ) : authors.length > 0 ? (
                   <div className="relative">
                     <select
-                      className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
+                      className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
                       value={author}
                       onChange={(e) => setAuthor(e.target.value)}
                       aria-invalid={!!errors.author}
@@ -379,7 +379,7 @@ export default function AdminEditBookPage() {
                     </select>
                     <div className="mt-2">
                       <input
-                        className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
+                        className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
                         type="text"
                         value={author}
                         onChange={(e) => setAuthor(e.target.value)}
@@ -390,7 +390,7 @@ export default function AdminEditBookPage() {
                   </div>
                 ) : (
                   <input
-                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"}`}
+                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"}`}
                     type="text"
                     value={author}
                     onChange={(e) => setAuthor(e.target.value)}
@@ -406,7 +406,7 @@ export default function AdminEditBookPage() {
                   Year <span className="text-rose-600">*</span>
                 </span>
                 <input
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.year ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.year ? "border-rose-400" : "border-zinc-200"}`}
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -457,7 +457,7 @@ export default function AdminEditBookPage() {
                   />
                 ) : shelves.length > 0 ? (
                   <select
-                    className={`rounded-xl border px-4 py-3 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
+                    className={`rounded-xl border px-4 py-3 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
                     value={shelf}
                     onChange={(e) => setShelf(e.target.value)}
                     aria-invalid={!!errors.shelf}
@@ -473,7 +473,7 @@ export default function AdminEditBookPage() {
                   </select>
                 ) : (
                   <input
-                    className={`rounded-xl border px-4 py-3 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
+                    className={`rounded-xl border px-4 py-3 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
                     type="text"
                     value={shelf}
                     onChange={(e) => setShelf(e.target.value)}
@@ -490,7 +490,7 @@ export default function AdminEditBookPage() {
                   ISBN / Identifier <span className="text-zinc-500">(optional)</span>
                 </span>
                 <input
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.isbn ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.isbn ? "border-rose-400" : "border-zinc-200"}`}
                   type="text"
                   inputMode="numeric"
                   value={isbn}
@@ -509,7 +509,7 @@ export default function AdminEditBookPage() {
                   Publisher <span className="text-zinc-500">(optional)</span>
                 </span>
                 <input
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.publisher ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.publisher ? "border-rose-400" : "border-zinc-200"}`}
                   type="text"
                   value={publisher}
                   onChange={(e) => setPublisher(e.target.value)}
@@ -524,7 +524,7 @@ export default function AdminEditBookPage() {
                   Format / Type <span className="text-rose-600">*</span>
                 </span>
                 <select
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.format ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.format ? "border-rose-400" : "border-zinc-200"}`}
                   value={format}
                   onChange={(e) => setFormat(e.target.value)}
                   aria-invalid={!!errors.format}
@@ -543,7 +543,7 @@ export default function AdminEditBookPage() {
                 <label className="grid gap-2 text-sm sm:col-span-2">
                   <span className="text-zinc-700">eBook File (PDF only)</span>
                   <input
-                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-700 hover:file:bg-zinc-200"
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-700 hover:file:bg-zinc-200"
                     type="file"
                     accept=".pdf,application/pdf"
                     disabled={extractingMetadata}
@@ -570,7 +570,7 @@ export default function AdminEditBookPage() {
                   Barcode / Item ID <span className="text-zinc-500">(optional)</span>
                 </span>
                 <input
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.barcode ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.barcode ? "border-rose-400" : "border-zinc-200"}`}
                   type="text"
                   value={barcode}
                   onChange={(e) => setBarcode(e.target.value)}
@@ -585,7 +585,7 @@ export default function AdminEditBookPage() {
                   Category <span className="text-rose-600">*</span>
                 </span>
                 <select
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.category ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.category ? "border-rose-400" : "border-zinc-200"}`}
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   aria-invalid={!!errors.category}
@@ -612,7 +612,7 @@ export default function AdminEditBookPage() {
                   Description <span className="text-zinc-500">(optional but recommended)</span>
                 </span>
                 <textarea
-                  className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 min-h-[120px] resize-y"
+                  className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 min-h-[120px] resize-y"
                   value={description}
                   onChange={(e) => handleFieldChange(setDescription)(e.target.value)}
                   placeholder="Enter a brief description of the book's content, themes, and key topics. This helps students discover books through the chatbot and improves search results."
@@ -629,7 +629,7 @@ export default function AdminEditBookPage() {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${errors.status ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.status ? "border-rose-400" : "border-zinc-200"}`}
                   aria-invalid={!!errors.status}
                   data-field="status"
                 >
@@ -649,7 +649,7 @@ export default function AdminEditBookPage() {
                 <select
                   value={format === "eBook" ? "n/a" : loanPolicy}
                   onChange={(e) => setLoanPolicy(e.target.value)}
-                  className={`rounded-xl border px-4 py-3 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.loanPolicy ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border px-4 py-3 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.loanPolicy ? "border-rose-400" : "border-zinc-200"}`}
                   aria-invalid={!!errors.loanPolicy}
                   data-field="loanPolicy"
                   disabled={format === "eBook"}
@@ -681,7 +681,7 @@ export default function AdminEditBookPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-xl border border-zinc-900 bg-zinc-900 px-5 py-3 sm:py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 text-center"
+              className="rounded-xl border border-[var(--btn-primary)] bg-[var(--btn-primary)] px-5 py-3 sm:py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--btn-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60 text-center"
             >
               {submitting ? "Updating…" : "Update book"}
             </button>

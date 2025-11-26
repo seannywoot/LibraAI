@@ -100,7 +100,7 @@ export default function SecurityPage() {
             >
               ← Back to Dashboard
             </Link>
-            <SignOutButton className="bg-zinc-900 text-white hover:bg-zinc-800" />
+            <SignOutButton className="bg-[var(--btn-primary)] text-white hover:bg-[var(--btn-primary-hover)]" />
           </div>
         </div>
       </header>
@@ -110,7 +110,7 @@ export default function SecurityPage() {
           <h2 className="text-xl font-semibold text-zinc-900">Locked Accounts</h2>
           <button
             onClick={fetchLockedAccounts}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            className="rounded-lg bg-[var(--btn-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--btn-primary-hover)]"
           >
             Refresh
           </button>

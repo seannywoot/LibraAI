@@ -83,7 +83,7 @@ export default function ChatLogsClient() {
             />
             <button
               type="submit"
-              className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 transition"
+              className="px-6 py-3 bg-[var(--btn-primary)] text-white rounded-xl font-medium hover:bg-[var(--btn-primary-hover)] transition"
             >
               Search
             </button>
@@ -113,7 +113,7 @@ export default function ChatLogsClient() {
               {logs.map((log) => (
                 <div key={log._id} className="p-4 md:p-6 hover:bg-zinc-50 transition">
                   <div className="flex items-start gap-3 md:gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--btn-primary)] text-white">
                       <MessageCircle className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">

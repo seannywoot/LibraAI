@@ -253,7 +253,7 @@ export default function UnansweredQueriesAnalytics() {
           <button
             onClick={() => setShowResolved(false)}
             className={`px-4 py-2 rounded-lg font-medium transition ${!showResolved
-              ? "bg-zinc-900 text-white"
+              ? "bg-[var(--btn-primary)] text-white"
               : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
               }`}
           >
@@ -262,7 +262,7 @@ export default function UnansweredQueriesAnalytics() {
           <button
             onClick={() => setShowResolved(true)}
             className={`px-4 py-2 rounded-lg font-medium transition ${showResolved
-              ? "bg-zinc-900 text-white"
+              ? "bg-[var(--btn-primary)] text-white"
               : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
               }`}
           >
@@ -271,7 +271,7 @@ export default function UnansweredQueriesAnalytics() {
           <button
             onClick={handleInspectDuplicates}
             disabled={inspecting}
-            className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="ml-auto px-4 py-2 bg-[var(--btn-primary)] text-white rounded-lg hover:bg-[var(--btn-primary-hover)] transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {inspecting ? 'Inspecting...' : 'Inspect Data'}
           </button>
