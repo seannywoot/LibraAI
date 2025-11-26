@@ -5,7 +5,7 @@ import Link from "next/link";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
-import { Book, Clock, AlertCircle } from "@/components/icons";
+import { Book, Clock, AlertCircle, BookOpen, Library } from "@/components/icons";
 import { ChartBarDefault } from "@/components/student-bar-chart";
 
 function formatDate(dateStr) {
@@ -255,14 +255,14 @@ export default function StudentDashboardPage() {
 
             <Link
               href="/student/books"
-              className="block rounded-lg border border-gray-200 bg-gray-50 p-4 hover:bg-gray-100 transition-colors"
+              className="group block rounded-lg border border-gray-200 bg-gray-50 p-4 hover:bg-orange-50 hover:border-orange-200 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-gray-200 p-2">
-                  <Book className="h-5 w-5 text-gray-700" />
+                <div className="rounded-full bg-gray-200 p-2 group-hover:bg-orange-100 transition-colors">
+                  <Book className="h-5 w-5 text-gray-700 group-hover:text-orange-600 transition-colors" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-900">Browse Catalog</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 group-hover:text-orange-700 transition-colors">Browse Catalog</h4>
                   <p className="text-xs text-gray-600">Explore available books</p>
                 </div>
               </div>
@@ -270,14 +270,14 @@ export default function StudentDashboardPage() {
 
             <Link
               href="/student/library"
-              className="block rounded-lg border border-gray-200 bg-gray-50 p-4 hover:bg-gray-100 transition-colors"
+              className="group block rounded-lg border border-gray-200 bg-gray-50 p-4 hover:bg-orange-50 hover:border-orange-200 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-gray-200 p-2">
-                  <Book className="h-5 w-5 text-gray-700" />
+                <div className="rounded-full bg-gray-200 p-2 group-hover:bg-orange-100 transition-colors">
+                  <BookOpen className="h-5 w-5 text-gray-700 group-hover:text-orange-600 transition-colors" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-900">My Library</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 group-hover:text-orange-700 transition-colors">My Library</h4>
                   <p className="text-xs text-gray-600">View your collection</p>
                 </div>
               </div>
@@ -285,14 +285,14 @@ export default function StudentDashboardPage() {
 
             <Link
               href="/student/shelves"
-              className="block rounded-lg border border-gray-200 bg-gray-50 p-4 hover:bg-gray-100 transition-colors"
+              className="group block rounded-lg border border-gray-200 bg-gray-50 p-4 hover:bg-orange-50 hover:border-orange-200 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-gray-200 p-2">
-                  <Book className="h-5 w-5 text-gray-700" />
+                <div className="rounded-full bg-gray-200 p-2 group-hover:bg-orange-100 transition-colors">
+                  <Library className="h-5 w-5 text-gray-700 group-hover:text-orange-600 transition-colors" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-900">Browse Shelves</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 group-hover:text-orange-700 transition-colors">Browse Shelves</h4>
                   <p className="text-xs text-gray-600">Explore by category</p>
                 </div>
               </div>

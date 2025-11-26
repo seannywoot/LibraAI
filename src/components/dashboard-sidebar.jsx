@@ -46,12 +46,12 @@ const VARIANTS = {
     title: "text-(--text)",
     navBackground: "border border-(--stroke) bg-(--bg-1)",
     defaultLink:
-      "text-(--subtext) hover:bg-(--bg-2) hover:text-(--text)",
-    activeLink: "bg-(--bg-2) text-(--text)",
+      "text-(--subtext) hover:bg-orange-50 hover:text-orange-600",
+    activeLink: "bg-orange-50 text-orange-600",
     subtleText: "text-(--subtext)",
     divider: "border-(--stroke)",
     signOutVariant:
-      "border border-(--stroke) bg-(--bg-1) text-(--text) hover:bg-(--bg-2)",
+      "border border-(--stroke) bg-(--bg-1) text-(--text) hover:bg-orange-50",
   },
 };
 
@@ -200,7 +200,7 @@ export default function DashboardSidebar({
               >
                 <span className="flex items-center gap-3">
                   {link.icon ? (
-                    <span className="text-(--text)/60 transition-colors group-hover:text-(--text)">
+                    <span className="transition-colors">
                       {link.icon}
                     </span>
                   ) : null}

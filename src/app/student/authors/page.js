@@ -218,8 +218,8 @@ export default function StudentAuthorsPage() {
                       key={idx}
                       onClick={() => handleSuggestionClick(suggestion)}
                       className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${idx === selectedSuggestionIndex
-                          ? "bg-zinc-100"
-                          : "hover:bg-zinc-50"
+                        ? "bg-zinc-100"
+                        : "hover:bg-zinc-50"
                         }`}
                     >
                       <svg
@@ -254,8 +254,8 @@ export default function StudentAuthorsPage() {
               <button
                 onClick={() => setViewMode("grid")}
                 className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "grid"
-                    ? "bg-zinc-900 text-white"
-                    : "text-zinc-700 hover:bg-zinc-50"
+                  ? "bg-(--btn-primary) text-white"
+                  : "text-zinc-700 hover:bg-zinc-50"
                   }`}
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,8 +265,8 @@ export default function StudentAuthorsPage() {
               <button
                 onClick={() => setViewMode("list")}
                 className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "list"
-                    ? "bg-zinc-900 text-white"
-                    : "text-zinc-700 hover:bg-zinc-50"
+                  ? "bg-(--btn-primary) text-white"
+                  : "text-zinc-700 hover:bg-zinc-50"
                   }`}
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

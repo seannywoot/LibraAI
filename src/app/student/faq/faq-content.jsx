@@ -227,7 +227,7 @@ export default function FAQContent() {
         </p>
         <a
           href="mailto:libraaismartlibraryassistant@gmail.com"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white rounded-lg font-medium hover:bg-zinc-800 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-(--btn-primary) text-white rounded-lg font-medium hover:bg-(--btn-primary-hover) transition-colors"
         >
           <Mail className="h-4 w-4" />
           Contact Us
@@ -264,7 +264,7 @@ export default function FAQContent() {
             <div className="p-6 pt-0 flex gap-3">
               <button
                 onClick={handleSubmitReason}
-                className="flex-1 px-4 py-2.5 bg-zinc-900 text-white rounded-lg font-medium hover:bg-zinc-800 transition-colors text-sm"
+                className="flex-1 px-4 py-2.5 bg-(--btn-primary) text-white rounded-lg font-medium hover:bg-(--btn-primary-hover) transition-colors text-sm"
               >
                 Submit Feedback
               </button>

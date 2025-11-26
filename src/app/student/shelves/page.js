@@ -155,7 +155,7 @@ export default function StudentShelvesPage() {
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "grid"
-                    ? "bg-zinc-900 text-white"
+                    ? "bg-(--btn-primary) text-white"
                     : "text-zinc-700 hover:bg-zinc-50"
                     }`}
                 >
@@ -166,7 +166,7 @@ export default function StudentShelvesPage() {
                 <button
                   onClick={() => setViewMode("list")}
                   className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "list"
-                    ? "bg-zinc-900 text-white"
+                    ? "bg-(--btn-primary) text-white"
                     : "text-zinc-700 hover:bg-zinc-50"
                     }`}
                 >

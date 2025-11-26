@@ -1145,7 +1145,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
             <div className="flex items-center gap-2">
               <button
                 onClick={startNewConversation}
-                className="flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white text-sm font-medium transition hover:bg-zinc-800 dark:bg-blue-600 dark:hover:bg-blue-700 h-10 w-10 lg:h-auto lg:w-auto lg:px-4 lg:py-2"
+                className="flex items-center justify-center gap-2 rounded-xl bg-(--btn-primary) text-white text-sm font-medium transition hover:bg-(--btn-primary-hover) h-10 w-10 lg:h-auto lg:w-auto lg:px-4 lg:py-2"
                 aria-label="New Chat"
               >
                 <Plus className="h-5 w-5" />
@@ -1335,7 +1335,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                 </div>
               )}
               <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.role === "user"
-                ? "bg-zinc-900 text-white dark:bg-blue-600"
+                ? "bg-(--btn-primary) text-white"
                 : msg.stopped
                   ? "bg-amber-50 border border-amber-200 text-zinc-800 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-100"
                   : "bg-(--surface-2) text-(--text-primary)"
@@ -1534,7 +1534,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
               <button
                 type="submit"
                 disabled={(!input.trim() && !attachedFile)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white transition hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-(--btn-primary) text-white transition hover:bg-(--btn-primary-hover) disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Send message"
               >
                 <Send className="h-5 w-5" />

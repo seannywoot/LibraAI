@@ -155,7 +155,7 @@ export default function NotesPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={createNewNote}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-(--btn-primary) text-white rounded-lg hover:bg-(--btn-primary-hover) transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 New Note
@@ -193,7 +193,7 @@ export default function NotesPage() {
             {!searchQuery && (
               <button
                 onClick={createNewNote}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-(--btn-primary) text-white rounded-lg hover:bg-(--btn-primary-hover) transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Create Note
