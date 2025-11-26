@@ -1129,21 +1129,21 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     <>
       <div className="flex-1 flex flex-col relative">
         {/* Chat Header */}
-        <div className="border-b border-zinc-200 p-6">
+        <div className="border-b border-(--border-subtle) p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-blue-600">
                 <MessageCircle className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg font-semibold text-zinc-900 truncate">{autoTitle || 'LibraAI Assistant'}</h1>
-                <p className="text-sm text-zinc-500 truncate">{autoTitle ? 'Topic • Auto‑generated' : 'Ask me anything about literature'}</p>
+                <h1 className="text-lg font-semibold text-(--text-primary) truncate">{autoTitle || 'LibraAI Assistant'}</h1>
+                <p className="text-sm text-(--text-muted) truncate">{autoTitle ? 'Topic • Auto‑generated' : 'Ask me anything about literature'}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={startNewConversation}
-                className="flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white text-sm font-medium transition hover:bg-zinc-800 h-10 w-10 lg:h-auto lg:w-auto lg:px-4 lg:py-2"
+                className="flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white text-sm font-medium transition hover:bg-zinc-800 dark:bg-blue-600 dark:hover:bg-blue-700 h-10 w-10 lg:h-auto lg:w-auto lg:px-4 lg:py-2"
                 aria-label="New Chat"
               >
                 <Plus className="h-5 w-5" />
@@ -1151,7 +1151,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
               </button>
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className={`flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50 ${showHistorySidebar ? 'lg:hidden' : ''}`}
+                className={`flex h-10 w-10 items-center justify-center rounded-xl border border-(--border-subtle) bg-(--surface-1) text-(--text-secondary) transition hover:bg-(--surface-2) ${showHistorySidebar ? 'lg:hidden' : ''}`}
                 aria-label="Chat history"
               >
                 <History className="h-5 w-5" />
@@ -1333,10 +1333,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                 </div>
               )}
               <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.role === "user"
-                ? "bg-zinc-900 text-white"
+                ? "bg-zinc-900 text-white dark:bg-blue-600"
                 : msg.stopped
-                  ? "bg-amber-50 border border-amber-200 text-zinc-800"
-                  : "bg-zinc-100 text-zinc-800"
+                  ? "bg-amber-50 border border-amber-200 text-zinc-800 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-100"
+                  : "bg-(--surface-2) text-(--text-primary)"
                 }`}>
                 {msg.hasFile && (
                   <div className="mb-2">
@@ -1393,7 +1393,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                     </p>
                   </div>
                 )}
-                <span className={`mt-1 block text-xs ${msg.role === "user" ? "text-zinc-400" : msg.stopped ? "text-amber-600" : "text-zinc-500"
+                <span className={`mt-1 block text-xs ${msg.role === "user" ? "text-zinc-400 dark:text-blue-100" : msg.stopped ? "text-amber-600 dark:text-amber-300" : "text-(--text-muted)"
                   }`}>
                   {msg.timestamp}
                 </span>
