@@ -27,13 +27,20 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   /* Sidebar palette from design (light mode) */
-  --bg-1: #fafafa; /* panel and nav background */
-  --bg-2: #f5f5f5; /* active/hover item background */
-  --bg-3: #ebebeb; /* subtle fills if needed */
-  --stroke: #e0e0e0; /* light borders */
-  --dark-stroke: #1f2937; /* icon/text darker accents */
-  --subtext: #64748b; /* muted text */
-  --text: var(--text-primary); /* primary text */
+  --bg-1: #fafafa;
+  /* panel and nav background */
+  --bg-2: #f5f5f5;
+  /* active/hover item background */
+  --bg-3: #ebebeb;
+  /* subtle fills if needed */
+  --stroke: #e0e0e0;
+  /* light borders */
+  --dark-stroke: #1f2937;
+  /* icon/text darker accents */
+  --subtext: #64748b;
+  /* muted text */
+  --text: var(--text-primary);
+  /* primary text */
 }
 
 .dark {
@@ -77,7 +84,10 @@
 }
 
 @layer base {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     border-color: inherit;
   }
 
@@ -131,6 +141,7 @@
 }
 
 @layer base {
+
   .dark .bg-white,
   .dark .bg-gray-50,
   .dark .bg-zinc-50 {
@@ -346,6 +357,30 @@
   .dark .ring-zinc-900 {
     --tw-ring-color: var(--ring-color) !important;
   }
+
+  /* Orange hover effects - light mode only */
+  .dark .hover\:bg-orange-50:hover {
+    background-color: var(--surface-2) !important;
+  }
+
+  .dark .hover\:bg-orange-100:hover,
+  .dark .group:hover .group-hover\:bg-orange-100 {
+    background-color: var(--surface-3) !important;
+  }
+
+  .dark .hover\:text-orange-600:hover,
+  .dark .group:hover .group-hover\:text-orange-600 {
+    color: var(--accent) !important;
+  }
+
+  .dark .hover\:text-orange-700:hover,
+  .dark .group:hover .group-hover\:text-orange-700 {
+    color: var(--accent) !important;
+  }
+
+  .dark .hover\:border-orange-200:hover {
+    border-color: var(--border-subtle) !important;
+  }
 }
 
 /* Accordion animations */
@@ -353,6 +388,7 @@
   from {
     height: 0;
   }
+
   to {
     height: var(--radix-accordion-content-height);
   }
@@ -362,6 +398,7 @@
   from {
     height: var(--radix-accordion-content-height);
   }
+
   to {
     height: 0;
   }
@@ -381,6 +418,7 @@
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -393,6 +431,7 @@
 
 /* Custom minimal scrollbar styles */
 @layer utilities {
+
   /* Webkit browsers (Chrome, Safari, Edge) */
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
