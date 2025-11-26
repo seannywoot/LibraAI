@@ -119,7 +119,7 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-6 pt-20 lg:pt-8 lg:pl-[300px]">
+    <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
       <DashboardSidebar
         heading="LibraAI"
         links={navigationLinks}
@@ -127,8 +127,8 @@ export default function NotesPage() {
         SignOutComponent={SignOutButton}
       />
 
-      <main className="max-w-6xl">
-        <header className="mb-8">
+      <main className="space-y-6">
+        <header>
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
