@@ -95,7 +95,7 @@ export async function getRecommendations({
 /**
  * Build comprehensive user profile from all behavior data
  */
-async function buildUserProfile(db, userId) {
+export async function buildUserProfile(db, userId) {
   const interactions = db.collection("user_interactions");
   const transactions = db.collection("transactions");
   const bookmarks = db.collection("bookmarks");
@@ -952,3 +952,6 @@ function shuffleArray(array) {
 
   return arr;
 }
+
+// Explicit named exports for environments that require static export lists
+export { buildUserProfile, getRecommendations, getSimilarBooks, getPopularRecommendations };
