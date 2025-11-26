@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use as usePromise } from "react";
 import { useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getStudentLinks } from "@/components/navLinks";
@@ -59,7 +59,8 @@ function shuffleArray(array) {
 export default function QuizTakingPage({ params }) {
     const router = useRouter();
     const navigationLinks = getStudentLinks();
-    const { quizId } = use(params);
+    // In Next.js 16, dynamic route params in client components are Promises
+    const { quizId } = usePromise(params);
 
     const [quiz, setQuiz] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -78,10 +79,12 @@ export default function QuizTakingPage({ params }) {
     const [showResumeModal, setShowResumeModal] = useState(false);
     const [savedState, setSavedState] = useState(null);
 
+    // Initial data load. Depend ONLY on quizId to avoid effect loops
     useEffect(() => {
         loadQuiz();
         loadPreviousResults();
-    }, [loadPreviousResults, loadQuiz, quizId]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quizId]);
 
     // Check for saved state after quiz loads
     useEffect(() => {
@@ -95,7 +98,8 @@ export default function QuizTakingPage({ params }) {
                 initializeNewAttempt();
             }
         }
-    }, [initializeNewAttempt, quiz, quizId, showResults]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quizId, quiz, showResults]);
 
     // Save state whenever answers or current question changes
     useEffect(() => {
