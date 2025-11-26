@@ -124,7 +124,7 @@ export default function FAQContent() {
   };
 
   return (
-    <main className="max-w-4xl mx-auto">
+    <main className="space-y-6">
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-semibold text-zinc-800 mb-3">
@@ -156,8 +156,8 @@ export default function FAQContent() {
             key={category.id}
             onClick={() => setActiveCategory(category.id)}
             className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${activeCategory === category.id
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-600 hover:text-zinc-900 hover:bg-white/50"
+              ? "bg-white text-zinc-900 shadow-sm"
+              : "text-zinc-600 hover:text-zinc-900 hover:bg-white/50"
               }`}
           >
             {category.label}

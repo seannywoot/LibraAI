@@ -174,7 +174,7 @@ export default function NoteEditorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
         <DashboardSidebar
           heading="LibraAI"
           links={navigationLinks}
@@ -187,7 +187,7 @@ export default function NoteEditorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white pr-6 pl-[300px]">
+    <div className="min-h-screen bg-white px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
       <DashboardSidebar
         heading="LibraAI"
         links={navigationLinks}

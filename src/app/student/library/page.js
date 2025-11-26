@@ -263,7 +263,7 @@ function MyLibraryContent() {
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Failed to load library");
       setMyBooks(data.books || []);
-      
+
       // Only update total count when not searching
       if (!searchInput) {
         setTotalMyBooks(data.books?.length || 0);
@@ -284,7 +284,7 @@ function MyLibraryContent() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load borrowed books");
       setBorrowedBooks(data.items || []);
-      
+
       // Only update total count when not searching
       if (!searchInput) {
         setTotalBorrowedBooks(data.items?.length || 0);
@@ -311,7 +311,7 @@ function MyLibraryContent() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load bookmarked books");
       setBookmarkedBooks(data.books || []);
-      
+
       // Only update total count when not searching
       if (!searchInput) {
         setTotalBookmarkedBooks(data.books?.length || 0);
@@ -505,7 +505,7 @@ function MyLibraryContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"
@@ -531,26 +531,29 @@ function MyLibraryContent() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 px-3 sm:px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                title="Upload PDF"
               >
                 <Upload className="h-4 w-4" />
-                {uploading ? "Uploading..." : "Upload PDF"}
+                <span className="hidden sm:inline">{uploading ? "Uploading..." : "Upload PDF"}</span>
               </button>
               <button
                 onClick={() => setShowScanner(true)}
                 disabled={uploading}
-                className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 px-3 sm:px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                title="Scan Barcode"
               >
                 <Camera className="h-4 w-4" />
-                Scan Barcode
+                <span className="hidden sm:inline">Scan Barcode</span>
               </button>
               <button
                 onClick={() => setShowManualForm(true)}
                 disabled={uploading}
-                className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-black px-3 sm:px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                title="Add Manually"
               >
                 <BookIcon className="h-4 w-4" />
-                Add Manually
+                <span className="hidden sm:inline">Add Manually</span>
               </button>
             </div>
           )}

@@ -18,7 +18,7 @@ export default async function StudentChatPage() {
   const navigationLinks = getStudentLinks();
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="h-[calc(100vh-4rem)] rounded-3xl border border-(--stroke) bg-white shadow-[0_2px_20px_rgba(0,0,0,0.03)] flex">

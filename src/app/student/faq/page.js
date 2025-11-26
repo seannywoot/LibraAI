@@ -18,12 +18,12 @@ export default async function StudentFAQPage() {
   const navigationLinks = getStudentLinks();
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-      <DashboardSidebar 
-        heading="LibraAI" 
-        links={navigationLinks} 
-        variant="light" 
-        SignOutComponent={SignOutButton} 
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+      <DashboardSidebar
+        heading="LibraAI"
+        links={navigationLinks}
+        variant="light"
+        SignOutComponent={SignOutButton}
       />
       <FAQContent />
     </div>

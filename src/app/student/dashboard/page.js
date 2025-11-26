@@ -153,7 +153,7 @@ export default function StudentDashboardPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
       <DashboardSidebar
         heading="LibraAI"
         links={navigationLinks}

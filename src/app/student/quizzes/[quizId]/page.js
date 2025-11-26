@@ -144,7 +144,7 @@ export default function QuizTakingPage({ params }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 pr-4 pl-4 lg:pr-6 lg:pl-[300px] py-4 lg:py-8">
+            <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
                 <DashboardSidebar
                     heading="LibraAI"
                     links={navigationLinks}
@@ -170,7 +170,7 @@ export default function QuizTakingPage({ params }) {
     const answeredCount = selectedAnswers.filter(a => a !== null).length;
 
     return (
-        <div className="min-h-screen bg-gray-50 pr-4 pl-4 lg:pr-6 lg:pl-[300px] py-4 lg:py-8">
+        <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
             <DashboardSidebar
                 heading="LibraAI"
                 links={navigationLinks}
