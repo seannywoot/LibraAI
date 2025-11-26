@@ -25,7 +25,7 @@ export default function UnansweredQueriesAnalytics() {
     if (status === "authenticated") {
       fetchAnalytics();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, showResolved]);
 
   const fetchAnalytics = async () => {
@@ -33,7 +33,7 @@ export default function UnansweredQueriesAnalytics() {
       setLoading(true);
       const response = await fetch(`/api/chat/analytics/unanswered?resolved=${showResolved}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setAnalytics(data);
       }
@@ -48,10 +48,10 @@ export default function UnansweredQueriesAnalytics() {
     try {
       setInspecting(true);
       setInspectionResult(null);
-      
+
       const response = await fetch('/api/admin/inspect-duplicates');
       const data = await response.json();
-      
+
       if (data.success) {
         setInspectionResult(data);
       } else {
@@ -73,13 +73,13 @@ export default function UnansweredQueriesAnalytics() {
     try {
       setCleaningUp(true);
       setCleanupResult(null);
-      
+
       const response = await fetch('/api/admin/cleanup-duplicates', {
         method: 'POST'
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setCleanupResult(data);
         // Refresh analytics after cleanup
@@ -111,7 +111,7 @@ export default function UnansweredQueriesAnalytics() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-8">
+    <div className="min-h-screen bg-zinc-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -224,21 +224,21 @@ export default function UnansweredQueriesAnalytics() {
                 {analytics.statistics.totalUnansweredQueries}
               </div>
             </div>
-            
+
             <div className="bg-white rounded-xl border border-zinc-200 p-6">
               <div className="text-sm text-zinc-600 mb-1">Total Attempts</div>
               <div className="text-3xl font-bold text-zinc-900">
                 {analytics.statistics.totalAttempts}
               </div>
             </div>
-            
+
             <div className="bg-white rounded-xl border border-zinc-200 p-6">
               <div className="text-sm text-zinc-600 mb-1">Avg Attempts/Query</div>
               <div className="text-3xl font-bold text-zinc-900">
                 {analytics.statistics.avgAttemptsPerQuery}
               </div>
             </div>
-            
+
             <div className="bg-white rounded-xl border border-zinc-200 p-6">
               <div className="text-sm text-zinc-600 mb-1">Users Affected</div>
               <div className="text-3xl font-bold text-zinc-900">
@@ -252,21 +252,19 @@ export default function UnansweredQueriesAnalytics() {
         <div className="mb-6 flex items-center gap-4">
           <button
             onClick={() => setShowResolved(false)}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              !showResolved
+            className={`px-4 py-2 rounded-lg font-medium transition ${!showResolved
                 ? "bg-zinc-900 text-white"
                 : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
-            }`}
+              }`}
           >
             Unresolved
           </button>
           <button
             onClick={() => setShowResolved(true)}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              showResolved
+            className={`px-4 py-2 rounded-lg font-medium transition ${showResolved
                 ? "bg-zinc-900 text-white"
                 : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
-            }`}
+              }`}
           >
             Resolved
           </button>
@@ -302,7 +300,7 @@ export default function UnansweredQueriesAnalytics() {
               Queries that users had to repeat most often
             </p>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-zinc-50 border-b border-zinc-200">
@@ -340,11 +338,11 @@ export default function UnansweredQueriesAnalytics() {
                     </td>
                   </tr>
                 ))}
-                
+
                 {analytics?.topUnanswered?.length === 0 && (
                   <tr>
                     <td colSpan="6" className="p-8 text-center text-zinc-500">
-                      {showResolved 
+                      {showResolved
                         ? "No resolved queries yet"
                         : "No unanswered queries - great job! 🎉"
                       }
@@ -367,7 +365,7 @@ export default function UnansweredQueriesAnalytics() {
                 Latest queries that users had to repeat
               </p>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-zinc-50 border-b border-zinc-200">
@@ -397,7 +395,7 @@ export default function UnansweredQueriesAnalytics() {
                       </td>
                     </tr>
                   ))}
-                  
+
                   {analytics?.recentUnanswered?.length === 0 && (
                     <tr>
                       <td colSpan="4" className="p-8 text-center text-zinc-500">

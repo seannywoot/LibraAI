@@ -12,9 +12,9 @@ import { ToastContainer, showToast } from "@/components/ToastContainer";
 function formatDate(dateStr) {
   if (!dateStr) return "—";
   const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", { 
-    month: "short", 
-    day: "numeric", 
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
     year: "numeric",
     timeZone: "Asia/Manila"
   });
@@ -123,7 +123,7 @@ export default function AdminTransactionsPage() {
         const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
         if (statusFilter) params.append("status", statusFilter);
         if (searchInput) params.append("search", searchInput);
-        
+
         const url = `/api/admin/transactions?${params}`;
         const res = await fetch(url, { cache: "no-store" });
         const data = await res.json().catch(() => ({}));
@@ -154,7 +154,7 @@ export default function AdminTransactionsPage() {
     try {
       const params = new URLSearchParams({ q: searchInput });
       if (statusFilter) params.append("status", statusFilter);
-      
+
       const res = await fetch(
         `/api/admin/transactions/suggestions?${params}`,
         { cache: "no-store" }
@@ -271,7 +271,7 @@ export default function AdminTransactionsPage() {
         throw new Error(data?.error || "Failed to update transaction");
       }
       showToast(data?.message || "Action completed", "success");
-      
+
       // For archive action, remove the item from the list dynamically
       if (action === "archive") {
         setItems((prevItems) => prevItems.filter((item) => item._id !== transactionId));
@@ -280,7 +280,7 @@ export default function AdminTransactionsPage() {
         // For other actions, refresh the list
         setRefreshKey((k) => k + 1);
       }
-      
+
       return { ok: true, message: data?.message };
     } catch (e) {
       showToast(e?.message || "Failed to update transaction", "error");
@@ -310,7 +310,7 @@ export default function AdminTransactionsPage() {
   async function submitReturn(event) {
     event.preventDefault();
     if (!returnTarget) return;
-    
+
     if (!bookCondition) {
       setReturnError("Please select a book condition.");
       return;
@@ -322,11 +322,11 @@ export default function AdminTransactionsPage() {
     }
 
     setReturnError("");
-    const result = await handleAction(returnTarget._id, "return", { 
-      bookCondition, 
-      conditionNotes: conditionNotes.trim() 
+    const result = await handleAction(returnTarget._id, "return", {
+      bookCondition,
+      conditionNotes: conditionNotes.trim()
     });
-    
+
     if (result?.ok) {
       closeReturnDialog();
     } else if (result?.error) {
@@ -337,11 +337,11 @@ export default function AdminTransactionsPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <ToastContainer position="top-right" />
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-6 border-b border-(--stroke) pb-6">
           <div className="flex items-end justify-between gap-4">
             <div className="space-y-2">
@@ -420,11 +420,10 @@ export default function AdminTransactionsPage() {
                   <button
                     key={idx}
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${
-                      idx === selectedSuggestionIndex
+                    className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${idx === selectedSuggestionIndex
                         ? "bg-zinc-100"
                         : "hover:bg-zinc-50"
-                    }`}
+                      }`}
                   >
                     <svg className="h-4 w-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       {suggestion.type === "book" ? (
@@ -522,13 +521,12 @@ export default function AdminTransactionsPage() {
                             {t.status === "returned" && t.bookCondition && (
                               <div className="mt-2">
                                 <span
-                                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                    t.bookCondition === "good"
+                                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${t.bookCondition === "good"
                                       ? "bg-emerald-100 text-emerald-800"
                                       : t.bookCondition === "fair"
-                                      ? "bg-amber-100 text-amber-800"
-                                      : "bg-rose-100 text-rose-800"
-                                  }`}
+                                        ? "bg-amber-100 text-amber-800"
+                                        : "bg-rose-100 text-rose-800"
+                                    }`}
                                 >
                                   {t.bookCondition === "good" && "✓"}
                                   {t.bookCondition === "fair" && "⚠"}
@@ -811,7 +809,7 @@ export default function AdminTransactionsPage() {
               </label>
 
               {returnError && <p className="text-xs text-rose-600">{returnError}</p>}
-              
+
               <div className="flex justify-end gap-2">
                 <button
                   type="button"

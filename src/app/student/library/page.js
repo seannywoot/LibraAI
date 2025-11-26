@@ -373,6 +373,14 @@ function MyLibraryContent() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("File size exceeds 10MB limit", "error");
+      // Reset input so user can try again
+      event.target.value = "";
+      return;
+    }
+
     setUploading(true);
     try {
       const formData = new FormData();

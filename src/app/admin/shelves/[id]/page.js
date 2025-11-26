@@ -53,13 +53,13 @@ export default function AdminShelfBooksPage() {
     try {
       const res = await fetch(`/api/admin/shelves/${shelfId}/books?page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
-      
+
       // Show 404 page if shelf not found or invalid ID
       if (res.status === 404 || (res.status === 400 && data?.error?.includes("Invalid"))) {
         router.push("/404");
         return;
       }
-      
+
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load books");
       setShelf(data.shelf);
       setItems(data.items || []);
@@ -74,10 +74,10 @@ export default function AdminShelfBooksPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="flex items-end justify-between gap-4 border-b border-(--stroke) pb-6">
           <div className="space-y-2">
             <button

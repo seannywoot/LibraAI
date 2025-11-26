@@ -23,15 +23,15 @@ export default function AdminSeedPage() {
     setFixIndexLoading(true);
     setError("");
     setFixIndexResult(null);
-    
+
     try {
       const res = await fetch("/api/admin/shelves/fix-index", { method: "POST" });
       const data = await res.json();
-      
+
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to fix index");
       }
-      
+
       setFixIndexResult(data);
     } catch (e) {
       setError(e?.message || "Unknown error");
@@ -44,15 +44,15 @@ export default function AdminSeedPage() {
     setCleanupLoading(true);
     setError("");
     setCleanupResult(null);
-    
+
     try {
       const res = await fetch("/api/admin/shelves/cleanup", { method: "POST" });
       const data = await res.json();
-      
+
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to cleanup shelves");
       }
-      
+
       setCleanupResult(data);
     } catch (e) {
       setError(e?.message || "Unknown error");
@@ -65,15 +65,15 @@ export default function AdminSeedPage() {
     setAuthorsLoading(true);
     setError("");
     setAuthorsResult(null);
-    
+
     try {
       const res = await fetch("/api/admin/authors/seed", { method: "POST" });
       const data = await res.json();
-      
+
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to seed authors");
       }
-      
+
       setAuthorsResult(data);
     } catch (e) {
       setError(e?.message || "Unknown error");
@@ -86,15 +86,15 @@ export default function AdminSeedPage() {
     setLoading(true);
     setError("");
     setResult(null);
-    
+
     try {
       const res = await fetch("/api/admin/books/seed", { method: "POST" });
       const data = await res.json();
-      
+
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to seed data");
       }
-      
+
       setResult(data);
     } catch (e) {
       setError(e?.message || "Unknown error");
@@ -104,15 +104,15 @@ export default function AdminSeedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
-      <DashboardSidebar 
-        heading="LibraAI" 
-        links={navigationLinks} 
-        variant="light" 
-        SignOutComponent={SignOutButton} 
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
+      <DashboardSidebar
+        heading="LibraAI"
+        links={navigationLinks}
+        variant="light"
+        SignOutComponent={SignOutButton}
       />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-2 border-b border-(--stroke) pb-6">
           <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Seed Database</h1>
@@ -127,7 +127,7 @@ export default function AdminSeedPage() {
             <p className="text-sm text-rose-700">
               If you&apos;re getting &quot;E11000 duplicate key error&quot;, click this button to fix the database index.
             </p>
-            
+
             <button
               onClick={handleFixIndex}
               disabled={fixIndexLoading}
@@ -142,7 +142,7 @@ export default function AdminSeedPage() {
             <p className="text-sm text-amber-700">
               Remove any invalid shelf entries with null or empty codes.
             </p>
-            
+
             <button
               onClick={handleCleanup}
               disabled={cleanupLoading}
@@ -165,7 +165,7 @@ export default function AdminSeedPage() {
             <p className="text-xs text-blue-600 italic">
               Note: Existing authors will be updated with bios if missing.
             </p>
-            
+
             <button
               onClick={handleSeedAuthors}
               disabled={authorsLoading}
@@ -188,7 +188,7 @@ export default function AdminSeedPage() {
             <p className="text-xs text-zinc-500 italic">
               Note: Existing books (by ISBN) will be updated, not duplicated.
             </p>
-            
+
             <button
               onClick={handleSeed}
               disabled={loading}
@@ -230,7 +230,7 @@ export default function AdminSeedPage() {
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 space-y-4">
               <h3 className="font-semibold text-blue-900">✅ Authors Seeded!</h3>
               <p className="text-sm text-blue-700">{authorsResult.message}</p>
-              
+
               <div className="rounded-lg bg-white p-4 border border-blue-200">
                 <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Authors</h4>
                 <div className="space-y-1 text-sm">
@@ -271,7 +271,7 @@ export default function AdminSeedPage() {
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 space-y-4">
               <h3 className="font-semibold text-emerald-900">Success!</h3>
               <p className="text-sm text-emerald-700">{result.message}</p>
-              
+
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="rounded-lg bg-white p-4 border border-emerald-200">
                   <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Books</h4>

@@ -71,9 +71,9 @@ export default function AdminShelvesPage() {
       const res = await fetch(`/api/admin/shelves?${params.toString()}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load shelves");
-      
+
       const shelvesData = data.items || [];
-      
+
       // Fetch book counts for each shelf
       const shelvesWithCounts = await Promise.all(
         shelvesData.map(async (shelf) => {
@@ -86,7 +86,7 @@ export default function AdminShelvesPage() {
           }
         })
       );
-      
+
       setItems(shelvesWithCounts);
       setTotal(data.total || 0);
     } catch (e) {
@@ -154,16 +154,16 @@ export default function AdminShelvesPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/admin/shelves", { 
-        method: "POST", 
-        headers: { "content-type": "application/json" }, 
-        body: JSON.stringify({ 
-          code: c, 
-          name: formData.name, 
-          location: loc, 
-          capacity: formData.capacity === "" ? null : Number(formData.capacity), 
-          notes: formData.notes 
-        }) 
+      const res = await fetch("/api/admin/shelves", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          code: c,
+          name: formData.name,
+          location: loc,
+          capacity: formData.capacity === "" ? null : Number(formData.capacity),
+          notes: formData.notes
+        })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Create failed");
@@ -173,7 +173,7 @@ export default function AdminShelvesPage() {
       setHasUnsavedChanges(false);
       initialFormDataRef.current = null;
       await load();
-    } catch (e) { 
+    } catch (e) {
       showToast(e?.message || "Failed to add shelf", "error");
     } finally {
       setSubmitting(false);
@@ -186,14 +186,14 @@ export default function AdminShelvesPage() {
     if (!c) return;
     setSubmitting(true);
     try {
-      const payload = { 
-        ...formData, 
-        capacity: formData.capacity === "" ? null : Number(formData.capacity) 
+      const payload = {
+        ...formData,
+        capacity: formData.capacity === "" ? null : Number(formData.capacity)
       };
-      const res = await fetch(`/api/admin/shelves/${editingShelf._id}`, { 
-        method: "PUT", 
-        headers: { "content-type": "application/json" }, 
-        body: JSON.stringify(payload) 
+      const res = await fetch(`/api/admin/shelves/${editingShelf._id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload)
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Update failed");
@@ -203,7 +203,7 @@ export default function AdminShelvesPage() {
       setHasUnsavedChanges(false);
       initialFormDataRef.current = null;
       await load();
-    } catch (e) { 
+    } catch (e) {
       showToast(e?.message || "Failed to update shelf", "error");
     } finally {
       setSubmitting(false);
@@ -221,7 +221,7 @@ export default function AdminShelvesPage() {
       showToast(successMessage, "success");
       setPendingDelete(null);
       await load();
-    } catch (e) { 
+    } catch (e) {
       showToast(e?.message || "Failed to delete shelf", "error");
     } finally {
       setDeletingId(null);
@@ -232,7 +232,7 @@ export default function AdminShelvesPage() {
   const isDeletingCurrent = pendingDelete ? deletingId === pendingDelete._id : false;
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <ToastContainer position="top-right" />
       <DashboardSidebar
         heading="Catalog — Shelves"
@@ -252,7 +252,7 @@ export default function AdminShelvesPage() {
         }}
       />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-6 border-b border-(--stroke) pb-6">
           <div className="flex items-end justify-between gap-4">
             <div className="space-y-2">
@@ -308,8 +308,8 @@ export default function AdminShelvesPage() {
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
             <h2 className="text-lg font-semibold text-zinc-900">No existing shelf</h2>
             <p className="text-sm text-zinc-600">
-              {searchInput 
-                ? "Try searching for other shelf codes or locations, or consult with the librarian for assistance." 
+              {searchInput
+                ? "Try searching for other shelf codes or locations, or consult with the librarian for assistance."
                 : "Click \"Add Shelf\" to add a new shelf to the system."}
             </p>
           </div>
@@ -350,9 +350,9 @@ export default function AdminShelvesPage() {
                         {shelf.notes && shelf.notes.length > 40 ? `${shelf.notes.substring(0, 40)}...` : shelf.notes || "—"}
                       </td>
                       <td className="px-4 py-3">
-                        <RowActions 
-                          onEdit={() => openEditModal(shelf)} 
-                          onDelete={() => setPendingDelete(shelf)} 
+                        <RowActions
+                          onEdit={() => openEditModal(shelf)}
+                          onDelete={() => setPendingDelete(shelf)}
                         />
                       </td>
                     </tr>

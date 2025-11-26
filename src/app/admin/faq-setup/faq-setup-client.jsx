@@ -201,7 +201,7 @@ export default function FAQSetupClient() {
   const isDeletingCurrent = pendingDelete ? deletingId === pendingDelete._id : false;
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"
@@ -219,7 +219,7 @@ export default function FAQSetupClient() {
         }}
       />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-6 border-b border-(--stroke) pb-6">
           <div className="flex items-end justify-between gap-4">
             <div className="space-y-2">

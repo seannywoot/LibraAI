@@ -83,7 +83,7 @@ export default function AdminBooksListPage() {
       try {
         const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
         if (searchInput) params.append("search", searchInput);
-        
+
         const res = await fetch(`/api/admin/books?${params}`, { cache: "no-store" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load books");
@@ -184,21 +184,21 @@ export default function AdminBooksListPage() {
         method: "DELETE",
       });
       const data = await res.json().catch(() => ({}));
-      
+
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Failed to delete book");
       }
 
       showToast("Book deleted successfully", "success");
       setPendingDelete(null);
-      
+
       // Reload the books list
       const reloadRes = await fetch(`/api/admin/books?page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
       const reloadData = await reloadRes.json().catch(() => ({}));
       if (reloadRes.ok && reloadData?.ok) {
         setItems(reloadData.items || []);
         setTotal(reloadData.total || 0);
-        
+
         // If current page is now empty and not the first page, go back one page
         if (reloadData.items.length === 0 && page > 1) {
           setPage(page - 1);
@@ -214,11 +214,11 @@ export default function AdminBooksListPage() {
   const isDeletingCurrent = pendingDelete ? deleting === pendingDelete._id : false;
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <ToastContainer />
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-6 border-b border-(--stroke) pb-6">
           <div className="flex items-end justify-between gap-4">
             <div className="space-y-2">
@@ -278,11 +278,10 @@ export default function AdminBooksListPage() {
                   <button
                     key={idx}
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${
-                      idx === selectedSuggestionIndex
+                    className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${idx === selectedSuggestionIndex
                         ? "bg-zinc-100"
                         : "hover:bg-zinc-50"
-                    }`}
+                      }`}
                   >
                     <svg className="h-4 w-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       {suggestion.type === "title" ? (

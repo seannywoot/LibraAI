@@ -65,14 +65,14 @@ export default function AdminAuthorsPage() {
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (searchInput) params.set("s", searchInput);
-      
+
       const res = await fetch(`/api/admin/authors?${params.toString()}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
-      
+
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load authors");
-      
+
       const authors = data.items || [];
-      
+
       // Fetch book counts for each author
       const authorsWithCounts = await Promise.all(
         authors.map(async (author) => {
@@ -85,7 +85,7 @@ export default function AdminAuthorsPage() {
           }
         })
       );
-      
+
       setItems(authorsWithCounts);
       setTotal(data.total || 0);
     } catch (e) {
@@ -145,10 +145,10 @@ export default function AdminAuthorsPage() {
     if (!n) return;
     setSubmitting(true);
     try {
-      const res = await fetch("/api/admin/authors", { 
-        method: "POST", 
-        headers: { "content-type": "application/json" }, 
-        body: JSON.stringify({ name: n, bio: formData.bio }) 
+      const res = await fetch("/api/admin/authors", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: n, bio: formData.bio })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Create failed");
@@ -158,7 +158,7 @@ export default function AdminAuthorsPage() {
       setHasUnsavedChanges(false);
       initialFormDataRef.current = null;
       await load();
-    } catch (e) { 
+    } catch (e) {
       showToast(e?.message || "Failed to add author", "error");
     } finally {
       setSubmitting(false);
@@ -171,10 +171,10 @@ export default function AdminAuthorsPage() {
     if (!n) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/admin/authors/${editingAuthor._id}`, { 
-        method: "PUT", 
-        headers: { "content-type": "application/json" }, 
-        body: JSON.stringify({ name: n, bio: formData.bio }) 
+      const res = await fetch(`/api/admin/authors/${editingAuthor._id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: n, bio: formData.bio })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Update failed");
@@ -184,7 +184,7 @@ export default function AdminAuthorsPage() {
       setHasUnsavedChanges(false);
       initialFormDataRef.current = null;
       await load();
-    } catch (e) { 
+    } catch (e) {
       showToast(e?.message || "Failed to update author", "error");
     } finally {
       setSubmitting(false);
@@ -201,7 +201,7 @@ export default function AdminAuthorsPage() {
       showToast("Author deleted successfully", "success");
       setPendingDelete(null);
       await load();
-    } catch (e) { 
+    } catch (e) {
       showToast(e?.message || "Failed to delete author", "error");
     } finally {
       setDeletingId(null);
@@ -212,13 +212,13 @@ export default function AdminAuthorsPage() {
   const isDeletingCurrent = pendingDelete ? deletingId === pendingDelete._id : false;
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <ToastContainer position="top-right" />
-      <DashboardSidebar 
-        heading="LibraAI" 
-        links={navigationLinks} 
-        variant="light" 
-        SignOutComponent={SignOutButton} 
+      <DashboardSidebar
+        heading="LibraAI"
+        links={navigationLinks}
+        variant="light"
+        SignOutComponent={SignOutButton}
         onNavigate={(callback) => {
           if (hasUnsavedChanges) {
             setPendingCloseAction(() => callback);
@@ -227,10 +227,10 @@ export default function AdminAuthorsPage() {
           }
           callback();
           return true;
-        }} 
+        }}
       />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-6 border-b border-(--stroke) pb-6">
           <div className="flex items-end justify-between gap-4">
             <div className="space-y-2">
@@ -286,8 +286,8 @@ export default function AdminAuthorsPage() {
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
             <h2 className="text-lg font-semibold text-zinc-900">No existing author</h2>
             <p className="text-sm text-zinc-600">
-              {searchInput 
-                ? "Try searching for other authors or consult with the librarian for assistance." 
+              {searchInput
+                ? "Try searching for other authors or consult with the librarian for assistance."
                 : "Click \"Add Author\" to add a new author to the system."}
             </p>
           </div>

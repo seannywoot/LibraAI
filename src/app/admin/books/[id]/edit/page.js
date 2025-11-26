@@ -61,17 +61,17 @@ export default function AdminEditBookPage() {
           fetch("/api/admin/shelves?pageSize=100", { cache: "no-store" }),
           fetch("/api/admin/authors?pageSize=100", { cache: "no-store" })
         ]);
-        
+
         console.log("Book response status:", bookRes.status);
         const bookData = await bookRes.json().catch(() => ({}));
         console.log("Book data:", bookData);
-        
+
         // Show 404 page if book not found or invalid ID
         if (bookRes.status === 404 || (bookRes.status === 400 && bookData?.error?.includes("Invalid"))) {
           router.push("/404");
           return;
         }
-        
+
         if (bookRes.ok && bookData?.ok && bookData?.book) {
           const book = bookData.book;
           console.log("Setting book data:", book);
@@ -88,7 +88,7 @@ export default function AdminEditBookPage() {
           setDescription(book.description || "");
           setStatus(book.status || "available");
           setLoanPolicy(book.loanPolicy || "standard");
-          
+
           // Store initial data for comparison
           initialDataRef.current = {
             title: book.title || "",
@@ -109,12 +109,12 @@ export default function AdminEditBookPage() {
           console.error("Failed to load book:", bookData);
           showToast(bookData?.error || "Failed to load book details", "error");
         }
-        
+
         const shelvesData = await shelvesRes.json().catch(() => ({}));
         if (shelvesRes.ok && shelvesData?.ok) {
           setShelves(shelvesData.items || []);
         }
-        
+
         const authorsData = await authorsRes.json().catch(() => ({}));
         if (authorsRes.ok && authorsData?.ok) {
           setAuthors(authorsData.items || []);
@@ -225,7 +225,7 @@ export default function AdminEditBookPage() {
       });
 
       const uploadData = await uploadRes.json().catch(() => ({}));
-      
+
       if (!uploadRes.ok || !uploadData?.ok) {
         throw new Error(uploadData?.error || "Failed to upload PDF");
       }
@@ -243,7 +243,7 @@ export default function AdminEditBookPage() {
       });
 
       const metadataData = await metadataRes.json().catch(() => ({}));
-      
+
       if (metadataRes.ok && metadataData?.ok && metadataData?.metadata) {
         showToast("PDF uploaded successfully! Metadata extracted for verification.", "success");
       } else {
@@ -305,9 +305,9 @@ export default function AdminEditBookPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+      <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
         <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} onNavigate={handleNavigation} />
-        <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+        <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
           <p className="text-zinc-600">Loading book details...</p>
         </main>
       </div>
@@ -315,10 +315,10 @@ export default function AdminEditBookPage() {
   }
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} onNavigate={handleNavigation} />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-3 border-b border-(--stroke) pb-6">
           <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
           <div className="space-y-2">
@@ -688,9 +688,9 @@ export default function AdminEditBookPage() {
           </div>
         </form>
       </main>
-      
+
       <ToastContainer position="top-right" />
-      
+
       <UnsavedChangesDialog
         hasUnsavedChanges={hasUnsavedChanges}
         showDialog={showDialog}

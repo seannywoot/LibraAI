@@ -59,12 +59,12 @@ export default function AdminAddBookPage() {
           fetch("/api/admin/shelves?pageSize=100", { cache: "no-store" }),
           fetch("/api/admin/authors?pageSize=100", { cache: "no-store" })
         ]);
-        
+
         const shelvesData = await shelvesRes.json().catch(() => ({}));
         if (shelvesRes.ok && shelvesData?.ok) {
           setShelves(shelvesData.items || []);
         }
-        
+
         const authorsData = await authorsRes.json().catch(() => ({}));
         if (authorsRes.ok && authorsData?.ok) {
           setAuthors(authorsData.items || []);
@@ -437,7 +437,7 @@ export default function AdminAddBookPage() {
     // Get current values from the form inputs directly
     const currentIsbn = isbn.trim();
     const currentTitle = title.trim();
-    
+
     if (!currentIsbn && !currentTitle) {
       showToast("Please enter ISBN or Title to fetch book details", "error");
       return;
@@ -446,8 +446,8 @@ export default function AdminAddBookPage() {
     setFetchingFromGoogle(true);
     try {
       // Build search query - prefer ISBN for accuracy
-      const searchQuery = currentIsbn 
-        ? `isbn:${currentIsbn}` 
+      const searchQuery = currentIsbn
+        ? `isbn:${currentIsbn}`
         : encodeURIComponent(currentTitle);
 
       console.log('Fetching from Google Books with query:', searchQuery);
@@ -469,11 +469,11 @@ export default function AdminAddBookPage() {
       }
 
       const volumeInfo = googleData.items[0].volumeInfo;
-      
+
       // Extract and process categories from Google Books
       let googleCategories = [];
       if (volumeInfo.categories && Array.isArray(volumeInfo.categories)) {
-        googleCategories = volumeInfo.categories.flatMap(cat => 
+        googleCategories = volumeInfo.categories.flatMap(cat =>
           cat.split('/').map(c => c.trim())
         ).filter(c => c.length > 0);
         googleCategories = [...new Set(googleCategories)];
@@ -508,29 +508,29 @@ export default function AdminAddBookPage() {
         setDescription(volumeInfo.description);
         setHasUnsavedChanges(true);
       }
-      
+
       // Map Google Books categories to our categories (always update if found)
       if (googleCategories.length > 0) {
         const mappedCategories = [];
         const extractedTags = [];
-        
+
         for (const cat of googleCategories) {
           // Check if it matches our predefined categories
           const matchedCategory = PREDEFINED_CATEGORIES.find(
-            predef => cat.toLowerCase().includes(predef.toLowerCase()) || 
-                     predef.toLowerCase().includes(cat.toLowerCase())
+            predef => cat.toLowerCase().includes(predef.toLowerCase()) ||
+              predef.toLowerCase().includes(cat.toLowerCase())
           );
-          
+
           if (matchedCategory && !mappedCategories.includes(matchedCategory)) {
             mappedCategories.push(matchedCategory);
           }
-          
+
           // Also add as potential tag if it's more specific
           if (cat.length > 3 && !extractedTags.includes(cat)) {
             extractedTags.push(cat);
           }
         }
-        
+
         // Set categories (always overwrite when fetching from Google)
         if (mappedCategories.length > 0) {
           setCategories(mappedCategories);
@@ -540,14 +540,14 @@ export default function AdminAddBookPage() {
           setCategories(['Non-Fiction']);
           setHasUnsavedChanges(true);
         }
-        
+
         // Set tags from Google Books categories
         if (extractedTags.length > 0) {
           setTags(extractedTags.slice(0, 10)); // Limit to 10 tags
           setHasUnsavedChanges(true);
         }
       }
-      
+
       // Store cover image URL
       if (volumeInfo.imageLinks?.thumbnail) {
         setCoverImage(volumeInfo.imageLinks.thumbnail);
@@ -580,7 +580,7 @@ export default function AdminAddBookPage() {
       });
 
       const uploadData = await uploadRes.json().catch(() => ({}));
-      
+
       if (!uploadRes.ok || !uploadData?.ok) {
         throw new Error(uploadData?.error || "Failed to upload PDF");
       }
@@ -598,12 +598,12 @@ export default function AdminAddBookPage() {
       });
 
       const metadataData = await metadataRes.json().catch(() => ({}));
-      
+
       let extractedTitle = "";
-      
+
       if (metadataRes.ok && metadataData?.ok && metadataData?.metadata) {
         const { metadata } = metadataData;
-        
+
         // Fill form fields with extracted metadata (only if fields are empty)
         if (metadata.title && !title) {
           setTitle(metadata.title);
@@ -642,16 +642,16 @@ export default function AdminAddBookPage() {
 
           if (googleData.items && googleData.items.length > 0) {
             const volumeInfo = googleData.items[0].volumeInfo;
-            
+
             // Extract and process categories from Google Books
             let googleCategories = [];
             if (volumeInfo.categories && Array.isArray(volumeInfo.categories)) {
-              googleCategories = volumeInfo.categories.flatMap(cat => 
+              googleCategories = volumeInfo.categories.flatMap(cat =>
                 cat.split('/').map(c => c.trim())
               ).filter(c => c.length > 0);
               googleCategories = [...new Set(googleCategories)];
             }
-            
+
             // Fill form fields with Google Books data (only if fields are empty)
             if (volumeInfo.title && !title) {
               setTitle(volumeInfo.title);
@@ -681,29 +681,29 @@ export default function AdminAddBookPage() {
               setDescription(volumeInfo.description);
               setHasUnsavedChanges(true);
             }
-            
+
             // Map Google Books categories to our categories (only if our categories state is empty)
             if (googleCategories.length > 0 && categories.length === 0) {
               const mappedCategories = [];
               const extractedTags = [];
-              
+
               for (const cat of googleCategories) {
                 // Check if it matches our predefined categories
                 const matchedCategory = PREDEFINED_CATEGORIES.find(
-                  predef => cat.toLowerCase().includes(predef.toLowerCase()) || 
-                           predef.toLowerCase().includes(cat.toLowerCase())
+                  predef => cat.toLowerCase().includes(predef.toLowerCase()) ||
+                    predef.toLowerCase().includes(cat.toLowerCase())
                 );
-                
+
                 if (matchedCategory && !mappedCategories.includes(matchedCategory)) {
                   mappedCategories.push(matchedCategory);
                 }
-                
+
                 // Also add as potential tag if it's more specific
                 if (cat.length > 3 && !extractedTags.includes(cat)) {
                   extractedTags.push(cat);
                 }
               }
-              
+
               // Set categories (only if empty)
               if (mappedCategories.length > 0) {
                 setCategories(mappedCategories);
@@ -713,19 +713,19 @@ export default function AdminAddBookPage() {
                 setCategories(['Non-Fiction']);
                 setHasUnsavedChanges(true);
               }
-              
+
               // Set tags from Google Books categories (only if empty)
               if (extractedTags.length > 0 && tags.length === 0) {
                 setTags(extractedTags.slice(0, 10)); // Limit to 10 tags
                 setHasUnsavedChanges(true);
               }
             }
-            
+
             // Store cover image URL
             if (volumeInfo.imageLinks?.thumbnail && !coverImage) {
               setCoverImage(volumeInfo.imageLinks.thumbnail);
             }
-            
+
             console.log(`Found book: "${volumeInfo.title}" by ${volumeInfo.authors?.[0] || 'Unknown'}`);
             showToast("PDF uploaded and enriched with Google Books data!", "success");
           } else {
@@ -815,10 +815,10 @@ export default function AdminAddBookPage() {
   }
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} onNavigate={handleNavigation} />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-3 border-b border-(--stroke) pb-6">
           <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
           <div className="space-y-2">
@@ -855,12 +855,12 @@ export default function AdminAddBookPage() {
                 )}
               </button>
             </div>
-            
+
             {coverImage && (
               <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-zinc-200">
-                <img 
-                  src={coverImage} 
-                  alt="Book cover preview" 
+                <img
+                  src={coverImage}
+                  alt="Book cover preview"
                   className="w-20 h-28 object-cover rounded shadow-sm"
                 />
                 <div className="flex-1">
@@ -878,7 +878,7 @@ export default function AdminAddBookPage() {
                 </button>
               </div>
             )}
-            
+
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
@@ -927,7 +927,7 @@ export default function AdminAddBookPage() {
                   )}
                 </label>
               )}
-              
+
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
                   Title <span className="text-rose-600">*</span>
@@ -1177,8 +1177,8 @@ export default function AdminAddBookPage() {
                     {showCategorySuggestions && categorySearch && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
                         {PREDEFINED_CATEGORIES
-                          .filter(cat => 
-                            !categories.includes(cat) && 
+                          .filter(cat =>
+                            !categories.includes(cat) &&
                             cat.toLowerCase().includes(categorySearch.toLowerCase())
                           )
                           .slice(0, 10)
@@ -1197,14 +1197,14 @@ export default function AdminAddBookPage() {
                               {cat}
                             </button>
                           ))}
-                        {PREDEFINED_CATEGORIES.filter(cat => 
-                          !categories.includes(cat) && 
+                        {PREDEFINED_CATEGORIES.filter(cat =>
+                          !categories.includes(cat) &&
                           cat.toLowerCase().includes(categorySearch.toLowerCase())
                         ).length === 0 && (
-                          <div className="px-4 py-2 text-sm text-zinc-500">
-                            No categories found
-                          </div>
-                        )}
+                            <div className="px-4 py-2 text-sm text-zinc-500">
+                              No categories found
+                            </div>
+                          )}
                       </div>
                     )}
                   </div>
@@ -1259,8 +1259,8 @@ export default function AdminAddBookPage() {
                     {showTagSuggestions && tagSearch && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
                         {PREDEFINED_TAGS
-                          .filter(tag => 
-                            !tags.includes(tag) && 
+                          .filter(tag =>
+                            !tags.includes(tag) &&
                             tag.toLowerCase().includes(tagSearch.toLowerCase())
                           )
                           .slice(0, 10)
@@ -1279,14 +1279,14 @@ export default function AdminAddBookPage() {
                               {tag}
                             </button>
                           ))}
-                        {PREDEFINED_TAGS.filter(tag => 
-                          !tags.includes(tag) && 
+                        {PREDEFINED_TAGS.filter(tag =>
+                          !tags.includes(tag) &&
                           tag.toLowerCase().includes(tagSearch.toLowerCase())
                         ).length === 0 && (
-                          <div className="px-4 py-2 text-sm text-zinc-500">
-                            No tags found
-                          </div>
-                        )}
+                            <div className="px-4 py-2 text-sm text-zinc-500">
+                              No tags found
+                            </div>
+                          )}
                       </div>
                     )}
                   </div>
@@ -1373,9 +1373,9 @@ export default function AdminAddBookPage() {
           </div>
         </form>
       </main>
-      
+
       <ToastContainer position="top-right" />
-      
+
       <UnsavedChangesDialog
         hasUnsavedChanges={hasUnsavedChanges}
         showDialog={showDialog}

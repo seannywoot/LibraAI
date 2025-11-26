@@ -52,7 +52,7 @@ export default function SecurityPage() {
     try {
       setError("");
       setSuccessMessage("");
-      
+
       const response = await fetch("/api/admin/security/locked-accounts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -105,7 +105,7 @@ export default function SecurityPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-zinc-900">Locked Accounts</h2>
           <button
@@ -209,6 +209,6 @@ export default function SecurityPage() {
           </div>
         </div>
       </main>
-    </div>
+    </div >
   );
 }

@@ -41,13 +41,13 @@ export default function AdminProfilePage() {
   useEffect(() => {
     const loadPreferences = async () => {
       if (preferencesLoadedRef.current) return;
-      
+
       try {
         const res = await fetch("/api/user/profile");
         const data = await res.json().catch(() => ({}));
         if (data?.ok && data?.user) {
           const user = data.user;
-          
+
           // Update local state
           if (user.name) {
             setName(user.name);
@@ -55,21 +55,21 @@ export default function AdminProfilePage() {
           if (typeof user.emailNotifications === "boolean") {
             setEmailNotifications(user.emailNotifications);
           }
-          
+
           // Update context so other components get the data
           const prefs = {
             name: user.name || "",
             emailNotifications: user.emailNotifications ?? true,
           };
           updatePreferences(prefs);
-          
+
           // Store in localStorage for cross-tab sync
           try {
             localStorage.setItem("userPreferences", JSON.stringify(prefs));
           } catch (err) {
             // Ignore storage errors
           }
-          
+
           preferencesLoadedRef.current = true;
         }
       } catch (err) {
@@ -97,10 +97,10 @@ export default function AdminProfilePage() {
 
   const handleDarkModeChange = async (nextValue) => {
     const newTheme = nextValue ? "dark" : "light";
-    
+
     // Update theme immediately in UI and localStorage
     setDarkModePreference(nextValue, { persist: true });
-    
+
     // Save to database in background (session will sync automatically)
     try {
       await fetch("/api/user/profile", {
@@ -116,7 +116,7 @@ export default function AdminProfilePage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     isEditingRef.current = true;
-    
+
     try {
       const payload = { name, emailNotifications };
 
@@ -151,10 +151,10 @@ export default function AdminProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-4 lg:p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
         <header className="space-y-3 border-b border-(--stroke) pb-6">
           <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
           <div className="space-y-2">
