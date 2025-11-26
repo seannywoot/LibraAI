@@ -47,7 +47,7 @@ const VARIANTS = {
     navBackground: "border border-(--stroke) bg-(--bg-1)",
     defaultLink:
       "text-(--subtext) hover:bg-orange-50 hover:text-orange-600",
-    activeLink: "bg-orange-50 text-orange-600",
+    activeLink: "bg-(--sidebar-active-bg) text-(--sidebar-active-text)",
     subtleText: "text-(--subtext)",
     divider: "border-(--stroke)",
     signOutVariant:

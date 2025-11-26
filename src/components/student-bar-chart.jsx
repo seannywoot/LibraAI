@@ -23,7 +23,7 @@ export const description = "A bar chart showing favorite categories"
 const chartConfig = {
     views: {
         label: "Views",
-        color: "#ce6411",
+        color: "#C86F26",
     },
 }
 
@@ -80,11 +80,13 @@ export function ChartBarDefault({ favoriteCategories = [] }) {
                             tickMargin={10}
                             axisLine={false}
                             tickFormatter={(value) => value.length > 12 ? value.slice(0, 12) + '...' : value}
+                            tick={{ fill: 'var(--text-primary)' }}
                         />
                         <YAxis
                             tickLine={false}
                             axisLine={false}
                             tickFormatter={(value) => `${value}`}
+                            tick={{ fill: 'var(--text-primary)' }}
                         />
                         <ChartTooltip
                             cursor={false}
