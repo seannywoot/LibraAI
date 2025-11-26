@@ -282,111 +282,137 @@ export default function StudentAuthorBooksPage() {
                   <Link
                     key={book._id}
                     href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
-                    className="flex flex-col sm:flex-row items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow"
+                    className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                   >
-                    {/* Book Cover */}
-                    <div className="w-full sm:w-24 h-48 sm:h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden self-center sm:self-start">
-                      {book.coverImage || book.coverImageUrl || book.thumbnail ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={book.coverImage || book.coverImageUrl || book.thumbnail}
-                          alt={`Cover of ${book.title}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
-                          }}
-                        />
-                      ) : (
-                        <span>No Cover</span>
-                      )}
-                    </div>
-
-                    {/* Book Details */}
-                    <div className="flex-1 min-w-0 w-full">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
-                        {book.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-2">
-                        by {book.author}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-3">
-                        {book.year && <span>Published: {book.year}</span>}
-                        {book.year && book.publisher && <span className="hidden sm:inline">|</span>}
-                        {book.publisher && <span>{book.publisher}</span>}
-                        {book.format && (
+                    <div className="flex gap-6">
+                      {/* Book Cover */}
+                      <div className="w-24 h-32 shrink-0 rounded bg-gray-100 flex flex-col items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                        {book.coverImage || book.coverImageUrl || book.thumbnail ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={book.coverImage || book.coverImageUrl || book.thumbnail}
+                            alt={`Cover of ${book.title}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              const parent = e.target.parentElement;
+                              parent.innerHTML = '<svg class="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg><span class="text-xs text-gray-400">No Cover</span>';
+                            }}
+                          />
+                        ) : (
                           <>
-                            <span className="hidden sm:inline">|</span>
-                            <span className="font-medium">{book.format}</span>
+                            <BookIcon className="w-8 h-8 mb-1" />
+                            <span>No Cover</span>
                           </>
                         )}
                       </div>
 
-                      {/* Status and Actions */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
-                        <div className="flex items-center gap-3">
-                          <StatusChip status={book.status} />
-                          {book.isbn && (
-                            <span className="text-sm text-gray-500">
-                              ISBN: {book.isbn}
-                            </span>
+                      {/* Book Details */}
+                      <div className="flex-1 min-w-0 w-full">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                          {book.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-2">
+                          by {book.author}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-3">
+                          {book.year && <span>Published: {book.year}</span>}
+                          {book.year && book.publisher && <span className="hidden sm:inline">|</span>}
+                          {book.publisher && <span>{book.publisher}</span>}
+                          {book.format && (
+                            <>
+                              <span className="hidden sm:inline">|</span>
+                              <span className="font-medium">{book.format}</span>
+                            </>
                           )}
                         </div>
 
-                        <div
-                          className="flex items-center gap-3 w-full sm:w-auto"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                        >
-                          {book.status === "available" && !["reference-only", "staff-only"].includes(book.loanPolicy || "") ? (
-                            <BorrowConfirmButton
-                              onConfirm={() => handleBorrow(book._id)}
-                              disabled={lockedByOther}
-                              busy={isBorrowingThis}
-                              className="flex-1 sm:flex-none justify-center rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                              borrowLabel="Borrow"
-                              confirmingLabel="Confirm?"
-                              confirmingTitle="Submit Borrow Request"
-                              confirmingMessage="This sends a borrow request to the librarian for approval."
-                              confirmButtonLabel="Submit Request"
-                              busyLabel="Borrowing..."
-                            />
-                          ) : book.status === "reserved" && book.reservedForCurrentUser ? (
-                            <span className="text-sm font-medium text-gray-500">Awaiting approval</span>
-                          ) : book.status === "reserved" ? (
-                            <button
-                              disabled
-                              className="flex-1 sm:flex-none rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
-                            >
-                              Reserved
-                            </button>
-                          ) : book.status === "checked-out" ? (
-                            <button
-                              disabled
-                              className="flex-1 sm:flex-none rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
-                            >
-                              Unavailable
-                            </button>
-                          ) : book.loanPolicy === "reference-only" ? (
-                            <span className="text-sm text-gray-500">Reference only</span>
-                          ) : book.loanPolicy === "staff-only" ? (
-                            <span className="text-sm text-gray-500">Staff only</span>
-                          ) : null}
+                        {/* Description */}
+                        {book.description && (
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                            {book.description}
+                          </p>
+                        )}
 
-                          {/* Bookmark Button */}
-                          <button
-                            onClick={(e) => handleToggleBookmark(book._id, e)}
-                            disabled={isBookmarkingThis}
-                            className={`p-2 rounded-full transition-colors ${isBookmarked
-                              ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                              : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                              } disabled:opacity-50`}
-                            title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+                        {/* Status and Actions */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
+                          <div className="flex items-center gap-3">
+                            <StatusChip status={book.status} />
+                            {book.isbn && (
+                              <span className="text-sm text-gray-500">
+                                ISBN: {book.isbn}
+                              </span>
+                            )}
+                          </div>
+
+                          <div
+                            className="flex items-center gap-3 w-full sm:w-auto"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
                           >
-                            <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} />
-                          </button>
+                            {book.format === "eBook" && book.ebookUrl ? (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const isPdfId = /^[a-f\d]{24}$/i.test(book.ebookUrl);
+                                  const url = isPdfId ? `/api/ebooks/${book.ebookUrl}` : book.ebookUrl;
+                                  window.open(url, "_blank", "noopener,noreferrer");
+                                }}
+                                className="flex-1 sm:flex-none justify-center rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+                              >
+                                Access
+                              </button>
+                            ) : book.status === "available" && !["reference-only", "staff-only"].includes(book.loanPolicy || "") ? (
+                              <BorrowConfirmButton
+                                onConfirm={() => handleBorrow(book._id)}
+                                disabled={lockedByOther}
+                                busy={isBorrowingThis}
+                                className="flex-1 sm:flex-none justify-center rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                                borrowLabel="Borrow"
+                                confirmingLabel="Confirm?"
+                                confirmingTitle="Submit Borrow Request"
+                                confirmingMessage="This sends a borrow request to the librarian for approval."
+                                confirmButtonLabel="Submit Request"
+                                busyLabel="Borrowing..."
+                              />
+                            ) : book.status === "reserved" && book.reservedForCurrentUser ? (
+                              <span className="text-sm font-medium text-gray-500">Awaiting approval</span>
+                            ) : book.status === "reserved" ? (
+                              <button
+                                disabled
+                                className="flex-1 sm:flex-none rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
+                              >
+                                Reserved
+                              </button>
+                            ) : book.status === "checked-out" ? (
+                              <button
+                                disabled
+                                className="flex-1 sm:flex-none rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
+                              >
+                                Unavailable
+                              </button>
+                            ) : book.loanPolicy === "reference-only" ? (
+                              <span className="text-sm text-gray-500">Reference only</span>
+                            ) : book.loanPolicy === "staff-only" ? (
+                              <span className="text-sm text-gray-500">Staff only</span>
+                            ) : null}
+
+                            {/* Bookmark Button */}
+                            <button
+                              onClick={(e) => handleToggleBookmark(book._id, e)}
+                              disabled={isBookmarkingThis}
+                              className={`p-2 rounded-full transition-colors ${isBookmarked
+                                ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                                : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                                } disabled:opacity-50`}
+                              title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
+                            >
+                              <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
