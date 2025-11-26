@@ -1,5 +1,4 @@
 import { getServerSession } from "next-auth";
-import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import ChatLogsClient from "./chat-logs-client";
