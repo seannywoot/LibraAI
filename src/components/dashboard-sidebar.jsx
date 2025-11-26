@@ -221,7 +221,7 @@ export default function DashboardSidebar({
             aria-haspopup="menu"
             aria-expanded={open ? "true" : "false"}
           >
-            <span className="flex items-center gap-3">
+            <span className="flex flex-1 min-w-0 items-center gap-3">
               {/* Simple avatar using initial */}
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-(--bg-2) text-(--text) font-semibold">
                 {displayName.slice(0, 1)}

@@ -104,11 +104,13 @@ function parseContent(html) {
       case 'div':  // Handle div tags like paragraphs
         const pSegments = parseInlineFormatting(node);
         if (pSegments.length > 0 && pSegments.some(s => s.text.trim())) {
-          // Check if this paragraph/div contains a heading that should be parsed
+          // Check if this paragraph/div contains a heading or list that should be parsed
           const hasHeading = node.querySelector('h1, h2, h3');
           const hasCode = node.querySelector('pre, code');
-          if (hasHeading || hasCode) {
-            // Process children separately to catch nested headings/code
+          const hasList = node.querySelector('ul, ol');
+
+          if (hasHeading || hasCode || hasList) {
+            // Process children separately to catch nested headings/code/lists
             Array.from(node.childNodes).forEach(child => processNode(child));
           } else {
             blocks.push({ type: 'p', segments: pSegments });

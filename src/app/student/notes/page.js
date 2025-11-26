@@ -113,8 +113,10 @@ export default function NotesPage() {
     if (!content) return "";
     const temp = document.createElement("div");
     temp.innerHTML = content;
-    let text = temp.textContent || temp.innerText || "";
-    text = text.replace(/\s+/g, " ").trim();
+    // Use innerText to capture visual line breaks (e.g. <br>, <p>) while ignoring source whitespace
+    let text = temp.innerText || temp.textContent || "";
+    // Preserve newlines but collapse consecutive spaces (not newlines)
+    text = text.replace(/[^\S\n]+/g, " ").trim();
     return text.substring(0, 150) + (text.length > 150 ? "..." : "");
   }
 
@@ -206,7 +208,7 @@ export default function NotesPage() {
                 </div>
 
                 {note.content && (
-                  <p className="text-sm text-gray-600 line-clamp-3 mb-3 flex-1">
+                  <p className="text-sm text-gray-600 line-clamp-3 mb-3 flex-1" style={{ whiteSpace: "pre-wrap" }}>
                     {getPreview(note.content)}
                   </p>
                 )}

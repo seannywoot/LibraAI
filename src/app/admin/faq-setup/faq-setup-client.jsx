@@ -31,7 +31,7 @@ export default function FAQSetupClient() {
 
   useEffect(() => {
     fetchFAQs();
-    
+
     // Check if URL has #add hash to auto-open the add modal
     if (window.location.hash === "#add") {
       openAddModal();
@@ -219,34 +219,30 @@ export default function FAQSetupClient() {
         }}
       />
 
-      <main className="max-w-6xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold text-zinc-800 mb-2">
-              FAQ Management
-            </h1>
-            <p className="text-zinc-600">
-              Manage FAQ database and add new questions
-            </p>
+      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+        <header className="space-y-6 border-b border-(--stroke) pb-6">
+          <div className="flex items-end justify-between gap-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Admin</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">FAQ Management</h1>
+              <p className="text-sm text-zinc-600">Manage FAQ database and add new questions.</p>
+            </div>
+            <button
+              onClick={openAddModal}
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
+            >
+              <Plus className="h-4 w-4" />
+              Add New FAQ
+            </button>
           </div>
-          <button
-            onClick={openAddModal}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 transition"
-          >
-            <Plus className="h-4 w-4" />
-            Add New FAQ
-          </button>
-        </div>
+        </header>
 
         {/* Existing FAQs */}
-        <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
-          <div className="p-6 border-b border-zinc-200">
-            <h2 className="text-lg font-semibold text-zinc-800">Existing FAQs</h2>
-          </div>
+        <section className="space-y-4">
           <div className="divide-y divide-zinc-100">
             {faqs.length > 0 ? (
               faqs.map((faq) => (
-                <div key={faq._id} className="p-6 hover:bg-zinc-50 transition-colors">
+                <div key={faq._id} className="py-6 first:pt-0 hover:bg-zinc-50 transition-colors -mx-4 px-4 rounded-xl">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
@@ -287,11 +283,11 @@ export default function FAQSetupClient() {
               ))
             ) : (
               <div className="p-12 text-center text-zinc-500">
-                <p>No FAQs found. Click &quot;Add New FAQ&quot; or &quot;Seed Database&quot; to get started.</p>
+                <p>No FAQs found. Click "Add New FAQ" or "Seed Database" to get started.</p>
               </div>
             )}
           </div>
-        </div>
+        </section>
       </main>
 
       {/* Add/Edit Modal */}
