@@ -290,8 +290,8 @@ function AuthContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 py-8 sm:px-6 sm:py-12 lg:px-8 text-zinc-900">
-      <div className="flex w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 md:flex-row">
+    <div className="flex h-screen w-screen items-center justify-center bg-zinc-100 px-4 sm:px-6 lg:px-8 text-zinc-900 overflow-hidden">
+      <div className="flex w-full max-w-6xl max-h-[90vh] flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 md:flex-row">
         <section className="relative hidden w-full md:max-w-xs lg:max-w-sm flex-col justify-between bg-zinc-900 p-10 text-zinc-100 md:flex">
           <div className="absolute inset-0 bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900" aria-hidden />
           <div className="relative z-10">
@@ -322,7 +322,7 @@ function AuthContent() {
           </p>
         </section>
 
-        <main className="flex w-full flex-1 flex-col justify-center px-6 py-8 sm:px-10 sm:py-12 lg:px-14">
+        <main className="flex w-full flex-1 flex-col justify-center px-6 py-8 sm:px-10 sm:py-12 lg:px-14 overflow-y-auto">
           <div className="w-full max-w-2xl">
             <header className="mb-6 flex items-center justify-between">
               <div>
