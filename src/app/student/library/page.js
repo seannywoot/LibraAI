@@ -263,7 +263,7 @@ function MyLibraryContent() {
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Failed to load library");
       setMyBooks(data.books || []);
-      
+
       // Only update total count when not searching
       if (!searchInput) {
         setTotalMyBooks(data.books?.length || 0);
@@ -284,7 +284,7 @@ function MyLibraryContent() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load borrowed books");
       setBorrowedBooks(data.items || []);
-      
+
       // Only update total count when not searching
       if (!searchInput) {
         setTotalBorrowedBooks(data.items?.length || 0);
@@ -311,7 +311,7 @@ function MyLibraryContent() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load bookmarked books");
       setBookmarkedBooks(data.books || []);
-      
+
       // Only update total count when not searching
       if (!searchInput) {
         setTotalBookmarkedBooks(data.books?.length || 0);
@@ -505,7 +505,7 @@ function MyLibraryContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"

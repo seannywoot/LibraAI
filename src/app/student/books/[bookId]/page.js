@@ -54,7 +54,7 @@ function StatusChip({ status }) {
 
 function formatBookFormat(format) {
   if (!format) return null;
-  
+
   const formatLower = format.toLowerCase();
   if (formatLower === 'hardcover' || formatLower === 'paperback') {
     return `Physical, ${format}`;
@@ -104,7 +104,7 @@ export default function BookDetailPage({ params }) {
     if (book) {
       loadRecommendations();
       checkBookmarkStatus();
-      
+
       // Track book view
       const tracker = getBehaviorTracker();
       tracker.trackBookView(book._id, {
@@ -125,17 +125,17 @@ export default function BookDetailPage({ params }) {
         cache: "no-store",
       });
       const data = await res.json().catch(() => ({}));
-      
+
       // Show 404 page if book not found or invalid ID
       if (res.status === 404 || (res.status === 400 && data?.error?.includes("Invalid"))) {
         router.push("/404");
         return;
       }
-      
+
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Failed to load book details");
       setBook(data.book);
-      
+
       // Track book view for recommendations
       fetch(`/api/student/books/${bookId}/track-view`, {
         method: "POST",
@@ -187,7 +187,7 @@ export default function BookDetailPage({ params }) {
           return { bookId: id, bookmarked: data?.bookmarked || false };
         })
       );
-      
+
       const newBookmarked = new Set();
       bookmarkChecks.forEach(({ bookId, bookmarked }) => {
         if (bookmarked) newBookmarked.add(bookId);
@@ -281,7 +281,7 @@ export default function BookDetailPage({ params }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
         <DashboardSidebar
           heading="LibraAI"
           links={navigationLinks}
@@ -297,7 +297,7 @@ export default function BookDetailPage({ params }) {
 
   if (error || !book) {
     return (
-      <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
         <DashboardSidebar
           heading="LibraAI"
           links={navigationLinks}
@@ -312,7 +312,7 @@ export default function BookDetailPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"
@@ -464,11 +464,10 @@ export default function BookDetailPage({ params }) {
                 <button
                   onClick={handleToggleBookmark}
                   disabled={bookmarking}
-                  className={`inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors ${
-                    isBookmarked
+                  className={`inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors ${isBookmarked
                       ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  } disabled:opacity-50`}
+                    } disabled:opacity-50`}
                   title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
                 >
                   <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} />
@@ -537,8 +536,8 @@ export default function BookDetailPage({ params }) {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              {isFallbackRecommendations 
-                ? "Popular Books You Might Enjoy" 
+              {isFallbackRecommendations
+                ? "Popular Books You Might Enjoy"
                 : "Similar Books You Might Like"}
             </h2>
             {loadingRecommendations && (
@@ -562,7 +561,7 @@ export default function BookDetailPage({ params }) {
           ) : !loadingRecommendations ? (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
               <p className="text-sm text-gray-600">
-                {isFallbackRecommendations 
+                {isFallbackRecommendations
                   ? "We couldn't find books similar to this one, but here are some popular titles from our library."
                   : "No recommendations available at this time."}
               </p>

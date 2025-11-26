@@ -181,7 +181,7 @@ export default function ShelfBooksPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
       <ToastContainer />
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
@@ -378,8 +378,8 @@ export default function ShelfBooksPage() {
                             onClick={(e) => handleToggleBookmark(book._id, e)}
                             disabled={isBookmarkingThis}
                             className={`p-2 rounded-full transition-colors ${isBookmarked
-                                ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                                : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                              ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                              : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
                               } disabled:opacity-50`}
                             title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
                           >

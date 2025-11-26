@@ -53,7 +53,7 @@ function StatusChip({ status }) {
 
 function formatBookFormat(format) {
   if (!format) return null;
-  
+
   const formatLower = format.toLowerCase();
   if (formatLower === 'hardcover' || formatLower === 'paperback') {
     return `Physical, ${format}`;
@@ -108,7 +108,7 @@ export default function StudentBooksPage() {
   // Initialize state from URL parameters or sessionStorage on mount
   useEffect(() => {
     if (isInitialized) return;
-    
+
     // FORCE CLEAR old sessionStorage with year range values
     // This ensures clean state for all users
     const savedState = sessionStorage.getItem('catalogState');
@@ -116,8 +116,8 @@ export default function StudentBooksPage() {
       try {
         const parsed = JSON.parse(savedState);
         // If it has any year range values, clear it completely
-        if (parsed?.filters?.yearRange && 
-            (parsed.filters.yearRange[0] !== null || parsed.filters.yearRange[1] !== null)) {
+        if (parsed?.filters?.yearRange &&
+          (parsed.filters.yearRange[0] !== null || parsed.filters.yearRange[1] !== null)) {
           console.log('Clearing old catalog state with year range values');
           sessionStorage.removeItem('catalogState');
         }
@@ -126,11 +126,11 @@ export default function StudentBooksPage() {
         sessionStorage.removeItem('catalogState');
       }
     }
-    
+
     // Now try to restore from sessionStorage (should be clean now)
     const cleanState = sessionStorage.getItem('catalogState');
     let initialState = null;
-    
+
     if (cleanState) {
       try {
         initialState = JSON.parse(cleanState);
@@ -139,7 +139,7 @@ export default function StudentBooksPage() {
         sessionStorage.removeItem('catalogState');
       }
     }
-    
+
     // If we have saved state, use it; otherwise use URL params or defaults
     if (initialState) {
       setSearchInput(initialState.searchInput || "");
@@ -160,8 +160,8 @@ export default function StudentBooksPage() {
         categories: [],
       });
       setYearInputs({
-        from: initialState.filters?.yearRange?.[0] !== null && initialState.filters?.yearRange?.[0] !== undefined 
-          ? initialState.filters.yearRange[0].toString() 
+        from: initialState.filters?.yearRange?.[0] !== null && initialState.filters?.yearRange?.[0] !== undefined
+          ? initialState.filters.yearRange[0].toString()
           : "",
         to: initialState.filters?.yearRange?.[1] !== null && initialState.filters?.yearRange?.[1] !== undefined
           ? initialState.filters.yearRange[1].toString()
@@ -199,7 +199,7 @@ export default function StudentBooksPage() {
         to: urlYearMax !== null ? urlYearMax.toString() : "",
       });
     }
-    
+
     setIsInitialized(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -209,7 +209,7 @@ export default function StudentBooksPage() {
     if (!isInitialized) return;
 
     const params = new URLSearchParams();
-    
+
     if (searchInput) params.set("search", searchInput);
     if (sortBy !== "relevance") params.set("sortBy", sortBy);
     if (page !== 1) params.set("page", page.toString());
@@ -225,10 +225,10 @@ export default function StudentBooksPage() {
 
     const queryString = params.toString();
     const newUrl = queryString ? `?${queryString}` : window.location.pathname;
-    
+
     // Update URL without triggering a navigation
     window.history.replaceState({}, "", newUrl);
-    
+
     // Save state to sessionStorage for persistence across navigation
     const stateToSave = {
       searchInput,
@@ -258,11 +258,11 @@ export default function StudentBooksPage() {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-     
+
   }, [items]);
 
   // Clear sessionStorage when navigating away (except for back/forward navigation)
@@ -270,9 +270,9 @@ export default function StudentBooksPage() {
     const handleBeforeUnload = () => {
       // Keep the state in sessionStorage even on page refresh
     };
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
@@ -281,7 +281,7 @@ export default function StudentBooksPage() {
   // Debounced search effect
   useEffect(() => {
     if (!isInitialized) return;
-    
+
     const timer = setTimeout(() => {
       setPage(1);
       loadBooks();
@@ -324,7 +324,7 @@ export default function StudentBooksPage() {
 
   useEffect(() => {
     if (!isInitialized) return;
-    
+
     loadBooks();
     loadCategories();
 
@@ -387,8 +387,8 @@ export default function StudentBooksPage() {
       // Add filter parameters
       // Only send resourceTypes if it's not the default (Books only) or if it's empty
       // If only "Books" is selected, don't send the parameter (books don't have resourceType field in DB)
-      if (filters.resourceTypes.length > 0 && 
-          !(filters.resourceTypes.length === 1 && filters.resourceTypes[0] === "Books")) {
+      if (filters.resourceTypes.length > 0 &&
+        !(filters.resourceTypes.length === 1 && filters.resourceTypes[0] === "Books")) {
         params.append("resourceTypes", filters.resourceTypes.join(","));
       }
       if (filters.formats.length > 0) {
@@ -439,9 +439,9 @@ export default function StudentBooksPage() {
         body: JSON.stringify({ bookIds }),
         cache: "no-store",
       });
-      
+
       const data = await res.json().catch(() => ({}));
-      
+
       if (res.ok && data?.ok) {
         // Update bookmarked set with the results
         const newBookmarked = new Set();
@@ -558,9 +558,9 @@ export default function StudentBooksPage() {
 
   function handleCancelFilters() {
     setTempFilters(filters);
-    setYearInputs({ 
-      from: filters.yearRange[0] !== null ? filters.yearRange[0].toString() : "", 
-      to: filters.yearRange[1] !== null ? filters.yearRange[1].toString() : "" 
+    setYearInputs({
+      from: filters.yearRange[0] !== null ? filters.yearRange[0].toString() : "",
+      to: filters.yearRange[1] !== null ? filters.yearRange[1].toString() : ""
     });
     setShowFilters(false);
   }
@@ -664,7 +664,7 @@ export default function StudentBooksPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="h-screen bg-gray-50 pr-6 pl-[300px] py-8 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] flex flex-col overflow-hidden">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"
@@ -830,7 +830,7 @@ export default function StudentBooksPage() {
                             onChange={(e) => {
                               const value = e.target.value;
                               const currentYear = new Date().getFullYear();
-                              
+
                               // Allow empty string or valid numbers up to 4 digits
                               if (value === "") {
                                 setYearInputs((prev) => ({ ...prev, from: "" }));
@@ -840,12 +840,12 @@ export default function StudentBooksPage() {
                                 }));
                               } else if (/^\d+$/.test(value) && value.length <= 4) {
                                 const numValue = parseInt(value);
-                                
+
                                 // Prevent typing future years
                                 if (numValue > currentYear) {
                                   return; // Don't update if trying to type future year
                                 }
-                                
+
                                 setYearInputs((prev) => ({ ...prev, from: value }));
                                 setTempFilters((prev) => ({
                                   ...prev,
@@ -865,15 +865,15 @@ export default function StudentBooksPage() {
                               } else {
                                 const numValue = parseInt(value);
                                 const currentYear = new Date().getFullYear();
-                                
+
                                 // Validate: must be a valid year, not exceed current year, and not exceed "to" year
                                 let clampedValue = Math.min(numValue, currentYear);
-                                
+
                                 // Don't exceed "to" year if set
                                 if (tempFilters.yearRange[1] !== null && clampedValue > tempFilters.yearRange[1]) {
                                   clampedValue = tempFilters.yearRange[1];
                                 }
-                                
+
                                 setYearInputs((prev) => ({ ...prev, from: clampedValue.toString() }));
                                 setTempFilters((prev) => ({
                                   ...prev,
@@ -899,7 +899,7 @@ export default function StudentBooksPage() {
                             onChange={(e) => {
                               const value = e.target.value;
                               const currentYear = new Date().getFullYear();
-                              
+
                               // Allow empty string or valid numbers up to 4 digits
                               if (value === "") {
                                 setYearInputs((prev) => ({ ...prev, to: "" }));
@@ -909,12 +909,12 @@ export default function StudentBooksPage() {
                                 }));
                               } else if (/^\d+$/.test(value) && value.length <= 4) {
                                 const numValue = parseInt(value);
-                                
+
                                 // Prevent typing future years
                                 if (numValue > currentYear) {
                                   return; // Don't update if trying to type future year
                                 }
-                                
+
                                 setYearInputs((prev) => ({ ...prev, to: value }));
                                 setTempFilters((prev) => ({
                                   ...prev,
@@ -934,15 +934,15 @@ export default function StudentBooksPage() {
                               } else {
                                 const numValue = parseInt(value);
                                 const currentYear = new Date().getFullYear();
-                                
+
                                 // Validate: must not exceed current year and must not be less than "from" year
                                 let clampedValue = Math.min(numValue, currentYear);
-                                
+
                                 // Don't go below "from" year if set
                                 if (tempFilters.yearRange[0] !== null && clampedValue < tempFilters.yearRange[0]) {
                                   clampedValue = tempFilters.yearRange[0];
                                 }
-                                
+
                                 setYearInputs((prev) => ({ ...prev, to: clampedValue.toString() }));
                                 setTempFilters((prev) => ({
                                   ...prev,
