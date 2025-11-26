@@ -282,7 +282,7 @@ function getPreview(content) {
   headings.forEach(heading => {
     const div = document.createElement("div");
     div.innerHTML = heading.innerHTML;
-    div.className = "font-bold mb-1 mt-2"; // Keep it bold but normal size, add spacing
+    div.className = "font-bold mb-1"; // Keep it bold but normal size, remove top spacing
     heading.parentNode.replaceChild(div, heading);
   });
 
@@ -329,7 +329,7 @@ function NoteCard({ note, searchQuery, openDeleteModal, formatDate }) {
         <div className="relative mb-3 max-h-[4.5rem] overflow-hidden">
           <div
             ref={contentRef}
-            className="text-sm text-gray-600 prose prose-sm max-w-none prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0"
+            className="text-sm text-gray-600 leading-6 prose prose-sm max-w-none prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
             dangerouslySetInnerHTML={{ __html: getPreview(note.content) }}
           />
           {isOverflowing && (
