@@ -280,10 +280,10 @@ export default function ShelfBooksPage() {
                   <Link
                     key={book._id}
                     href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
-                    className="flex items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow"
+                    className="flex flex-col sm:flex-row items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow"
                   >
                     {/* Book Cover */}
-                    <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                    <div className="w-full sm:w-24 h-48 sm:h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden self-center sm:self-start">
                       {book.coverImage || book.coverImageUrl || book.thumbnail ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -301,27 +301,27 @@ export default function ShelfBooksPage() {
                     </div>
 
                     {/* Book Details */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 w-full">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
                         {book.title}
                       </h3>
                       <p className="text-sm text-gray-600 mb-2">
                         by {book.author}
                       </p>
-                      <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-3">
                         {book.year && <span>Published: {book.year}</span>}
-                        {book.year && book.publisher && <span>|</span>}
+                        {book.year && book.publisher && <span className="hidden sm:inline">|</span>}
                         {book.publisher && <span>{book.publisher}</span>}
                         {book.format && (
                           <>
-                            <span>|</span>
+                            <span className="hidden sm:inline">|</span>
                             <span className="font-medium">{book.format}</span>
                           </>
                         )}
                       </div>
 
                       {/* Status and Actions */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
                         <div className="flex items-center gap-3">
                           <StatusChip status={book.status} />
                           {book.isbn && (
@@ -332,7 +332,7 @@ export default function ShelfBooksPage() {
                         </div>
 
                         <div
-                          className="flex items-center gap-3"
+                          className="flex items-center gap-3 w-full sm:w-auto"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -343,7 +343,7 @@ export default function ShelfBooksPage() {
                               onConfirm={() => handleBorrow(book._id)}
                               disabled={lockedByOther}
                               busy={isBorrowingThis}
-                              className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                              className="flex-1 sm:flex-none justify-center rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
                               borrowLabel="Borrow"
                               confirmingLabel="Confirm?"
                               confirmingTitle="Submit Borrow Request"
@@ -356,14 +356,14 @@ export default function ShelfBooksPage() {
                           ) : book.status === "reserved" ? (
                             <button
                               disabled
-                              className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
+                              className="flex-1 sm:flex-none rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
                             >
                               Reserved
                             </button>
                           ) : book.status === "checked-out" ? (
                             <button
                               disabled
-                              className="rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
+                              className="flex-1 sm:flex-none rounded-md bg-gray-300 px-6 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
                             >
                               Unavailable
                             </button>

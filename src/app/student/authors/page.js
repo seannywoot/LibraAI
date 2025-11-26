@@ -157,10 +157,10 @@ export default function StudentAuthorsPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="min-h-screen bg-(--bg-1) pr-6 pl-[300px] py-8 text-(--text)">
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
-      <main className="space-y-8 rounded-3xl border border-(--stroke) bg-white p-10 shadow-[0_2px_20px_rgba(0,0,0,0.03)]">
+      <main className="space-y-8 rounded-3xl border border-zinc-200 bg-white p-6 lg:p-10 shadow-sm">
         <header className="space-y-6 border-b border-(--stroke) pb-6">
           <div className="space-y-2">
             <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-500">Student</p>
@@ -171,94 +171,92 @@ export default function StudentAuthorsPage() {
           {/* Search Bar with View Toggle */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
-            <svg
-              className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onFocus={() =>
-                searchInput.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)
-              }
-              onBlur={() => {
-                setTimeout(() => {
-                  if (shouldCloseOnBlur.current) {
-                    setShowSuggestions(false);
-                    setSelectedSuggestionIndex(-1);
-                  }
-                }, 200);
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder="Search by author name..."
-              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-            />
-            {searchInput && (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+              <svg
+                className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onFocus={() =>
+                  searchInput.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)
+                }
+                onBlur={() => {
+                  setTimeout(() => {
+                    if (shouldCloseOnBlur.current) {
+                      setShowSuggestions(false);
+                      setSelectedSuggestionIndex(-1);
+                    }
+                  }, 200);
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Search by author name..."
+                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 pl-10 pr-10 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
 
-            {/* Auto-suggestions dropdown */}
-            {showSuggestions && suggestions.length > 0 && searchInput.trim().length >= 2 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
-                {suggestions.map((suggestion, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${
-                      idx === selectedSuggestionIndex
-                        ? "bg-zinc-100"
-                        : "hover:bg-zinc-50"
-                    }`}
-                  >
-                    <svg
-                      className="h-4 w-4 text-zinc-400 shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+              {/* Auto-suggestions dropdown */}
+              {showSuggestions && suggestions.length > 0 && searchInput.trim().length >= 2 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                  {suggestions.map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${idx === selectedSuggestionIndex
+                          ? "bg-zinc-100"
+                          : "hover:bg-zinc-50"
+                        }`}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-zinc-900 truncate">
-                        {suggestion.text}
-                      </p>
-                      <p className="text-xs text-zinc-500 capitalize">
-                        {suggestion.type}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+                      <svg
+                        className="h-4 w-4 text-zinc-400 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-zinc-900 truncate">
+                          {suggestion.text}
+                        </p>
+                        <p className="text-xs text-zinc-500 capitalize">
+                          {suggestion.type}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* View Toggle */}
             <div className="flex rounded-lg border border-zinc-300 bg-white overflow-hidden">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`px-3 py-2.5 text-sm transition-colors ${
-                  viewMode === "grid"
+                className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "grid"
                     ? "bg-zinc-900 text-white"
                     : "text-zinc-700 hover:bg-zinc-50"
-                }`}
+                  }`}
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -266,11 +264,10 @@ export default function StudentAuthorsPage() {
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`px-3 py-2.5 text-sm transition-colors ${
-                  viewMode === "list"
+                className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "list"
                     ? "bg-zinc-900 text-white"
                     : "text-zinc-700 hover:bg-zinc-50"
-                }`}
+                  }`}
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

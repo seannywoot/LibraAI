@@ -333,10 +333,10 @@ export default function BookDetailPage({ params }) {
 
         {/* Book Details */}
         <div className="rounded-lg bg-white border border-gray-200 p-8 shadow-sm">
-          <div className="flex gap-8">
+          <div className="flex flex-col md:flex-row gap-8">
             {/* Book Cover */}
-            <div className="w-48 shrink-0">
-              <div className="aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium overflow-hidden">
+            <div className="w-full md:w-48 shrink-0 flex justify-center md:block">
+              <div className="aspect-2/3 w-48 md:w-full rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium overflow-hidden">
                 {book.coverImage || book.coverImageUrl ? (
                   <img
                     src={book.coverImage || book.coverImageUrl}
@@ -465,8 +465,8 @@ export default function BookDetailPage({ params }) {
                   onClick={handleToggleBookmark}
                   disabled={bookmarking}
                   className={`inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors ${isBookmarked
-                      ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     } disabled:opacity-50`}
                   title={isBookmarked ? "Remove bookmark" : "Bookmark this book"}
                 >

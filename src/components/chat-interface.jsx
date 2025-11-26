@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { shouldRegenerateTitle, heuristicTitle, buildTitleRequestPayload } from "@/utils/chatTitle";
-import { MessageCircle, Send, Paperclip, History, X, Trash2 } from "@/components/icons";
+import { MessageCircle, Send, Paperclip, History, X, Trash2, Plus } from "@/components/icons";
 
 // Helper function to render message content with markdown formatting and clickable links
 const renderMessageContent = (content) => {
@@ -1135,39 +1135,39 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white">
                 <MessageCircle className="h-5 w-5" />
               </div>
-              <div>
-                <h1 className="text-lg font-semibold text-zinc-900">{autoTitle || 'LibraAI Assistant'}</h1>
-                <p className="text-sm text-zinc-500">{autoTitle ? 'Topic • Auto‑generated' : 'Ask me anything about literature'}</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg font-semibold text-zinc-900 truncate">{autoTitle || 'LibraAI Assistant'}</h1>
+                <p className="text-sm text-zinc-500 truncate">{autoTitle ? 'Topic • Auto‑generated' : 'Ask me anything about literature'}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={startNewConversation}
-                className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-zinc-800 transition"
+                className="flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white text-sm font-medium transition hover:bg-zinc-800 h-10 w-10 lg:h-auto lg:w-auto lg:px-4 lg:py-2"
+                aria-label="New Chat"
               >
-                + New Chat
+                <Plus className="h-5 w-5" />
+                <span className="hidden lg:inline">New Chat</span>
               </button>
-              {!showHistorySidebar && (
-                <button
-                  onClick={() => setShowHistory(!showHistory)}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50"
-                  aria-label="Chat history"
-                >
-                  <History className="h-5 w-5" />
-                </button>
-              )}
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className={`flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50 ${showHistorySidebar ? 'lg:hidden' : ''}`}
+                aria-label="Chat history"
+              >
+                <History className="h-5 w-5" />
+              </button>
             </div>
           </div>
         </div>
 
-        {/* History Sidebar Overlay (only when not using persistent sidebar) */}
-        {!showHistorySidebar && showHistory && (
+        {/* History Sidebar Overlay */}
+        {showHistory && (
           <>
             <div
-              className="fixed inset-0 bg-black/20 z-40"
+              className={`fixed inset-0 bg-black/20 z-40 ${showHistorySidebar ? 'lg:hidden' : ''}`}
               onClick={() => setShowHistory(false)}
             />
-            <div className="absolute top-0 right-0 bottom-0 w-80 bg-white border-l border-zinc-200 shadow-xl z-50 flex flex-col">
+            <div className={`absolute top-0 right-0 bottom-0 w-80 bg-white border-l border-zinc-200 shadow-xl z-50 flex flex-col ${showHistorySidebar ? 'lg:hidden' : ''}`}>
               <div className="border-b border-zinc-200 p-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-zinc-900">Chat History</h2>
@@ -1193,8 +1193,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                               key={conv.id}
                               onClick={() => loadConversation(conv)}
                               className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
-                                  ? "border-zinc-900 bg-zinc-50"
-                                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                                ? "border-zinc-900 bg-zinc-50"
+                                : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
                                 }`}
                             >
                               <div className="flex items-start justify-between gap-2">
@@ -1226,8 +1226,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                               key={conv.id}
                               onClick={() => loadConversation(conv)}
                               className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
-                                  ? "border-zinc-900 bg-zinc-50"
-                                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                                ? "border-zinc-900 bg-zinc-50"
+                                : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
                                 }`}
                             >
                               <div className="flex items-start justify-between gap-2">
@@ -1259,8 +1259,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                               key={conv.id}
                               onClick={() => loadConversation(conv)}
                               className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
-                                  ? "border-zinc-900 bg-zinc-50"
-                                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                                ? "border-zinc-900 bg-zinc-50"
+                                : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
                                 }`}
                             >
                               <div className="flex items-start justify-between gap-2">
@@ -1292,8 +1292,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                               key={conv.id}
                               onClick={() => loadConversation(conv)}
                               className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
-                                  ? "border-zinc-900 bg-zinc-50"
-                                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                                ? "border-zinc-900 bg-zinc-50"
+                                : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
                                 }`}
                             >
                               <div className="flex items-start justify-between gap-2">
@@ -1333,10 +1333,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                 </div>
               )}
               <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.role === "user"
-                  ? "bg-zinc-900 text-white"
-                  : msg.stopped
-                    ? "bg-amber-50 border border-amber-200 text-zinc-800"
-                    : "bg-zinc-100 text-zinc-800"
+                ? "bg-zinc-900 text-white"
+                : msg.stopped
+                  ? "bg-amber-50 border border-amber-200 text-zinc-800"
+                  : "bg-zinc-100 text-zinc-800"
                 }`}>
                 {msg.hasFile && (
                   <div className="mb-2">
@@ -1544,7 +1544,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
 
       {/* Persistent History Sidebar */}
       {showHistorySidebar && (
-        <div className="w-80 border-l border-zinc-200 bg-zinc-50 flex flex-col">
+        <div className="hidden lg:flex w-80 border-l border-zinc-200 bg-zinc-50 flex-col">
           <div className="border-b border-zinc-200 p-4">
             <h2 className="text-lg font-semibold text-zinc-900">Chat History</h2>
           </div>
@@ -1562,8 +1562,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                           key={conv.id}
                           onClick={() => loadConversation(conv)}
                           className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
-                              ? "border-zinc-900 bg-white shadow-sm"
-                              : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                            ? "border-zinc-900 bg-white shadow-sm"
+                            : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
                             }`}
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -1595,8 +1595,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                           key={conv.id}
                           onClick={() => loadConversation(conv)}
                           className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
-                              ? "border-zinc-900 bg-white shadow-sm"
-                              : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                            ? "border-zinc-900 bg-white shadow-sm"
+                            : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
                             }`}
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -1628,8 +1628,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                           key={conv.id}
                           onClick={() => loadConversation(conv)}
                           className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
-                              ? "border-zinc-900 bg-white shadow-sm"
-                              : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                            ? "border-zinc-900 bg-white shadow-sm"
+                            : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
                             }`}
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -1661,8 +1661,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                           key={conv.id}
                           onClick={() => loadConversation(conv)}
                           className={`group p-3 rounded-lg border cursor-pointer transition ${currentConversationId === conv.id
-                              ? "border-zinc-900 bg-white shadow-sm"
-                              : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                            ? "border-zinc-900 bg-white shadow-sm"
+                            : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
                             }`}
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -1743,12 +1743,12 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
           <div
             key={toast.id}
             className={`flex items-start gap-3 p-4 rounded-xl shadow-lg border animate-slide-in ${toast.type === 'success'
-                ? 'bg-green-50 border-green-200 text-green-800'
-                : toast.type === 'error'
-                  ? 'bg-red-50 border-red-200 text-red-800'
-                  : toast.type === 'warning'
-                    ? 'bg-amber-50 border-amber-200 text-amber-800'
-                    : 'bg-blue-50 border-blue-200 text-blue-800'
+              ? 'bg-green-50 border-green-200 text-green-800'
+              : toast.type === 'error'
+                ? 'bg-red-50 border-red-200 text-red-800'
+                : toast.type === 'warning'
+                  ? 'bg-amber-50 border-amber-200 text-amber-800'
+                  : 'bg-blue-50 border-blue-200 text-blue-800'
               }`}
           >
             <div className="flex-1">

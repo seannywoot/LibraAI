@@ -1702,6 +1702,7 @@ export default function StudentBooksPage() {
 
           {/* Recommendations Sidebar */}
           < RecommendationsSidebar
+            className="hidden lg:block"
             key={recommendationsKey}
             maxItems={8}
             context={searchInput ? "search" : "browse"}
