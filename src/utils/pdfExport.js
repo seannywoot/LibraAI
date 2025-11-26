@@ -51,6 +51,16 @@ function parseInlineFormatting(element) {
         underline: inherited.underline || tag === 'u'
       };
 
+      // Handle inline styles for font-weight
+      if (node.style && node.style.fontWeight) {
+        const weight = node.style.fontWeight;
+        if (weight === 'normal' || (parseInt(weight) < 600 && !isNaN(parseInt(weight)))) {
+          styles.bold = false;
+        } else if (weight === 'bold' || (parseInt(weight) >= 600 && !isNaN(parseInt(weight)))) {
+          styles.bold = true;
+        }
+      }
+
       // Process children with inherited styles
       Array.from(node.childNodes).forEach(child => traverse(child, styles));
     }
@@ -89,15 +99,15 @@ function parseContent(html) {
 
     switch (tag) {
       case 'h1':
-        const h1Segments = parseInlineFormatting(node);
+        const h1Segments = parseInlineFormatting(node, { bold: true, italic: false, underline: false });
         blocks.push({ type: 'h1', segments: h1Segments });
         break;
       case 'h2':
-        const h2Segments = parseInlineFormatting(node);
+        const h2Segments = parseInlineFormatting(node, { bold: true, italic: false, underline: false });
         blocks.push({ type: 'h2', segments: h2Segments });
         break;
       case 'h3':
-        const h3Segments = parseInlineFormatting(node);
+        const h3Segments = parseInlineFormatting(node, { bold: true, italic: false, underline: false });
         blocks.push({ type: 'h3', segments: h3Segments });
         break;
       case 'p':
@@ -307,31 +317,31 @@ function renderBlocks(doc, blocks, margin, maxWidth, startY) {
       case 'h1':
         checkPageBreak(15);
         doc.setFontSize(20);
-        doc.setFont("helvetica", "bold");
+        checkPageBreak(15);
+        doc.setFontSize(20);
         doc.setTextColor(17, 17, 17);
-        // Render headings with bold font by default
-        const h1Segments = block.segments.map(s => ({ ...s, bold: true }));
-        y = renderStyledText(doc, h1Segments, margin, y, maxWidth, 8);
+        // Render headings with bold font by default, unless unbolded
+        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 8);
         y += 10; // Increased from 8 to match 1rem spacing
         break;
 
       case 'h2':
         checkPageBreak(12);
         doc.setFontSize(16);
-        doc.setFont("helvetica", "bold");
+        checkPageBreak(12);
+        doc.setFontSize(16);
         doc.setTextColor(17, 17, 17);
-        const h2Segments = block.segments.map(s => ({ ...s, bold: true }));
-        y = renderStyledText(doc, h2Segments, margin, y, maxWidth, 7);
+        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 7);
         y += 8; // Increased from 6 to match 0.75rem spacing
         break;
 
       case 'h3':
         checkPageBreak(10);
         doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
+        checkPageBreak(10);
+        doc.setFontSize(14);
         doc.setTextColor(17, 17, 17);
-        const h3Segments = block.segments.map(s => ({ ...s, bold: true }));
-        y = renderStyledText(doc, h3Segments, margin, y, maxWidth, 6);
+        y = renderStyledText(doc, block.segments, margin, y, maxWidth, 6);
         y += 6; // Increased from 5 to match 0.5rem spacing
         break;
 
