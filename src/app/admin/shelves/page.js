@@ -315,7 +315,8 @@ export default function AdminShelvesPage() {
           </div>
         ) : (
           <section className="space-y-4">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full border-separate border-spacing-y-3">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-zinc-500">
@@ -359,6 +360,69 @@ export default function AdminShelvesPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="grid gap-4 md:hidden">
+              {items.map((shelf) => (
+                <div key={shelf._id} className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <Link
+                        href={`/admin/shelves/${encodeURIComponent(shelf.slug || shelf.code || shelf._id)}`}
+                        className="text-lg font-bold text-zinc-900 hover:text-blue-600 hover:underline"
+                      >
+                        {shelf.code}
+                      </Link>
+                      <p className="text-sm font-medium text-zinc-700 mt-0.5">
+                        {shelf.name || "Unnamed Shelf"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEditModal(shelf)}
+                        className="p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 rounded-lg transition"
+                        aria-label="Edit shelf"
+                      >
+                        <EditIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setPendingDelete(shelf)}
+                        className="p-2 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition"
+                        aria-label="Delete shelf"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-zinc-500">
+                    <div>
+                      <span className="block font-medium text-zinc-700">Location</span>
+                      {shelf.location || "—"}
+                    </div>
+                    <div>
+                      <span className="block font-medium text-zinc-700">Books</span>
+                      <Link href={`/admin/shelves/${encodeURIComponent(shelf.slug || shelf.code || shelf._id)}`} className="text-blue-600 hover:underline">
+                        {shelf.bookCount ?? 0} books
+                      </Link>
+                    </div>
+                    <div>
+                      <span className="block font-medium text-zinc-700">Capacity</span>
+                      {shelf.capacity ?? "—"}
+                    </div>
+                  </div>
+
+                  {shelf.notes && (
+                    <div className="pt-2 border-t border-zinc-100">
+                      <span className="block text-xs font-medium text-zinc-700 mb-1">Notes</span>
+                      <p className="text-xs text-zinc-600 line-clamp-2">
+                        {shelf.notes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
 
             <div className="flex items-center justify-between">

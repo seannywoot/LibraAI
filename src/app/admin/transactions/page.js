@@ -421,8 +421,8 @@ export default function AdminTransactionsPage() {
                     key={idx}
                     onClick={() => handleSuggestionClick(suggestion)}
                     className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${idx === selectedSuggestionIndex
-                        ? "bg-zinc-100"
-                        : "hover:bg-zinc-50"
+                      ? "bg-zinc-100"
+                      : "hover:bg-zinc-50"
                       }`}
                   >
                     <svg className="h-4 w-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -457,7 +457,8 @@ export default function AdminTransactionsPage() {
           </div>
         ) : (
           <section className="space-y-4">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full border-separate border-spacing-y-3">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-zinc-500">
@@ -522,10 +523,10 @@ export default function AdminTransactionsPage() {
                               <div className="mt-2">
                                 <span
                                   className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${t.bookCondition === "good"
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : t.bookCondition === "fair"
-                                        ? "bg-amber-100 text-amber-800"
-                                        : "bg-rose-100 text-rose-800"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : t.bookCondition === "fair"
+                                      ? "bg-amber-100 text-amber-800"
+                                      : "bg-rose-100 text-rose-800"
                                     }`}
                                 >
                                   {t.bookCondition === "good" && "✓"}
@@ -632,6 +633,191 @@ export default function AdminTransactionsPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="grid gap-4 md:hidden">
+              {items.map((t) => {
+                const startDateValue = t.borrowedAt || t.requestedAt;
+                const startDate = startDateValue ? new Date(startDateValue) : null;
+                const dueDateValue = t.dueDate || t.requestedDueDate;
+                const dueDateObj = dueDateValue ? new Date(dueDateValue) : null;
+                let durationLabel = "";
+                if (startDate && dueDateObj && !Number.isNaN(startDate.getTime()) && !Number.isNaN(dueDateObj.getTime())) {
+                  const diffMs = dueDateObj.getTime() - startDate.getTime();
+                  const diffDays = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+                  durationLabel = `${diffDays} day${diffDays === 1 ? "" : "s"}`;
+                } else if (t.requestedLoanDays) {
+                  const days = Math.max(1, t.requestedLoanDays);
+                  durationLabel = `${days} day${days === 1 ? "" : "s"}`;
+                }
+
+                return (
+                  <div key={t._id} className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <h3 className="font-medium text-zinc-900 line-clamp-2">{t.bookTitle}</h3>
+                        <p className="text-sm text-zinc-600">{t.bookAuthor}</p>
+                      </div>
+                      <StatusBadge status={t.status} />
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      <div className="flex-1 rounded-lg bg-zinc-50 p-2 border border-zinc-100">
+                        <span className="block font-medium text-zinc-700 mb-0.5">User</span>
+                        <div className="font-medium text-zinc-900">{t.userName}</div>
+                        <div className="truncate">{t.userId}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-zinc-500">
+                      <div>
+                        <span className="block font-medium text-zinc-700">Requested</span>
+                        {formatDate(t.requestedAt)}
+                      </div>
+                      <div>
+                        <span className="block font-medium text-zinc-700">Borrowed</span>
+                        {formatDate(t.borrowedAt)}
+                      </div>
+                      <div>
+                        <span className="block font-medium text-zinc-700">Due Date</span>
+                        {formatDate(dueDateValue)}
+                        {durationLabel && <span className="ml-1 text-zinc-400">({durationLabel})</span>}
+                      </div>
+                      <div>
+                        <span className="block font-medium text-zinc-700">Returned</span>
+                        {formatDate(t.returnedAt)}
+                      </div>
+                    </div>
+
+                    {/* Status Details (Rejection/Condition) */}
+                    {t.status === "rejected" && t.rejectionReason && (
+                      <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                        <span className="font-semibold block mb-1">Rejection Reason:</span>
+                        {t.rejectionReason}
+                      </div>
+                    )}
+                    {t.status === "returned" && t.bookCondition && (
+                      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-zinc-700">Condition:</span>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${t.bookCondition === "good"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : t.bookCondition === "fair"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-rose-100 text-rose-800"
+                              }`}
+                          >
+                            {t.bookCondition === "good" && "✓"}
+                            {t.bookCondition === "fair" && "⚠"}
+                            {t.bookCondition === "damaged" && "✕"}
+                            {" "}
+                            {t.bookCondition.charAt(0).toUpperCase() + t.bookCondition.slice(1)}
+                          </span>
+                        </div>
+                        {t.conditionNotes && (
+                          <p className="text-zinc-600 italic">"{t.conditionNotes}"</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="pt-2 border-t border-zinc-100">
+                      {t.status === "pending-approval" && (
+                        <div className="space-y-3">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs font-medium text-zinc-700">Set Due Date</span>
+                            <CalendarDatePicker
+                              value={dueDates[t._id] || ""}
+                              min={todayInputDate}
+                              onChange={(nextValue) =>
+                                setDueDates((prev) => ({
+                                  ...prev,
+                                  [t._id]: nextValue && nextValue < todayInputDate ? todayInputDate : nextValue,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                              disabled={actionLoading === `${t._id}:approve`}
+                              onClick={() =>
+                                handleAction(t._id, "approve", {
+                                  dueDate: dueDates[t._id] ? new Date(dueDates[t._id]).toISOString() : undefined,
+                                })
+                              }
+                            >
+                              {actionLoading === `${t._id}:approve` ? "Approving…" : "Approve"}
+                            </button>
+                            <button
+                              className="rounded-lg border border-rose-500 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50"
+                              disabled={actionLoading === `${t._id}:reject`}
+                              onClick={() => {
+                                setError("");
+                                setRejectTarget(t);
+                                setRejectReason("");
+                                setRejectError("");
+                              }}
+                            >
+                              {actionLoading === `${t._id}:reject` ? "Rejecting…" : "Reject"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {t.status === "return-requested" && (
+                        <button
+                          className="w-full rounded-lg border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+                          disabled={actionLoading === `${t._id}:return`}
+                          onClick={() => {
+                            setReturnTarget(t);
+                            setBookCondition("good");
+                            setConditionNotes("");
+                            setReturnError("");
+                          }}
+                        >
+                          {actionLoading === `${t._id}:return` ? "Processing…" : "Confirm Return"}
+                        </button>
+                      )}
+
+                      {t.status === "borrowed" && (
+                        <button
+                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-50"
+                          disabled={actionLoading === `${t._id}:return`}
+                          onClick={() => {
+                            setReturnTarget(t);
+                            setBookCondition("good");
+                            setConditionNotes("");
+                            setReturnError("");
+                          }}
+                        >
+                          {actionLoading === `${t._id}:return` ? "Processing…" : "Mark Returned"}
+                        </button>
+                      )}
+
+                      {(t.status === "rejected" || t.status === "returned") && !t.archived && (
+                        <button
+                          className="w-full rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 disabled:opacity-50"
+                          disabled={actionLoading === `${t._id}:archive`}
+                          onClick={() => handleAction(t._id, "archive")}
+                        >
+                          {actionLoading === `${t._id}:archive` ? "Archiving…" : "Archive"}
+                        </button>
+                      )}
+
+                      {t.archived && (
+                        <div className="text-center">
+                          <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-500">
+                            Archived
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex items-center justify-between">

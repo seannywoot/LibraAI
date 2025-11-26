@@ -136,55 +136,95 @@ export default function SecurityPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
-            <table className="w-full">
-              <thead className="border-b border-zinc-200 bg-zinc-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                    Failed Attempts
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                    Locked At
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                    Time Remaining
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200">
-                {lockedAccounts.map((account) => (
-                  <tr key={account.identifier} className="hover:bg-zinc-50">
-                    <td className="px-6 py-4 text-sm text-zinc-900">
-                      {account.identifier}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-zinc-600">
-                      {account.attempts}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-zinc-600">
-                      {new Date(account.lockedAt).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-zinc-600">
-                      {Math.ceil(account.remainingTime / 60)} minutes
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <button
-                        onClick={() => handleUnlock(account.identifier)}
-                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
-                      >
-                        Unlock
-                      </button>
-                    </td>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+              <table className="w-full">
+                <thead className="border-b border-zinc-200 bg-zinc-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
+                      Failed Attempts
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
+                      Locked At
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
+                      Time Remaining
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-zinc-200">
+                  {lockedAccounts.map((account) => (
+                    <tr key={account.identifier} className="hover:bg-zinc-50">
+                      <td className="px-6 py-4 text-sm text-zinc-900">
+                        {account.identifier}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-zinc-600">
+                        {account.attempts}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-zinc-600">
+                        {new Date(account.lockedAt).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-zinc-600">
+                        {Math.ceil(account.remainingTime / 60)} minutes
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <button
+                          onClick={() => handleUnlock(account.identifier)}
+                          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+                        >
+                          Unlock
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="grid gap-4 md:hidden">
+              {lockedAccounts.map((account) => (
+                <div key={account.identifier} className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-medium text-zinc-900">{account.identifier}</h3>
+                      <p className="text-xs text-zinc-500 mt-1">
+                        Locked at {new Date(account.lockedAt).toLocaleTimeString()}
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-medium text-rose-800">
+                      Locked
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm text-zinc-600">
+                    <div>
+                      <span className="block text-xs font-medium text-zinc-500 mb-0.5">Failed Attempts</span>
+                      {account.attempts}
+                    </div>
+                    <div>
+                      <span className="block text-xs font-medium text-zinc-500 mb-0.5">Time Remaining</span>
+                      {Math.ceil(account.remainingTime / 60)} mins
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleUnlock(account.identifier)}
+                    className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+                  >
+                    Unlock Account
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         <div className="mt-8 rounded-lg border border-zinc-200 bg-white p-6">

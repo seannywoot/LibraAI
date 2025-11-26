@@ -279,8 +279,8 @@ export default function AdminBooksListPage() {
                     key={idx}
                     onClick={() => handleSuggestionClick(suggestion)}
                     className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 border-b border-zinc-100 last:border-b-0 ${idx === selectedSuggestionIndex
-                        ? "bg-zinc-100"
-                        : "hover:bg-zinc-50"
+                      ? "bg-zinc-100"
+                      : "hover:bg-zinc-50"
                       }`}
                   >
                     <svg className="h-4 w-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -316,7 +316,8 @@ export default function AdminBooksListPage() {
           </div>
         ) : (
           <section className="space-y-4">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full border-separate border-spacing-y-3">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-zinc-500">
@@ -369,6 +370,62 @@ export default function AdminBooksListPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="grid gap-4 md:hidden">
+              {items.map((b) => (
+                <div key={b._id} className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <h3 className="font-medium text-zinc-900 line-clamp-2">{b.title}</h3>
+                      <p className="text-sm text-zinc-600">{b.author || "Unknown Author"}</p>
+                    </div>
+                    <StatusChip status={b.status} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-zinc-500">
+                    <div>
+                      <span className="block font-medium text-zinc-700">Year</span>
+                      {b.year ?? "—"}
+                    </div>
+                    <div>
+                      <span className="block font-medium text-zinc-700">Shelf</span>
+                      {b.shelf && b.shelfId ? (
+                        <Link href={`/admin/shelves/${b.shelfId}`} className="text-blue-600 hover:underline">
+                          {b.shelf}
+                        </Link>
+                      ) : (
+                        b.shelf || "—"
+                      )}
+                    </div>
+                    <div>
+                      <span className="block font-medium text-zinc-700">ISBN</span>
+                      {b.isbn || "—"}
+                    </div>
+                    <div>
+                      <span className="block font-medium text-zinc-700">Barcode</span>
+                      {b.barcode || "—"}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-zinc-100">
+                    <Link
+                      href={`/admin/books/${b.slug || b._id}/edit`}
+                      className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-center text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      onClick={() => setPendingDelete(b)}
+                      disabled={deleting === b._id}
+                      className="flex-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-center text-sm font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50 transition-colors"
+                    >
+                      {deleting === b._id ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="flex items-center justify-between">

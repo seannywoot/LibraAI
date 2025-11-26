@@ -111,20 +111,20 @@ export default function ChatLogsClient() {
           ) : (
             <div className="divide-y divide-zinc-200">
               {logs.map((log) => (
-                <div key={log._id} className="p-6 hover:bg-zinc-50 transition">
-                  <div className="flex items-start gap-4">
+                <div key={log._id} className="p-4 md:p-6 hover:bg-zinc-50 transition">
+                  <div className="flex items-start gap-3 md:gap-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
                       <MessageCircle className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 md:mb-2 gap-1 md:gap-0">
                         <div>
                           <p className="text-sm font-semibold text-zinc-900">
                             {log.userName}
                           </p>
                           <p className="text-xs text-zinc-500">{log.userId}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left md:text-right">
                           <p className="text-xs text-zinc-500">
                             {new Date(log.timestamp).toLocaleString()}
                           </p>
@@ -143,7 +143,7 @@ export default function ChatLogsClient() {
                             {expandedLog === log._id
                               ? log.userMessage
                               : log.userMessage.slice(0, 150) +
-                                (log.userMessage.length > 150 ? "..." : "")}
+                              (log.userMessage.length > 150 ? "..." : "")}
                           </p>
                         </div>
 
@@ -155,23 +155,23 @@ export default function ChatLogsClient() {
                             {expandedLog === log._id
                               ? log.aiResponse
                               : log.aiResponse.slice(0, 150) +
-                                (log.aiResponse.length > 150 ? "..." : "")}
+                              (log.aiResponse.length > 150 ? "..." : "")}
                           </p>
                         </div>
 
                         {(log.userMessage.length > 150 ||
                           log.aiResponse.length > 150) && (
-                          <button
-                            onClick={() =>
-                              setExpandedLog(
-                                expandedLog === log._id ? null : log._id
-                              )
-                            }
-                            className="text-xs text-zinc-600 hover:text-zinc-900 font-medium"
-                          >
-                            {expandedLog === log._id ? "Show less" : "Show more"}
-                          </button>
-                        )}
+                            <button
+                              onClick={() =>
+                                setExpandedLog(
+                                  expandedLog === log._id ? null : log._id
+                                )
+                              }
+                              className="text-xs text-zinc-600 hover:text-zinc-900 font-medium"
+                            >
+                              {expandedLog === log._id ? "Show less" : "Show more"}
+                            </button>
+                          )}
                       </div>
 
                       <div className="mt-2 flex flex-wrap gap-2">

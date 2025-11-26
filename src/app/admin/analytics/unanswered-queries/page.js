@@ -253,8 +253,8 @@ export default function UnansweredQueriesAnalytics() {
           <button
             onClick={() => setShowResolved(false)}
             className={`px-4 py-2 rounded-lg font-medium transition ${!showResolved
-                ? "bg-zinc-900 text-white"
-                : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
+              ? "bg-zinc-900 text-white"
+              : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
               }`}
           >
             Unresolved
@@ -262,8 +262,8 @@ export default function UnansweredQueriesAnalytics() {
           <button
             onClick={() => setShowResolved(true)}
             className={`px-4 py-2 rounded-lg font-medium transition ${showResolved
-                ? "bg-zinc-900 text-white"
-                : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
+              ? "bg-zinc-900 text-white"
+              : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
               }`}
           >
             Resolved
@@ -301,7 +301,8 @@ export default function UnansweredQueriesAnalytics() {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr>
@@ -352,6 +353,49 @@ export default function UnansweredQueriesAnalytics() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-zinc-100">
+            {analytics?.topUnanswered?.map((item, index) => (
+              <div key={index} className="p-4 hover:bg-zinc-50">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="font-medium text-zinc-900 text-sm">
+                    {item.query}
+                  </div>
+                  <span className="shrink-0 inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-red-100 text-red-800 text-xs font-medium">
+                    {item.occurrences}x
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs text-zinc-500 mb-3">
+                  <div>
+                    <span className="block font-medium text-zinc-700">Attempts</span>
+                    {item.totalAttempts}
+                  </div>
+                  <div>
+                    <span className="block font-medium text-zinc-700">Affected Users</span>
+                    {item.affectedUsers}
+                  </div>
+                  <div>
+                    <span className="block font-medium text-zinc-700">Avg Time</span>
+                    {item.avgTimeBetweenAttempts}s
+                  </div>
+                  <div>
+                    <span className="block font-medium text-zinc-700">Last Seen</span>
+                    {new Date(item.lastSeen).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {analytics?.topUnanswered?.length === 0 && (
+              <div className="p-8 text-center text-zinc-500 text-sm">
+                {showResolved
+                  ? "No resolved queries yet"
+                  : "No unanswered queries - great job! 🎉"
+                }
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Recent Unanswered Queries */}
@@ -366,7 +410,8 @@ export default function UnansweredQueriesAnalytics() {
               </p>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-zinc-50 border-b border-zinc-200">
                   <tr>
@@ -405,6 +450,37 @@ export default function UnansweredQueriesAnalytics() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-zinc-100">
+              {analytics?.recentUnanswered?.map((item, index) => (
+                <div key={index} className="p-4 hover:bg-zinc-50">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="font-medium text-zinc-900 text-sm">
+                      {item.query}
+                    </div>
+                    <span className="shrink-0 inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-medium">
+                      {item.attempts}x
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-zinc-500">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-zinc-700">User:</span>
+                      {item.user}
+                    </div>
+                    <div>
+                      {new Date(item.lastAttempt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {analytics?.recentUnanswered?.length === 0 && (
+                <div className="p-8 text-center text-zinc-500 text-sm">
+                  No recent unanswered queries
+                </div>
+              )}
             </div>
           </div>
         )}

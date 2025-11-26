@@ -293,7 +293,8 @@ export default function AdminAuthorsPage() {
           </div>
         ) : (
           <section className="space-y-4">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full border-separate border-spacing-y-3">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-zinc-500">
@@ -330,6 +331,54 @@ export default function AdminAuthorsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="grid gap-4 md:hidden">
+              {items.map((author) => (
+                <div key={author._id} className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <Link
+                        href={`/admin/authors/${encodeURIComponent(author.slug || author._id)}`}
+                        className="font-medium text-zinc-900 hover:text-blue-600 hover:underline"
+                      >
+                        {author.name}
+                      </Link>
+                      <div className="mt-1">
+                        <Link href={`/admin/authors/${encodeURIComponent(author.slug || author._id)}`} className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-900 font-medium">
+                          <span className="inline-flex items-center justify-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-800 border border-zinc-200">
+                            {author.bookCount ?? 0}
+                          </span>
+                          <span className="text-xs text-zinc-500">{author.bookCount === 1 ? 'book' : 'books'}</span>
+                        </Link>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEditModal(author)}
+                        className="p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 rounded-lg transition"
+                        aria-label="Edit author"
+                      >
+                        <EditIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setPendingDelete(author)}
+                        className="p-2 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition"
+                        aria-label="Delete author"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {author.bio && (
+                    <p className="text-sm text-zinc-600 line-clamp-2">
+                      {author.bio}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
 
             <div className="flex items-center justify-between">
