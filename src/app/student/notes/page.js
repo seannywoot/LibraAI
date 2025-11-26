@@ -113,11 +113,25 @@ export default function NotesPage() {
     if (!content) return "";
     const temp = document.createElement("div");
     temp.innerHTML = content;
-    // Use innerText to capture visual line breaks (e.g. <br>, <p>) while ignoring source whitespace
-    let text = temp.innerText || temp.textContent || "";
-    // Preserve newlines but collapse consecutive spaces (not newlines)
-    text = text.replace(/[^\S\n]+/g, " ").trim();
-    return text.substring(0, 150) + (text.length > 150 ? "..." : "");
+
+    // Convert headings to divs to maintain formatting but avoid large text and prose-p conflicts
+    const headings = temp.querySelectorAll("h1, h2, h3, h4, h5, h6");
+    headings.forEach(heading => {
+      const div = document.createElement("div");
+      div.innerHTML = heading.innerHTML;
+      div.className = "font-bold mb-1 mt-2"; // Keep it bold but normal size, add spacing
+      heading.parentNode.replaceChild(div, heading);
+    });
+
+    // Remove empty paragraphs
+    const paragraphs = temp.querySelectorAll("p");
+    paragraphs.forEach(p => {
+      if (!p.textContent.trim() && !p.querySelector("img")) {
+        p.remove();
+      }
+    });
+
+    return temp.innerHTML;
   }
 
   return (
@@ -208,9 +222,13 @@ export default function NotesPage() {
                 </div>
 
                 {note.content && (
-                  <p className="text-sm text-gray-600 line-clamp-3 mb-3 flex-1" style={{ whiteSpace: "pre-wrap" }}>
-                    {getPreview(note.content)}
-                  </p>
+                  <div className="relative mb-3 max-h-[4.5rem] overflow-hidden">
+                    <div
+                      className="text-sm text-gray-600 prose prose-sm max-w-none prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0"
+                      dangerouslySetInnerHTML={{ __html: getPreview(note.content) }}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                  </div>
                 )}
 
                 <div className="flex items-center justify-between text-xs text-gray-500 mt-auto">
@@ -231,7 +249,7 @@ export default function NotesPage() {
       />
 
       {/* Toast Container */}
-      <ToastContainer />
+      < ToastContainer />
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
