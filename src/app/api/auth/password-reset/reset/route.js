@@ -9,13 +9,35 @@ function badRequest(message = "Invalid token or request") {
   });
 }
 
+function validatePassword(password) {
+  if (password.length < 8) {
+    return "Password must be at least 8 characters long";
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "Password must contain at least one uppercase letter";
+  }
+  if (!/[a-z]/.test(password)) {
+    return "Password must contain at least one lowercase letter";
+  }
+  if (!/[0-9]/.test(password)) {
+    return "Password must contain at least one number";
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return "Password must contain at least one special character";
+  }
+  return null;
+}
+
 export async function POST(request) {
   const body = await request.json().catch(() => ({}));
   const token = (body.token || "").toString();
   const newPassword = (body.password || body.newPassword || "").toString();
 
   if (!token || !newPassword) return badRequest();
-  if (newPassword.length < 8) return badRequest("Password must be at least 8 characters");
+
+  // Comprehensive password validation
+  const passwordError = validatePassword(newPassword);
+  if (passwordError) return badRequest(passwordError);
 
   try {
     const client = await clientPromise;

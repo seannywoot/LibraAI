@@ -48,6 +48,7 @@ export {
   Brain,
   CheckCircle,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 
 // Optional wrapper for consistent sizing in nav/buttons

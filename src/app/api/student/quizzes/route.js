@@ -96,6 +96,41 @@ export async function POST(request) {
             return NextResponse.json({ ok: false, error: "File must be a PDF" }, { status: 400 });
         }
 
+        // ========== DUPLICATE PDF DETECTION ==========
+        const pdfFileName = pdfFile.name;
+        const client = await clientPromise;
+        const db = client.db();
+        const quizzes = db.collection("quizzes");
+
+        // Check for existing quiz with same filename for this user
+        const existingQuiz = await quizzes.findOne({
+            userId: new ObjectId(session.user.id),
+            pdfFileName: pdfFileName
+        });
+
+        if (existingQuiz) {
+            console.log("⚠️ Duplicate PDF detected:", pdfFileName);
+
+            // Get attempt count for the existing quiz
+            const quizResults = db.collection("quizResults");
+            const attemptCount = await quizResults.countDocuments({
+                userId: new ObjectId(session.user.id),
+                quizId: existingQuiz._id
+            });
+
+            return NextResponse.json({
+                ok: false,
+                error: "duplicate_pdf",
+                existingQuiz: {
+                    _id: existingQuiz._id,
+                    title: existingQuiz.title,
+                    createdAt: existingQuiz.createdAt,
+                    questionCount: existingQuiz.questionCount,
+                    attemptCount: attemptCount
+                }
+            }, { status: 400 });
+        }
+
         const arrayBuffer = await pdfFile.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
@@ -254,16 +289,40 @@ The correctAnswer field should be the index (0-3) of the correct option. Make su
             return NextResponse.json({ ok: false, error: "Failed to parse quiz questions from AI" }, { status: 500 });
         }
 
+        // ========== DUPLICATE QUESTION DETECTION ==========
+        // Remove duplicate questions based on question text
+        const uniqueQuestions = [];
+        const seenQuestions = new Set();
+
+        for (const q of questions) {
+            const normalized = q.question.trim().toLowerCase();
+            if (!seenQuestions.has(normalized)) {
+                seenQuestions.add(normalized);
+                uniqueQuestions.push(q);
+            } else {
+                console.log("⚠️ Duplicate question removed:", q.question);
+            }
+        }
+
+        // Check if we have enough questions after removing duplicates
+        if (uniqueQuestions.length < questionCount) {
+            console.error(`❌ Only ${uniqueQuestions.length} unique questions after removing duplicates (needed ${questionCount})`);
+            return NextResponse.json({
+                ok: false,
+                error: `AI generated ${questions.length - uniqueQuestions.length} duplicate question(s). Only ${uniqueQuestions.length} unique questions remain. Please try uploading the PDF again.`
+            }, { status: 500 });
+        }
+
+        // Use unique questions (take only the requested count if we have more)
+        questions = uniqueQuestions.slice(0, questionCount);
+        console.log(`✅ ${questions.length} unique questions after duplicate removal`);
+
         if (!Array.isArray(questions) || questions.length !== questionCount) {
             return NextResponse.json({ ok: false, error: "AI generated invalid quiz format" }, { status: 500 });
         }
 
-        const pdfFileName = pdfFile.name;
+        // Prepare quiz data using variables declared earlier for duplicate detection
         const title = pdfFileName.replace(/\.pdf$/i, '').replace(/[_-]/g, ' ');
-
-        const client = await clientPromise;
-        const db = client.db();
-        const quizzes = db.collection("quizzes");
 
         const newQuiz = {
             userId: new ObjectId(session.user.id),

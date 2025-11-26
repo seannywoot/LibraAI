@@ -5,12 +5,60 @@ import { useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
-import { ArrowLeft, ArrowRight, CheckCircle, Loader2, Clock, FileText } from "@/components/icons";
+import { ArrowLeft, ArrowRight, CheckCircle, Loader2, Clock, FileText, RefreshCw } from "@/components/icons";
+
+// ============= LOCAL STORAGE UTILITIES =============
+
+const QUIZ_STATE_KEY_PREFIX = "quiz_state_";
+
+function getQuizStateKey(quizId) {
+    return `${QUIZ_STATE_KEY_PREFIX}${quizId}`;
+}
+
+function saveQuizState(quizId, state) {
+    try {
+        const key = getQuizStateKey(quizId);
+        localStorage.setItem(key, JSON.stringify(state));
+    } catch (err) {
+        console.error("Failed to save quiz state:", err);
+    }
+}
+
+function loadQuizState(quizId) {
+    try {
+        const key = getQuizStateKey(quizId);
+        const saved = localStorage.getItem(key);
+        return saved ? JSON.parse(saved) : null;
+    } catch (err) {
+        console.error("Failed to load quiz state:", err);
+        return null;
+    }
+}
+
+function clearQuizState(quizId) {
+    try {
+        const key = getQuizStateKey(quizId);
+        localStorage.removeItem(key);
+    } catch (err) {
+        console.error("Failed to clear quiz state:", err);
+    }
+}
+
+// Fisher-Yates shuffle algorithm for question randomization
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+// ============= MAIN COMPONENT =============
 
 export default function QuizTakingPage({ params }) {
     const router = useRouter();
     const navigationLinks = getStudentLinks();
-    // Next.js 15: params is a Promise in client components, use React.use() to unwrap
     const { quizId } = use(params);
 
     const [quiz, setQuiz] = useState(null);
@@ -20,15 +68,77 @@ export default function QuizTakingPage({ params }) {
     const [showResults, setShowResults] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [result, setResult] = useState(null);
-    const [startTime] = useState(Date.now());
+    const [startTime, setStartTime] = useState(Date.now());
     const [previousResults, setPreviousResults] = useState([]);
     const [showPreviousResults, setShowPreviousResults] = useState(false);
     const [reviewCurrentQuestion, setReviewCurrentQuestion] = useState(0);
+
+    // New state for randomization and resume modal
+    const [questionOrder, setQuestionOrder] = useState([]);
+    const [showResumeModal, setShowResumeModal] = useState(false);
+    const [savedState, setSavedState] = useState(null);
 
     useEffect(() => {
         loadQuiz();
         loadPreviousResults();
     }, [quizId]);
+
+    // Check for saved state after quiz loads
+    useEffect(() => {
+        if (quiz && !showResults) {
+            const saved = loadQuizState(quizId);
+            if (saved && saved.quizId === quizId) {
+                setSavedState(saved);
+                setShowResumeModal(true);
+            } else {
+                // No saved state, start fresh with randomized questions
+                initializeNewAttempt();
+            }
+        }
+    }, [quiz, quizId]);
+
+    // Save state whenever answers or current question changes
+    useEffect(() => {
+        if (quiz && questionOrder.length > 0 && !showResults) {
+            const state = {
+                quizId,
+                currentQuestion,
+                selectedAnswers,
+                startTime,
+                questionOrder,
+                savedAt: Date.now()
+            };
+            saveQuizState(quizId, state);
+        }
+    }, [currentQuestion, selectedAnswers, quizId, questionOrder, startTime, quiz, showResults]);
+
+    function initializeNewAttempt() {
+        if (!quiz) return;
+
+        // Generate random question order
+        const indices = Array.from({ length: quiz.questions.length }, (_, i) => i);
+        const shuffled = shuffleArray(indices);
+        setQuestionOrder(shuffled);
+        setCurrentQuestion(0);
+        setSelectedAnswers(new Array(quiz.questions.length).fill(null));
+        setStartTime(Date.now());
+    }
+
+    function handleResumeQuiz() {
+        if (savedState) {
+            setCurrentQuestion(savedState.currentQuestion);
+            setSelectedAnswers(savedState.selectedAnswers);
+            setStartTime(savedState.startTime);
+            setQuestionOrder(savedState.questionOrder);
+            setShowResumeModal(false);
+        }
+    }
+
+    function handleStartFresh() {
+        clearQuizState(quizId);
+        setShowResumeModal(false);
+        initializeNewAttempt();
+    }
 
     async function loadQuiz() {
         setLoading(true);
@@ -37,7 +147,6 @@ export default function QuizTakingPage({ params }) {
             const data = await res.json();
             if (data.ok) {
                 setQuiz(data.quiz);
-                setSelectedAnswers(new Array(data.quiz.questions.length).fill(null));
             } else {
                 router.push("/student/quizzes");
             }
@@ -80,7 +189,6 @@ export default function QuizTakingPage({ params }) {
     }
 
     async function handleSubmit() {
-        // Check if all questions are answered
         const unanswered = selectedAnswers.filter(a => a === null).length;
         if (unanswered > 0) {
             if (!confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) {
@@ -91,11 +199,18 @@ export default function QuizTakingPage({ params }) {
         setSubmitting(true);
         try {
             const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+
+            // Remap answers back to original question order
+            const originalOrderAnswers = new Array(quiz.questions.length).fill(null);
+            questionOrder.forEach((originalIndex, shuffledIndex) => {
+                originalOrderAnswers[originalIndex] = selectedAnswers[shuffledIndex];
+            });
+
             const res = await fetch(`/api/student/quizzes/${quizId}/results`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    answers: selectedAnswers,
+                    answers: originalOrderAnswers,
                     timeSpent: timeSpent
                 })
             });
@@ -104,6 +219,7 @@ export default function QuizTakingPage({ params }) {
             if (data.ok) {
                 setResult(data);
                 setShowResults(true);
+                clearQuizState(quizId); // Clear saved state after successful submission
                 await loadPreviousResults();
             } else {
                 alert(data.error || "Failed to submit quiz");
@@ -117,11 +233,11 @@ export default function QuizTakingPage({ params }) {
     }
 
     function handleRetake() {
-        setCurrentQuestion(0);
-        setSelectedAnswers(new Array(quiz.questions.length).fill(null));
+        clearQuizState(quizId);
         setShowResults(false);
         setResult(null);
         setReviewCurrentQuestion(0);
+        initializeNewAttempt();
     }
 
     function formatDate(dateStr) {
@@ -165,7 +281,9 @@ export default function QuizTakingPage({ params }) {
         return null;
     }
 
-    const currentQ = quiz.questions[currentQuestion];
+    // Get the current question using the randomized order
+    const currentQuestionIndex = questionOrder.length > 0 ? questionOrder[currentQuestion] : currentQuestion;
+    const currentQ = quiz.questions[currentQuestionIndex];
     const progress = ((currentQuestion + 1) / quiz.questions.length) * 100;
     const answeredCount = selectedAnswers.filter(a => a !== null).length;
 
@@ -528,6 +646,55 @@ export default function QuizTakingPage({ params }) {
                             </div>
                         )}
                     </>
+                )}
+
+                {/* Resume Quiz Modal */}
+                {showResumeModal && savedState && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                            <div className="text-center space-y-4">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-2">
+                                    <RefreshCw className="h-8 w-8 text-blue-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900">
+                                    Resume Previous Attempt?
+                                </h3>
+                                <div className="space-y-2 text-sm text-gray-600">
+                                    <p>
+                                        You have an incomplete quiz attempt from{" "}
+                                        <span className="font-medium text-gray-900">
+                                            {new Date(savedState.savedAt).toLocaleString()}
+                                        </span>
+                                    </p>
+                                    <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                                        <p className="font-medium text-gray-900">
+                                            Progress: {savedState.selectedAnswers.filter(a => a !== null).length} of {quiz.questions.length} questions answered
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            Current question: {savedState.currentQuestion + 1}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-3 pt-2">
+                                    <button
+                                        onClick={handleResumeQuiz}
+                                        className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                    >
+                                        Resume Quiz
+                                    </button>
+                                    <button
+                                        onClick={handleStartFresh}
+                                        className="w-full px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                                    >
+                                        Start Fresh
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 italic">
+                                    Starting fresh will discard your previous progress
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </main>
         </div>
