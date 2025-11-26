@@ -73,7 +73,7 @@ export default function PersonalBookDetailPage({ params }) {
 
   async function loadRecommendations() {
     if (!bookId) return;
-    
+
     setLoadingRecommendations(true);
     try {
       const res = await fetch(`/api/student/books/recommendations?context=library&bookId=${bookId}`, {
@@ -119,7 +119,7 @@ export default function PersonalBookDetailPage({ params }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
         <DashboardSidebar
           heading="LibraAI"
           links={navigationLinks}
@@ -135,7 +135,7 @@ export default function PersonalBookDetailPage({ params }) {
 
   if (error || !book) {
     return (
-      <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
         <DashboardSidebar
           heading="LibraAI"
           links={navigationLinks}
@@ -150,7 +150,7 @@ export default function PersonalBookDetailPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pr-6 pl-[300px] py-8">
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"
@@ -169,9 +169,9 @@ export default function PersonalBookDetailPage({ params }) {
         </Link>
 
         <div className="rounded-lg bg-white border border-gray-200 p-8 shadow-sm">
-          <div className="flex flex-col gap-8 md:flex-row">
-            <div className="w-48 shrink-0">
-              <div className="aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium overflow-hidden">
+          <div className="flex flex-col md:flex-row gap-8">
+            <div className="w-full md:w-48 shrink-0 flex justify-center md:block">
+              <div className="aspect-2/3 w-48 md:w-full rounded bg-gray-200 flex items-center justify-center text-gray-400 text-sm font-medium overflow-hidden">
                 {book.thumbnail ? (
                   <img
                     src={book.thumbnail}
@@ -198,7 +198,7 @@ export default function PersonalBookDetailPage({ params }) {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 border-y border-gray-200">
+              <div className="grid grid-cols-2 gap-4 py-4 border-y border-gray-200">
                 {book.isbn && (
                   <div>
                     <p className="text-sm font-semibold text-gray-900">ISBN</p>
@@ -285,8 +285,8 @@ export default function PersonalBookDetailPage({ params }) {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              {isFallbackRecommendations 
-                ? "Popular Books You Might Enjoy" 
+              {isFallbackRecommendations
+                ? "Popular Books You Might Enjoy"
                 : "Similar Books You Might Like"}
             </h2>
             {loadingRecommendations && (
@@ -318,7 +318,7 @@ export default function PersonalBookDetailPage({ params }) {
           ) : (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
               <p className="text-sm text-gray-600">
-                {isFallbackRecommendations 
+                {isFallbackRecommendations
                   ? "We couldn't find books similar to this one, but here are some popular titles from our library."
                   : "No recommendations available at the moment. Check back later!"}
               </p>
