@@ -16,6 +16,7 @@ import {
 export default function NotionEditor({ content, onChange }) {
   const editorRef = useRef(null);
   const [showToolbar, setShowToolbar] = useState(false);
+  const [activeFormats, setActiveFormats] = useState({});
   const isUpdatingRef = useRef(false);
 
   useEffect(() => {
@@ -47,11 +48,57 @@ export default function NotionEditor({ content, onChange }) {
     }
   }, [content]);
 
+  function ensureTrailingParagraph() {
+    if (!editorRef.current) return;
+
+    const lastChild = editorRef.current.lastElementChild;
+    if (lastChild && ["PRE", "BLOCKQUOTE", "UL", "OL", "H1", "H2", "H3"].includes(lastChild.tagName)) {
+      const p = document.createElement("p");
+      p.innerHTML = "<br>";
+      editorRef.current.appendChild(p);
+    }
+  }
+
+  function checkFormatting() {
+    if (!editorRef.current) return;
+
+    const formats = {
+      bold: document.queryCommandState("bold"),
+      italic: document.queryCommandState("italic"),
+      underline: document.queryCommandState("underline"),
+    };
+
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      let node = selection.anchorNode;
+      if (node && node.nodeType === 3) node = node.parentNode;
+
+      while (node && node !== editorRef.current) {
+        switch (node.tagName) {
+          case "H1": formats.h1 = true; break;
+          case "H2": formats.h2 = true; break;
+          case "H3": formats.h3 = true; break;
+          case "UL": formats.ul = true; break;
+          case "OL": formats.ol = true; break;
+          case "BLOCKQUOTE": formats.quote = true; break;
+          case "PRE": formats.code = true; break;
+        }
+        node = node.parentNode;
+      }
+    }
+    setActiveFormats(formats);
+  }
+
   function handleInput() {
     if (editorRef.current && !isUpdatingRef.current) {
       isUpdatingRef.current = true;
+
+      // Ensure we always have a trailing paragraph if the last element is a block
+      ensureTrailingParagraph();
+
       const newContent = editorRef.current.innerHTML;
       onChange(newContent);
+      checkFormatting();
       setTimeout(() => {
         isUpdatingRef.current = false;
       }, 0);
@@ -155,65 +202,65 @@ export default function NotionEditor({ content, onChange }) {
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-2 mb-4 flex items-center gap-1 flex-wrap">
         <button
           onClick={() => execCommand("bold")}
-          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          className={`p-2 rounded transition-colors ${activeFormats.bold ? "bg-gray-200 text-black" : "hover:bg-gray-100 text-gray-700"}`}
           title="Bold (Ctrl+B)"
         >
-          <Bold className="h-4 w-4 text-gray-700" />
+          <Bold className="h-4 w-4" />
         </button>
         <button
           onClick={() => execCommand("italic")}
-          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          className={`p-2 rounded transition-colors ${activeFormats.italic ? "bg-gray-200 text-black" : "hover:bg-gray-100 text-gray-700"}`}
           title="Italic (Ctrl+I)"
         >
-          <Italic className="h-4 w-4 text-gray-700" />
+          <Italic className="h-4 w-4" />
         </button>
         <button
           onClick={() => execCommand("underline")}
-          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          className={`p-2 rounded transition-colors ${activeFormats.underline ? "bg-gray-200 text-black" : "hover:bg-gray-100 text-gray-700"}`}
           title="Underline (Ctrl+U)"
         >
-          <Underline className="h-4 w-4 text-gray-700" />
+          <Underline className="h-4 w-4" />
         </button>
 
         <div className="w-px h-6 bg-gray-300 mx-1" />
 
         <button
           onClick={() => insertBlock("h1")}
-          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          className={`p-2 rounded transition-colors ${activeFormats.h1 ? "bg-gray-200 text-black" : "hover:bg-gray-100 text-gray-700"}`}
           title="Heading 1"
         >
-          <Heading1 className="h-4 w-4 text-gray-700" />
+          <Heading1 className="h-4 w-4" />
         </button>
         <button
           onClick={() => insertBlock("h2")}
-          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          className={`p-2 rounded transition-colors ${activeFormats.h2 ? "bg-gray-200 text-black" : "hover:bg-gray-100 text-gray-700"}`}
           title="Heading 2"
         >
-          <Heading2 className="h-4 w-4 text-gray-700" />
+          <Heading2 className="h-4 w-4" />
         </button>
         <button
           onClick={() => insertBlock("h3")}
-          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          className={`p-2 rounded transition-colors ${activeFormats.h3 ? "bg-gray-200 text-black" : "hover:bg-gray-100 text-gray-700"}`}
           title="Heading 3"
         >
-          <Heading3 className="h-4 w-4 text-gray-700" />
+          <Heading3 className="h-4 w-4" />
         </button>
 
         <div className="w-px h-6 bg-gray-300 mx-1" />
 
         <button
           onClick={() => insertBlock("ul")}
-          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          className={`p-2 rounded transition-colors ${activeFormats.ul ? "bg-gray-200 text-black" : "hover:bg-gray-100 text-gray-700"}`}
           title="Bullet List"
         >
-          <List className="h-4 w-4 text-gray-700" />
+          <List className="h-4 w-4" />
         </button>
         <button
           onClick={() => insertBlock("ol")}
-          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          className={`p-2 rounded transition-colors ${activeFormats.ol ? "bg-gray-200 text-black" : "hover:bg-gray-100 text-gray-700"}`}
           title="Numbered List"
         >
-          <ListOrdered className="h-4 w-4 text-gray-700" />
+          <ListOrdered className="h-4 w-4" />
         </button>
 
         <div className="w-px h-6 bg-gray-300 mx-1" />
@@ -221,10 +268,10 @@ export default function NotionEditor({ content, onChange }) {
 
         <button
           onClick={() => insertBlock("code")}
-          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          className={`p-2 rounded transition-colors ${activeFormats.code ? "bg-gray-200 text-black" : "hover:bg-gray-100 text-gray-700"}`}
           title="Code Block"
         >
-          <Code className="h-4 w-4 text-gray-700" />
+          <Code className="h-4 w-4" />
         </button>
       </div>
 
@@ -235,6 +282,9 @@ export default function NotionEditor({ content, onChange }) {
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onBlur={handleInput}
+        onKeyUp={checkFormatting}
+        onMouseUp={checkFormatting}
+        onClick={checkFormatting}
         className="min-h-[500px] text-gray-900 focus:outline-none prose prose-lg max-w-none p-4"
         style={{
           wordWrap: "break-word",
