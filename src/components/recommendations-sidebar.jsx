@@ -61,33 +61,47 @@ export default function RecommendationsSidebar({
   }
 
   async function loadBookmarkStatus(books) {
-    try {
-      const bookmarkChecks = await Promise.all(
-        books.map(async (book) => {
-          const bookId = book._id;
-          const res = await fetch(
-            `/api/student/books/bookmark?bookId=${bookId}`,
-            {
-              cache: "no-store",
-            }
-          );
-          const data = await res.json().catch(() => ({}));
-          return { bookId, bookmarked: data?.bookmarked || false };
-        })
-      );
+    if (!books || books.length === 0) return;
 
-      // Update bookmarked set
-      const newBookmarked = new Set();
-      bookmarkChecks.forEach(({ bookId, bookmarked }) => {
-        if (bookmarked) newBookmarked.add(bookId);
+    try {
+      const bookIds = books.map(book => book._id);
+      
+      // Use bulk API to check all bookmarks at once
+      const res = await fetch("/api/student/books/bookmarks/bulk", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ bookIds }),
+        cache: "no-store",
       });
-      setBookmarkedBooks(newBookmarked);
+      
+      const data = await res.json().catch(() => ({}));
+      
+      if (res.ok && data?.ok) {
+        // Update bookmarked set with the results
+        const newBookmarked = new Set();
+        Object.keys(data.bookmarks || {}).forEach((bookId) => {
+          if (data.bookmarks[bookId]) {
+            newBookmarked.add(bookId);
+          }
+        });
+        setBookmarkedBooks(newBookmarked);
+      }
     } catch (e) {
       console.error("Failed to load bookmark status:", e);
     }
   }
 
   async function handleToggleBookmark(bookId) {
+    // Optimistically update UI immediately
+    const wasBookmarked = bookmarkedBooks.has(bookId);
+    const newBookmarked = new Set(bookmarkedBooks);
+    if (wasBookmarked) {
+      newBookmarked.delete(bookId);
+    } else {
+      newBookmarked.add(bookId);
+    }
+    setBookmarkedBooks(newBookmarked);
+
     try {
       const res = await fetch("/api/student/books/bookmark", {
         method: "POST",
@@ -95,17 +109,26 @@ export default function RecommendationsSidebar({
         body: JSON.stringify({ bookId }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok)
+      if (!res.ok || !data?.ok) {
+        // Revert optimistic update on error
+        const revertBookmarked = new Set(bookmarkedBooks);
+        if (wasBookmarked) {
+          revertBookmarked.add(bookId);
+        } else {
+          revertBookmarked.delete(bookId);
+        }
+        setBookmarkedBooks(revertBookmarked);
         throw new Error(data?.error || "Failed to toggle bookmark");
-
-      // Update local state
-      const newBookmarked = new Set(bookmarkedBooks);
-      if (data.bookmarked) {
-        newBookmarked.add(bookId);
-      } else {
-        newBookmarked.delete(bookId);
       }
-      setBookmarkedBooks(newBookmarked);
+
+      // Confirm the state matches the server response
+      const confirmedBookmarked = new Set(bookmarkedBooks);
+      if (data.bookmarked) {
+        confirmedBookmarked.add(bookId);
+      } else {
+        confirmedBookmarked.delete(bookId);
+      }
+      setBookmarkedBooks(confirmedBookmarked);
 
       showToast(data.message, "success");
     } catch (e) {

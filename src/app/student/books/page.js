@@ -219,6 +219,23 @@ export default function StudentBooksPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Refresh bookmark status when page becomes visible (e.g., returning from bookmarks page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && items.length > 0) {
+        // Refresh bookmark status when page becomes visible
+        loadBookmarkStatus(items.map((b) => b._id));
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
   // Clear sessionStorage when navigating away (except for back/forward navigation)
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -384,26 +401,26 @@ export default function StudentBooksPage() {
     if (!bookIds || bookIds.length === 0) return;
 
     try {
-      // Check each book's bookmark status
-      const bookmarkChecks = await Promise.all(
-        bookIds.map(async (bookId) => {
-          const res = await fetch(
-            `/api/student/books/bookmark?bookId=${bookId}`,
-            {
-              cache: "no-store",
-            }
-          );
-          const data = await res.json().catch(() => ({}));
-          return { bookId, bookmarked: data?.bookmarked || false };
-        })
-      );
-
-      // Update bookmarked set
-      const newBookmarked = new Set();
-      bookmarkChecks.forEach(({ bookId, bookmarked }) => {
-        if (bookmarked) newBookmarked.add(bookId);
+      // Use bulk API to check all bookmarks at once
+      const res = await fetch("/api/student/books/bookmarks/bulk", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ bookIds }),
+        cache: "no-store",
       });
-      setBookmarkedBooks(newBookmarked);
+      
+      const data = await res.json().catch(() => ({}));
+      
+      if (res.ok && data?.ok) {
+        // Update bookmarked set with the results
+        const newBookmarked = new Set();
+        Object.keys(data.bookmarks || {}).forEach((bookId) => {
+          if (data.bookmarks[bookId]) {
+            newBookmarked.add(bookId);
+          }
+        });
+        setBookmarkedBooks(newBookmarked);
+      }
     } catch (e) {
       console.error("Failed to load bookmark status:", e);
     }
@@ -413,6 +430,16 @@ export default function StudentBooksPage() {
     e.preventDefault();
     e.stopPropagation();
 
+    // Optimistically update UI immediately
+    const wasBookmarked = bookmarkedBooks.has(bookId);
+    const newBookmarked = new Set(bookmarkedBooks);
+    if (wasBookmarked) {
+      newBookmarked.delete(bookId);
+    } else {
+      newBookmarked.add(bookId);
+    }
+    setBookmarkedBooks(newBookmarked);
+
     setBookmarking(bookId);
     try {
       const res = await fetch("/api/student/books/bookmark", {
@@ -421,17 +448,26 @@ export default function StudentBooksPage() {
         body: JSON.stringify({ bookId }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok)
+      if (!res.ok || !data?.ok) {
+        // Revert optimistic update on error
+        const revertBookmarked = new Set(bookmarkedBooks);
+        if (wasBookmarked) {
+          revertBookmarked.add(bookId);
+        } else {
+          revertBookmarked.delete(bookId);
+        }
+        setBookmarkedBooks(revertBookmarked);
         throw new Error(data?.error || "Failed to toggle bookmark");
-
-      // Update local state
-      const newBookmarked = new Set(bookmarkedBooks);
-      if (data.bookmarked) {
-        newBookmarked.add(bookId);
-      } else {
-        newBookmarked.delete(bookId);
       }
-      setBookmarkedBooks(newBookmarked);
+
+      // Confirm the state matches the server response
+      const confirmedBookmarked = new Set(bookmarkedBooks);
+      if (data.bookmarked) {
+        confirmedBookmarked.add(bookId);
+      } else {
+        confirmedBookmarked.delete(bookId);
+      }
+      setBookmarkedBooks(confirmedBookmarked);
 
       showToast(data.message, "success");
     } catch (e) {
