@@ -197,6 +197,15 @@ export default function NotionEditor({ content, onChange }) {
     }
   }
 
+  function handleClick(e) {
+    checkFormatting();
+
+    // Handle Ctrl+Click on links
+    if ((e.ctrlKey || e.metaKey) && e.target.tagName === 'A') {
+      window.open(e.target.href, '_blank');
+    }
+  }
+
   return (
     <div className="relative">
       {/* Toolbar */}
@@ -285,7 +294,7 @@ export default function NotionEditor({ content, onChange }) {
         onBlur={handleInput}
         onKeyUp={checkFormatting}
         onMouseUp={checkFormatting}
-        onClick={checkFormatting}
+        onClick={handleClick}
         onPaste={handlePaste}
         className="min-h-[500px] text-gray-900 focus:outline-none prose prose-lg max-w-none p-4"
         style={{

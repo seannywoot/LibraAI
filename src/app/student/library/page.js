@@ -71,6 +71,7 @@ function MyLibraryContent() {
   const [uploading, setUploading] = useState(false);
   const [returning, setReturning] = useState(null);
   const [showManualForm, setShowManualForm] = useState(false);
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const [viewMode, setViewMode] = useState("grid"); // 'list' or 'grid'
   const [manualBook, setManualBook] = useState({
     title: "",
@@ -443,6 +444,41 @@ function MyLibraryContent() {
     }
   }
 
+  function handleCancel() {
+    // Check if form is dirty (has any data entered)
+    const isDirty =
+      manualBook.title ||
+      manualBook.author ||
+      manualBook.isbn ||
+      manualBook.publisher ||
+      manualBook.year ||
+      manualBook.description ||
+      manualBook.thumbnail ||
+      manualBook.categories.length > 0;
+
+    if (isDirty) {
+      setShowCancelConfirmation(true);
+    } else {
+      setShowManualForm(false);
+    }
+  }
+
+  function confirmCancel() {
+    setManualBook({
+      title: "",
+      author: "",
+      isbn: "",
+      publisher: "",
+      year: "",
+      description: "",
+      thumbnail: "",
+      categories: [],
+      tags: [],
+    });
+    setShowCancelConfirmation(false);
+    setShowManualForm(false);
+  }
+
   async function handleFetchFromGoogleBooks() {
     // Get current values from the form inputs directly
     const currentIsbn = manualBook.isbn.trim();
@@ -785,159 +821,185 @@ function MyLibraryContent() {
 
         {/* Manual Add Modal */}
         {showManualForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-              <button
-                onClick={() => setShowManualForm(false)}
-                className="absolute right-4 top-4 rounded-full p-2 hover:bg-gray-100"
-              >
-                <X className="h-5 w-5" />
-              </button>
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                <button
+                  onClick={handleCancel}
+                  className="absolute right-4 top-4 rounded-full p-2 hover:bg-gray-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
 
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Add Book Manually
-              </h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  Add Book Manually
+                </h2>
 
-              <div className="mb-6 rounded-lg bg-blue-50 p-4 text-sm text-blue-700">
-                <p>
-                  Enter an ISBN or Title and click <strong>Fetch Details</strong> to automatically fill in the book information.
-                </p>
+                <div className="mb-6 rounded-lg bg-blue-50 p-4 text-sm text-blue-700">
+                  <p>
+                    Enter an ISBN or Title and click <strong>Fetch Details</strong> to automatically fill in the book information.
+                  </p>
+                </div>
+
+                <form onSubmit={handleManualAdd} className="space-y-4">
+                  {/* Cover Image Preview */}
+                  {manualBook.thumbnail && (
+                    <div className="flex justify-center mb-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={manualBook.thumbnail}
+                        alt="Book Cover"
+                        className="h-32 w-auto object-cover rounded shadow-sm"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Title <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={manualBook.title}
+                        onChange={(e) =>
+                          setManualBook({ ...manualBook, title: e.target.value })
+                        }
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleFetchFromGoogleBooks}
+                      disabled={fetchingFromGoogle}
+                      className="mb-[1px] rounded-lg bg-white border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {fetchingFromGoogle ? "Fetching..." : "Fetch Details"}
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Author
+                    </label>
+                    <input
+                      type="text"
+                      value={manualBook.author}
+                      onChange={(e) =>
+                        setManualBook({ ...manualBook, author: e.target.value })
+                      }
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      ISBN
+                    </label>
+                    <input
+                      type="text"
+                      value={manualBook.isbn}
+                      onChange={(e) =>
+                        setManualBook({ ...manualBook, isbn: e.target.value })
+                      }
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Publisher
+                      </label>
+                      <input
+                        type="text"
+                        value={manualBook.publisher}
+                        onChange={(e) =>
+                          setManualBook({
+                            ...manualBook,
+                            publisher: e.target.value,
+                          })
+                        }
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Year
+                      </label>
+                      <input
+                        type="text"
+                        value={manualBook.year}
+                        onChange={(e) =>
+                          setManualBook({ ...manualBook, year: e.target.value })
+                        }
+                        placeholder="2024"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hidden fields for extended data */}
+                  {manualBook.categories.length > 0 && (
+                    <div className="text-xs text-gray-500">
+                      <span className="font-medium">Categories:</span> {manualBook.categories.join(", ")}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={uploading}
+                      className="flex-1 rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                    >
+                      {uploading ? "Adding..." : "Add Book"}
+                    </button>
+                  </div>
+                </form>
               </div>
-
-              <form onSubmit={handleManualAdd} className="space-y-4">
-                {/* Cover Image Preview */}
-                {manualBook.thumbnail && (
-                  <div className="flex justify-center mb-4">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={manualBook.thumbnail}
-                      alt="Book Cover"
-                      className="h-32 w-auto object-cover rounded shadow-sm"
-                    />
-                  </div>
-                )}
-
-                <div className="flex gap-2 items-end">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Title <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={manualBook.title}
-                      onChange={(e) =>
-                        setManualBook({ ...manualBook, title: e.target.value })
-                      }
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                      required
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleFetchFromGoogleBooks}
-                    disabled={fetchingFromGoogle}
-                    className="mb-[1px] rounded-lg bg-white border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 whitespace-nowrap"
-                  >
-                    {fetchingFromGoogle ? "Fetching..." : "Fetch Details"}
-                  </button>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Author
-                  </label>
-                  <input
-                    type="text"
-                    value={manualBook.author}
-                    onChange={(e) =>
-                      setManualBook({ ...manualBook, author: e.target.value })
-                    }
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ISBN
-                  </label>
-                  <input
-                    type="text"
-                    value={manualBook.isbn}
-                    onChange={(e) =>
-                      setManualBook({ ...manualBook, isbn: e.target.value })
-                    }
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Publisher
-                    </label>
-                    <input
-                      type="text"
-                      value={manualBook.publisher}
-                      onChange={(e) =>
-                        setManualBook({
-                          ...manualBook,
-                          publisher: e.target.value,
-                        })
-                      }
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Year
-                    </label>
-                    <input
-                      type="text"
-                      value={manualBook.year}
-                      onChange={(e) =>
-                        setManualBook({ ...manualBook, year: e.target.value })
-                      }
-                      placeholder="2024"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                    />
-                  </div>
-                </div>
-
-                {/* Hidden fields for extended data */}
-                {manualBook.categories.length > 0 && (
-                  <div className="text-xs text-gray-500">
-                    <span className="font-medium">Categories:</span> {manualBook.categories.join(", ")}
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowManualForm(false)}
-                    className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={uploading}
-                    className="flex-1 rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                  >
-                    {uploading ? "Adding..." : "Add Book"}
-                  </button>
-                </div>
-              </form>
             </div>
-          </div >
-        )
-        }
+          </div>
+        )}
 
+        {/* Cancel Confirmation Modal */}
+        {showCancelConfirmation && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 p-4">
+            <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-2xl">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Discard changes?</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                You have unsaved changes. Are you sure you want to discard them?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelConfirmation(false)}
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  No, keep editing
+                </button>
+                <button
+                  onClick={confirmCancel}
+                  className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                >
+                  Yes, discard
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Scanner Modal */}
-        {
-          showScanner && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        {showScanner && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4">
+            <div className="flex min-h-full items-center justify-center p-4">
               <div className="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
                 <button
                   onClick={() => setShowScanner(false)}
@@ -956,656 +1018,654 @@ function MyLibraryContent() {
                 />
               </div>
             </div>
-          )
-        }
+          </div>
+        )}
 
         {/* Tab Content */}
-        {
-          activeTab === "bookmarked" ? (
-            /* Bookmarked Books */
-            <div className="space-y-4">
-              {/* View Controls */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Bookmarked Books ({bookmarkedBooks.length})
-                </h2>
-                <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={`p-1.5 rounded ${viewMode === "grid"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={`p-1.5 rounded ${viewMode === "list"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                        clipRule="evenodd"
+        {activeTab === "bookmarked" ? (
+          /* Bookmarked Books */
+          <div className="space-y-4">
+            {/* View Controls */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Bookmarked Books ({bookmarkedBooks.length})
+              </h2>
+              <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`p-1.5 rounded ${viewMode === "grid"
+              ? "bg-gray-900 text-white"
+              : "text-gray-600 hover:bg-gray-100"
+              }`}
+          >
+            <svg
+              className="h-4 w-4"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={`p-1.5 rounded ${viewMode === "list"
+              ? "bg-gray-900 text-white"
+              : "text-gray-600 hover:bg-gray-100"
+              }`}
+          >
+            <svg
+              className="h-4 w-4"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
+        {loading ? (
+          <div className="text-center py-12 text-gray-600">
+            Loading bookmarked books...
+          </div>
+        ) : bookmarkedBooks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+            <div className="rounded-full bg-gray-100 p-4 text-gray-400">
+              <Bookmark className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              No bookmarked books
+            </h3>
+            <p className="text-sm text-gray-600 max-w-md">
+              Bookmark books from the catalog to save them for later.
+            </p>
+          </div>
+        ) : viewMode === "list" ? (
+          <div className="space-y-4">
+            {bookmarkedBooks.map((book) => (
+              <Link
+                key={book._id}
+                href={`/student/books/${encodeURIComponent(book.slug || book._id)}?from=library&tab=bookmarked`}
+                className="rounded-lg border border-gray-200 bg-white p-6 hover:shadow-md transition-shadow cursor-pointer block"
+              >
+                <div className="flex gap-6">
+                  {/* Book Cover */}
+                  <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                    {book.coverImage || book.coverImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={book.coverImage || book.coverImageUrl}
+                        alt={`Cover of ${book.title}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
+                        }}
                       />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
-                {loading ? (
-                  <div className="text-center py-12 text-gray-600">
-                    Loading bookmarked books...
+                    ) : (
+                      <span>Book Cover</span>
+                    )}
                   </div>
-                ) : bookmarkedBooks.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                    <div className="rounded-full bg-gray-100 p-4 text-gray-400">
-                      <Bookmark className="h-8 w-8" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      No bookmarked books
+
+                  {/* Book Details */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                      {book.title}
                     </h3>
-                    <p className="text-sm text-gray-600 max-w-md">
-                      Bookmark books from the catalog to save them for later.
+                    <p className="text-sm text-gray-600 mb-2">
+                      {book.author}
                     </p>
+
+                    <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                      {book.isbn && <span>ISBN: {book.isbn}</span>}
+                      {book.bookmarkedAt && (
+                        <span>Bookmarked {new Date(book.bookmarkedAt).toLocaleDateString()}</span>
+                      )}
+                    </div>
+
+                    {book.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {book.description}
+                      </p>
+                    )}
                   </div>
-                ) : viewMode === "list" ? (
-                  <div className="space-y-4">
-                    {bookmarkedBooks.map((book) => (
-                      <Link
-                        key={book._id}
-                        href={`/student/books/${encodeURIComponent(book.slug || book._id)}?from=library&tab=bookmarked`}
-                        className="rounded-lg border border-gray-200 bg-white p-6 hover:shadow-md transition-shadow cursor-pointer block"
-                      >
-                        <div className="flex gap-6">
-                          {/* Book Cover */}
-                          <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
-                            {book.coverImage || book.coverImageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={book.coverImage || book.coverImageUrl}
-                                alt={`Cover of ${book.title}`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
-                                }}
-                              />
-                            ) : (
-                              <span>Book Cover</span>
-                            )}
-                          </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
+            {bookmarkedBooks.map((book) => (
+              <Link
+                key={book._id}
+                href={`/student/books/${encodeURIComponent(book.slug || book._id)}?from=library&tab=bookmarked`}
+                className="rounded-lg border border-gray-200 bg-white p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col"
+              >
+                {/* Book Cover */}
+                <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
+                  {book.coverImage || book.coverImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={book.coverImage || book.coverImageUrl}
+                      alt={`Cover of ${book.title}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
+                      }}
+                    />
+                  ) : (
+                    <span>Book Cover</span>
+                  )}
+                </div>
 
-                          {/* Book Details */}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
-                              {book.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-2">
-                              {book.author}
-                            </p>
+                {/* Book Details */}
+                <div className="flex-1 flex flex-col">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
+                    {book.title}
+                  </h3>
+                  <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
+                    {book.author}
+                  </p>
+                  <div className="text-xs text-gray-500 mb-2 h-4">
+                    {book.isbn && <span>ISBN: {book.isbn}</span>}
+                  </div>
 
-                            <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
-                              {book.isbn && <span>ISBN: {book.isbn}</span>}
-                              {book.bookmarkedAt && (
-                                <span>Bookmarked {new Date(book.bookmarkedAt).toLocaleDateString()}</span>
-                              )}
-                            </div>
+                  {/* Bookmark Date */}
+                  <div className="mt-auto">
+                    <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-[11px] font-medium text-gray-500 text-center">
+                      Bookmarked {new Date(book.bookmarkedAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+            </div>
+          </div>
+        ) : activeTab === "personal" ? (
+          /* Personal Collection */
+          <div className="space-y-4">
+      {/* View Controls */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900">
+          Personal Collection ({myBooks.length})
+        </h2>
+        <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`p-1.5 rounded ${viewMode === "grid"
+              ? "bg-gray-900 text-white"
+              : "text-gray-600 hover:bg-gray-100"
+              }`}
+          >
+            <svg
+              className="h-4 w-4"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={`p-1.5 rounded ${viewMode === "list"
+              ? "bg-gray-900 text-white"
+              : "text-gray-600 hover:bg-gray-100"
+              }`}
+          >
+            <svg
+              className="h-4 w-4"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
 
-                            {book.description && (
-                              <p className="text-sm text-gray-600 line-clamp-2">
-                                {book.description}
-                              </p>
-                            )}
-                          </div>
+      <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
+
+        {loading ? (
+          <div className="text-center py-12 text-gray-600">
+            Loading your library...
+          </div>
+        ) : myBooks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+            <div className="rounded-full bg-gray-100 p-4 text-gray-400">
+              <BookIcon className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              No books yet
+            </h3>
+            <p className="text-sm text-gray-600 max-w-md">
+              Start building your library by uploading PDFs, scanning barcodes, or adding books manually.
+            </p>
+          </div>
+        ) : viewMode === "list" ? (
+          <div className="space-y-4">
+            {myBooks.map((book) => (
+              <div
+                key={book._id}
+                className="relative rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow"
+              >
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRemoveBook(book._id);
+                  }}
+                  className="absolute right-4 top-4 z-10 rounded-full p-1.5 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shadow-sm"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+
+                <Link
+                  href={`/student/library/${book._id}`}
+                  className="block rounded-lg p-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/40"
+                >
+                  <div className="flex gap-5">
+                    {/* Book Cover */}
+                    <div className="w-20 h-28 md:w-24 md:h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                      {book.thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={book.thumbnail}
+                          alt={`Cover of ${book.title}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
+                          }}
+                        />
+                      ) : (
+                        <span>No Cover</span>
+                      )}
+                    </div>
+
+                    {/* Book Details */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                        {book.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {book.author || "Unknown Author"}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 mb-3">
+                        {book.isbn && <span>ISBN: {book.isbn}</span>}
+                        {book.addedAt && (
+                          <span>Added {new Date(book.addedAt).toLocaleDateString()}</span>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400">
+                          {book.fileType === "application/pdf" && book.fileUrl ? "Click to read PDF" : "View details"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
+            {myBooks.map((book) => (
+              <div
+                key={book._id}
+                className="relative rounded-lg border border-gray-200 bg-white hover:shadow-md transition-shadow"
+              >
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRemoveBook(book._id);
+                  }}
+                  className="absolute right-2 top-2 z-10 rounded-full p-1.5 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shadow-sm"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+
+                <Link
+                  href={`/student/library/${book._id}`}
+                  className="flex h-full flex-col rounded-lg p-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/40"
+                >
+                  {/* Book Cover */}
+                  <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
+                    {book.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={book.thumbnail}
+                        alt={`Cover of ${book.title}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
+                        }}
+                      />
+                    ) : (
+                      <span>No Cover</span>
+                    )}
+                  </div>
+
+                  {/* Book Details */}
+                  <div className="flex-1 flex flex-col">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
+                      {book.title}
+                    </h3>
+                    <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
+                      {book.author || "Unknown Author"}
+                    </p>
+                    <div className="text-xs text-gray-500 mb-2 h-4">
+                      {book.isbn && <span>ISBN: {book.isbn}</span>}
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="mt-auto space-y-2">
+                      {book.fileType === "application/pdf" && book.fileUrl ? (
+                        <div className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white text-center">
+                          Read PDF
                         </div>
-                      </Link>
-                    ))}
+                      ) : (
+                        <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-[11px] font-medium text-gray-500 text-center">
+                          Added {new Date(book.addedAt).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                    {bookmarkedBooks.map((book) => (
-                      <Link
-                        key={book._id}
-                        href={`/student/books/${encodeURIComponent(book.slug || book._id)}?from=library&tab=bookmarked`}
-                        className="rounded-lg border border-gray-200 bg-white p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col"
-                      >
-                        {/* Book Cover */}
-                        <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
-                          {book.coverImage || book.coverImageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={book.coverImage || book.coverImageUrl}
-                              alt={`Cover of ${book.title}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+            </div>
+          </div>
+        ) : (
+          /* Borrowed Books */
+          <div className="space-y-4">
+            {/* View Controls */}
+            <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900">
+          Borrowed Books ({borrowedBooks.length})
+        </h2>
+        <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`p-1.5 rounded ${viewMode === "grid"
+              ? "bg-gray-900 text-white"
+              : "text-gray-600 hover:bg-gray-100"
+              }`}
+          >
+            <svg
+              className="h-4 w-4"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={`p-1.5 rounded ${viewMode === "list"
+              ? "bg-gray-900 text-white"
+              : "text-gray-600 hover:bg-gray-100"
+              }`}
+          >
+            <svg
+              className="h-4 w-4"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
+        {loading ? (
+          <div className="text-center py-12 text-gray-600">
+            Loading borrowed books...
+          </div>
+        ) : borrowedBooks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+            <div className="rounded-full bg-gray-100 p-4 text-gray-400">
+              <BookOpen className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              No borrowed books
+            </h3>
+            <p className="text-sm text-gray-600 max-w-md">
+              You haven&apos;t borrowed any books yet. Browse the catalog to get started.
+            </p>
+          </div>
+        ) : viewMode === "list" ? (
+          <div className="space-y-4">
+            {borrowedBooks.map((transaction) => {
+              const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
+              const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
+              const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
+              const canReturn = transaction.status === "borrowed";
+              return (
+                <Link
+                  key={transaction._id}
+                  href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
+                  className={`block rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                    }`}
+                >
+                  <div className="flex gap-6">
+                    {/* Book Cover */}
+                    <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                      {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
+                          alt={`Cover of ${transaction.bookTitle}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
+                          }}
+                        />
+                      ) : (
+                        <span>Book Cover</span>
+                      )}
+                    </div>
+
+                    {/* Book Details */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                        {transaction.bookTitle}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {transaction.bookAuthor}
+                      </p>
+
+                      <div className="flex items-center gap-3 mb-3">
+                        <StatusBadge status={transaction.status} />
+                      </div>
+
+                      <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                        <span>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</span>
+                        <span>|</span>
+                        <span className={overdue ? "font-semibold text-rose-700" : ""}>
+                          Due: {formatDate(dueDate)}
+                          {overdue && " (Overdue)"}
+                        </span>
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="flex items-center justify-between">
+                        <div></div>
+                        <div className="flex items-center gap-3" onClick={(e) => e.preventDefault()}>
+                          {canReturn ? (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleReturn(transaction.bookId);
                               }}
-                            />
+                              disabled={returning === transaction.bookId}
+                              className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                            >
+                              {returning === transaction.bookId ? "Submitting..." : "Request Return"}
+                            </button>
+                          ) : transaction.status === "return-requested" ? (
+                            <span className="text-sm font-medium text-gray-500">
+                              Awaiting confirmation
+                            </span>
+                          ) : transaction.status === "rejected" ? (
+                            <span className="text-sm font-medium text-rose-600">
+                              Request rejected
+                            </span>
                           ) : (
-                            <span>Book Cover</span>
+                            <span className="text-sm font-medium text-gray-500">
+                              Pending approval
+                            </span>
                           )}
+
+                          {/* Bookmark Button */}
+                          <button
+                            onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
+                            disabled={bookmarking === transaction.bookId}
+                            className={`p-2 rounded-full transition-colors ${bookmarkStatus.get(transaction.bookId)
+                              ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                              : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                              } disabled:opacity-50`}
+                            title={bookmarkStatus.get(transaction.bookId) ? "Remove bookmark" : "Bookmark this book"}
+                          >
+                            <Bookmark className={`h-4 w-4 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
+                          </button>
                         </div>
-
-                        {/* Book Details */}
-                        <div className="flex-1 flex flex-col">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
-                            {book.title}
-                          </h3>
-                          <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
-                            {book.author}
-                          </p>
-                          <div className="text-xs text-gray-500 mb-2 h-4">
-                            {book.isbn && <span>ISBN: {book.isbn}</span>}
-                          </div>
-
-                          {/* Bookmark Date */}
-                          <div className="mt-auto">
-                            <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-[11px] font-medium text-gray-500 text-center">
-                              Bookmarked {new Date(book.bookmarkedAt).toLocaleDateString()}
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : activeTab === "personal" ? (
-            /* Personal Collection */
-            <div className="space-y-4">
-              {/* View Controls */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Personal Collection ({myBooks.length})
-                </h2>
-                <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={`p-1.5 rounded ${viewMode === "grid"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={`p-1.5 rounded ${viewMode === "list"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
-
-                {loading ? (
-                  <div className="text-center py-12 text-gray-600">
-                    Loading your library...
-                  </div>
-                ) : myBooks.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                    <div className="rounded-full bg-gray-100 p-4 text-gray-400">
-                      <BookIcon className="h-8 w-8" />
+                      </div>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      No books yet
-                    </h3>
-                    <p className="text-sm text-gray-600 max-w-md">
-                      Start building your library by uploading PDFs, scanning barcodes, or adding books manually.
-                    </p>
                   </div>
-                ) : viewMode === "list" ? (
-                  <div className="space-y-4">
-                    {myBooks.map((book) => (
-                      <div
-                        key={book._id}
-                        className="relative rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow"
-                      >
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
+            {borrowedBooks.map((transaction) => {
+              const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
+              const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
+              const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
+              const canReturn = transaction.status === "borrowed";
+              return (
+                <Link
+                  key={transaction._id}
+                  href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
+                  className={`rounded-lg border p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                    }`}
+                >
+                  {/* Book Cover */}
+                  <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
+                    {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
+                        alt={`Cover of ${transaction.bookTitle}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
+                        }}
+                      />
+                    ) : (
+                      <span>Book Cover</span>
+                    )}
+                  </div>
+
+                  {/* Book Details */}
+                  <div className="flex-1 flex flex-col">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
+                      {transaction.bookTitle}
+                    </h3>
+                    <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
+                      {transaction.bookAuthor}
+                    </p>
+
+                    {/* Status Badge */}
+                    <div className="mb-2 h-6 flex items-center">
+                      <StatusBadge status={transaction.status} />
+                    </div>
+
+                    {/* Dates */}
+                    <div className="text-[11px] text-gray-500 space-y-1 mb-3">
+                      <p>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</p>
+                      <p className={overdue ? "font-semibold text-rose-700" : ""}>
+                        Due: {formatDate(dueDate)}
+                        {overdue && " (Overdue)"}
+                      </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="mt-auto space-y-2" onClick={(e) => e.preventDefault()}>
+                      {canReturn ? (
                         <button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleRemoveBook(book._id);
+                            handleReturn(transaction.bookId);
                           }}
-                          className="absolute right-4 top-4 z-10 rounded-full p-1.5 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shadow-sm"
+                          disabled={returning === transaction.bookId}
+                          className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
                         >
-                          <X className="h-4 w-4" />
+                          {returning === transaction.bookId ? "Submitting..." : "Request Return"}
                         </button>
+                      ) : transaction.status === "return-requested" ? (
+                        <div className="w-full rounded-md bg-amber-100 border border-amber-200 px-4 py-2 text-xs font-medium text-amber-700 text-center">
+                          Awaiting confirmation
+                        </div>
+                      ) : transaction.status === "rejected" ? (
+                        <div className="w-full rounded-md bg-rose-100 border border-rose-200 px-4 py-2 text-xs font-medium text-rose-700 text-center">
+                          Request rejected
+                        </div>
+                      ) : (
+                        <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
+                          Pending approval
+                        </div>
+                      )}
 
-                        <Link
-                          href={`/student/library/${book._id}`}
-                          className="block rounded-lg p-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/40"
-                        >
-                          <div className="flex gap-5">
-                            {/* Book Cover */}
-                            <div className="w-20 h-28 md:w-24 md:h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
-                              {book.thumbnail ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={book.thumbnail}
-                                  alt={`Cover of ${book.title}`}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
-                                  }}
-                                />
-                              ) : (
-                                <span>No Cover</span>
-                              )}
-                            </div>
-
-                            {/* Book Details */}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
-                                {book.title}
-                              </h3>
-                              <p className="text-sm text-gray-600 mb-2">
-                                {book.author || "Unknown Author"}
-                              </p>
-                              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 mb-3">
-                                {book.isbn && <span>ISBN: {book.isbn}</span>}
-                                {book.addedAt && (
-                                  <span>Added {new Date(book.addedAt).toLocaleDateString()}</span>
-                                )}
-                              </div>
-
-                              {/* Action Button */}
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-gray-400">
-                                  {book.fileType === "application/pdf" && book.fileUrl ? "Click to read PDF" : "View details"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                    {myBooks.map((book) => (
-                      <div
-                        key={book._id}
-                        className="relative rounded-lg border border-gray-200 bg-white hover:shadow-md transition-shadow"
+                      {/* Bookmark Button */}
+                      <button
+                        onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
+                        disabled={bookmarking === transaction.bookId}
+                        className={`w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-xs font-medium transition-colors ${bookmarkStatus.get(transaction.bookId)
+                          ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          } disabled:opacity-50`}
                       >
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleRemoveBook(book._id);
-                          }}
-                          className="absolute right-2 top-2 z-10 rounded-full p-1.5 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shadow-sm"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-
-                        <Link
-                          href={`/student/library/${book._id}`}
-                          className="flex h-full flex-col rounded-lg p-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/40"
-                        >
-                          {/* Book Cover */}
-                          <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
-                            {book.thumbnail ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={book.thumbnail}
-                                alt={`Cover of ${book.title}`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">No Cover</span>';
-                                }}
-                              />
-                            ) : (
-                              <span>No Cover</span>
-                            )}
-                          </div>
-
-                          {/* Book Details */}
-                          <div className="flex-1 flex flex-col">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
-                              {book.title}
-                            </h3>
-                            <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
-                              {book.author || "Unknown Author"}
-                            </p>
-                            <div className="text-xs text-gray-500 mb-2 h-4">
-                              {book.isbn && <span>ISBN: {book.isbn}</span>}
-                            </div>
-
-                            {/* Action Button */}
-                            <div className="mt-auto space-y-2">
-                              {book.fileType === "application/pdf" && book.fileUrl ? (
-                                <div className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white text-center">
-                                  Read PDF
-                                </div>
-                              ) : (
-                                <div className="w-full rounded-md bg-gray-100 border border-gray-200 px-4 py-2 text-[11px] font-medium text-gray-500 text-center">
-                                  Added {new Date(book.addedAt).toLocaleDateString()}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            /* Borrowed Books */
-            <div className="space-y-4">
-              {/* View Controls */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Borrowed Books ({borrowedBooks.length})
-                </h2>
-                <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={`p-1.5 rounded ${viewMode === "grid"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={`p-1.5 rounded ${viewMode === "list"
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
-                {loading ? (
-                  <div className="text-center py-12 text-gray-600">
-                    Loading borrowed books...
-                  </div>
-                ) : borrowedBooks.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                    <div className="rounded-full bg-gray-100 p-4 text-gray-400">
-                      <BookOpen className="h-8 w-8" />
+                        <Bookmark className={`h-3.5 w-3.5 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
+                        {bookmarkStatus.get(transaction.bookId) ? "Bookmarked" : "Bookmark"}
+                      </button>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      No borrowed books
-                    </h3>
-                    <p className="text-sm text-gray-600 max-w-md">
-                      You haven&apos;t borrowed any books yet. Browse the catalog to get started.
-                    </p>
                   </div>
-                ) : viewMode === "list" ? (
-                  <div className="space-y-4">
-                    {borrowedBooks.map((transaction) => {
-                      const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
-                      const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
-                      const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
-                      const canReturn = transaction.status === "borrowed";
-                      return (
-                        <Link
-                          key={transaction._id}
-                          href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
-                          className={`block rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
-                            }`}
-                        >
-                          <div className="flex gap-6">
-                            {/* Book Cover */}
-                            <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
-                              {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
-                                  alt={`Cover of ${transaction.bookTitle}`}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
-                                  }}
-                                />
-                              ) : (
-                                <span>Book Cover</span>
-                              )}
-                            </div>
-
-                            {/* Book Details */}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
-                                {transaction.bookTitle}
-                              </h3>
-                              <p className="text-sm text-gray-600 mb-2">
-                                {transaction.bookAuthor}
-                              </p>
-
-                              <div className="flex items-center gap-3 mb-3">
-                                <StatusBadge status={transaction.status} />
-                              </div>
-
-                              <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
-                                <span>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</span>
-                                <span>|</span>
-                                <span className={overdue ? "font-semibold text-rose-700" : ""}>
-                                  Due: {formatDate(dueDate)}
-                                  {overdue && " (Overdue)"}
-                                </span>
-                              </div>
-
-                              {/* Action Button */}
-                              <div className="flex items-center justify-between">
-                                <div></div>
-                                <div className="flex items-center gap-3" onClick={(e) => e.preventDefault()}>
-                                  {canReturn ? (
-                                    <button
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleReturn(transaction.bookId);
-                                      }}
-                                      disabled={returning === transaction.bookId}
-                                      className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                                    >
-                                      {returning === transaction.bookId ? "Submitting..." : "Request Return"}
-                                    </button>
-                                  ) : transaction.status === "return-requested" ? (
-                                    <span className="text-sm font-medium text-gray-500">
-                                      Awaiting confirmation
-                                    </span>
-                                  ) : transaction.status === "rejected" ? (
-                                    <span className="text-sm font-medium text-rose-600">
-                                      Request rejected
-                                    </span>
-                                  ) : (
-                                    <span className="text-sm font-medium text-gray-500">
-                                      Pending approval
-                                    </span>
-                                  )}
-
-                                  {/* Bookmark Button */}
-                                  <button
-                                    onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
-                                    disabled={bookmarking === transaction.bookId}
-                                    className={`p-2 rounded-full transition-colors ${bookmarkStatus.get(transaction.bookId)
-                                      ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                                      : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                                      } disabled:opacity-50`}
-                                    title={bookmarkStatus.get(transaction.bookId) ? "Remove bookmark" : "Bookmark this book"}
-                                  >
-                                    <Bookmark className={`h-4 w-4 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                    {borrowedBooks.map((transaction) => {
-                      const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
-                      const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
-                      const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
-                      const canReturn = transaction.status === "borrowed";
-                      return (
-                        <Link
-                          key={transaction._id}
-                          href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
-                          className={`rounded-lg border p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
-                            }`}
-                        >
-                          {/* Book Cover */}
-                          <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
-                            {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
-                                alt={`Cover of ${transaction.bookTitle}`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
-                                }}
-                              />
-                            ) : (
-                              <span>Book Cover</span>
-                            )}
-                          </div>
-
-                          {/* Book Details */}
-                          <div className="flex-1 flex flex-col">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
-                              {transaction.bookTitle}
-                            </h3>
-                            <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
-                              {transaction.bookAuthor}
-                            </p>
-
-                            {/* Status Badge */}
-                            <div className="mb-2 h-6 flex items-center">
-                              <StatusBadge status={transaction.status} />
-                            </div>
-
-                            {/* Dates */}
-                            <div className="text-[11px] text-gray-500 space-y-1 mb-3">
-                              <p>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</p>
-                              <p className={overdue ? "font-semibold text-rose-700" : ""}>
-                                Due: {formatDate(dueDate)}
-                                {overdue && " (Overdue)"}
-                              </p>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="mt-auto space-y-2" onClick={(e) => e.preventDefault()}>
-                              {canReturn ? (
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleReturn(transaction.bookId);
-                                  }}
-                                  disabled={returning === transaction.bookId}
-                                  className="w-full rounded-md bg-black px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                                >
-                                  {returning === transaction.bookId ? "Submitting..." : "Request Return"}
-                                </button>
-                              ) : transaction.status === "return-requested" ? (
-                                <div className="w-full rounded-md bg-amber-100 border border-amber-200 px-4 py-2 text-xs font-medium text-amber-700 text-center">
-                                  Awaiting confirmation
-                                </div>
-                              ) : transaction.status === "rejected" ? (
-                                <div className="w-full rounded-md bg-rose-100 border border-rose-200 px-4 py-2 text-xs font-medium text-rose-700 text-center">
-                                  Request rejected
-                                </div>
-                              ) : (
-                                <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
-                                  Pending approval
-                                </div>
-                              )}
-
-                              {/* Bookmark Button */}
-                              <button
-                                onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
-                                disabled={bookmarking === transaction.bookId}
-                                className={`w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-xs font-medium transition-colors ${bookmarkStatus.get(transaction.bookId)
-                                  ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                  } disabled:opacity-50`}
-                              >
-                                <Bookmark className={`h-3.5 w-3.5 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
-                                {bookmarkStatus.get(transaction.bookId) ? "Bookmarked" : "Bookmark"}
-                              </button>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
             </div>
-          )
-        }
+          </div>
+        )}
       </main>
     </div>
   );
