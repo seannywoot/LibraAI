@@ -166,99 +166,8 @@ export async function POST(request) {
       });
     }
 
-    // Handle image uploads for OCR/barcode scanning
-    if (fileType?.startsWith("image/")) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const base64Image = buffer.toString("base64");
-
-      // Try to extract ISBN from image
-      // In production, integrate with OCR service (Google Cloud Vision, Tesseract.js, etc.)
-      const extractedText = await performOCR(base64Image);
-      const isbn = extractISBN(extractedText);
-
-      if (!isbn) {
-        return NextResponse.json(
-          { ok: false, error: "No ISBN found in image. Please try scanning a barcode or upload a PDF instead." },
-          { status: 400 }
-        );
-      }
-
-      // Try to find book in library catalog
-      let bookInfo = await db.collection("books").findOne({ isbn });
-
-      // If not found, fetch from external API (Google Books)
-      if (!bookInfo) {
-        try {
-          const googleRes = await fetch(
-            `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`
-          );
-          const googleData = await googleRes.json();
-
-          if (googleData.items && googleData.items.length > 0) {
-            const volumeInfo = googleData.items[0].volumeInfo;
-            bookInfo = {
-              title: volumeInfo.title || "Unknown Title",
-              author: volumeInfo.authors?.[0] || "Unknown Author",
-              isbn: isbn,
-              publisher: volumeInfo.publisher,
-              year: volumeInfo.publishedDate?.substring(0, 4),
-              description: volumeInfo.description,
-              thumbnail: volumeInfo.imageLinks?.thumbnail,
-            };
-          } else {
-            bookInfo = {
-              title: "Unknown Book",
-              author: "Unknown Author",
-              isbn: isbn,
-            };
-          }
-        } catch (apiError) {
-          console.error("Error fetching book info:", apiError);
-          bookInfo = {
-            title: "Unknown Book",
-            author: "Unknown Author",
-            isbn: isbn,
-          };
-        }
-      }
-
-      // Check if book already in user's library
-      const existing = await db.collection("personal_libraries").findOne({
-        userId: user._id,
-        isbn: isbn,
-      });
-
-      if (existing) {
-        return NextResponse.json(
-          { ok: false, error: "Book already in your library" },
-          { status: 400 }
-        );
-      }
-
-      // Add to personal library
-      await db.collection("personal_libraries").insertOne({
-        userId: user._id,
-        isbn: isbn,
-        title: bookInfo.title,
-        author: bookInfo.author,
-        publisher: bookInfo.publisher,
-        year: bookInfo.year,
-        description: bookInfo.description,
-        thumbnail: bookInfo.thumbnail,
-        addedAt: new Date(),
-        addedMethod: "image-ocr",
-      });
-
-      return NextResponse.json({
-        ok: true,
-        message: "Book added to library",
-        book: bookInfo,
-      });
-    }
-
     return NextResponse.json(
-      { ok: false, error: "Unsupported file type. Please upload a PDF or image file." },
+      { ok: false, error: "Unsupported file type. Please upload a PDF file." },
       { status: 400 }
     );
   } catch (error) {
@@ -269,32 +178,4 @@ export async function POST(request) {
       { status: 500 }
     );
   }
-}
-
-async function performOCR(base64Image) {
-  // Placeholder for OCR implementation
-  // In production, integrate with:
-  // - Google Cloud Vision API
-  // - AWS Textract
-  // - Tesseract.js (client-side)
-  // - Azure Computer Vision
-  return "";
-}
-
-function extractISBN(text) {
-  // Extract ISBN-10 or ISBN-13 from text
-  const isbn13Pattern = /(?:ISBN(?:-13)?:?\s*)?(\d{3}[-\s]?\d{1,5}[-\s]?\d{1,7}[-\s]?\d{1,7}[-\s]?\d)/gi;
-  const isbn10Pattern = /(?:ISBN(?:-10)?:?\s*)?(\d{1,5}[-\s]?\d{1,7}[-\s]?\d{1,7}[-\s]?\d)/gi;
-
-  let match = text.match(isbn13Pattern);
-  if (match) {
-    return match[0].replace(/[^\d]/g, "");
-  }
-
-  match = text.match(isbn10Pattern);
-  if (match) {
-    return match[0].replace(/[^\d]/g, "");
-  }
-
-  return null;
 }
