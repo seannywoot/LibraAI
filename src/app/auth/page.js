@@ -293,32 +293,15 @@ function AuthContent() {
     <div className="flex h-screen w-screen items-center justify-center bg-zinc-100 px-4 sm:px-6 lg:px-8 text-zinc-900 overflow-hidden">
       <div className="flex w-full max-w-6xl max-h-[90vh] flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 md:flex-row">
         <section className="relative hidden w-full md:max-w-xs lg:max-w-sm flex-col justify-between bg-zinc-900 p-10 text-zinc-100 md:flex">
-          <div className="absolute inset-0 bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900" aria-hidden />
-          <div className="relative z-10">
-            <img src="/libraai-logo.png" alt="LibraAI" className="h-12 w-auto object-contain mb-4" />
-            <h2 className="mt-6 text-3xl font-semibold leading-snug">
-              Your AI-powered digital library companion.
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,_#F4BC42,_#C86F26,_#802910)]" aria-hidden />
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
+            <img src="/libraai-logo.png" alt="LibraAI" className="h-24 w-auto object-contain mb-4 drop-shadow-lg" />
+            <h2 className="text-4xl font-bold tracking-tight text-white drop-shadow-md">
+              LibraAI
             </h2>
-            <p className="mt-4 text-sm text-zinc-400">
-              Discover, access, and organize course materials faster with targeted recommendations and a unified library workspace.
-            </p>
           </div>
-          <ul className="relative z-10 space-y-4 text-sm text-zinc-200">
-            <li className="flex items-start gap-3">
-              <span className="mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full bg-emerald-400" aria-hidden />
-              Natural conversation-based search for books and journals
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full bg-sky-400" aria-hidden />
-              Personalized recommendations based on reading pattern
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full bg-amber-400" aria-hidden />
-              Interactive tools such as notes and quizzes
-            </li>
-          </ul>
-          <p className="relative z-10 text-xs text-zinc-500">
-            Need help? Email <a className="font-medium text-zinc-100" href="mailto:support@libra.ai">support@libra.ai</a>
+          <p className="relative z-10 text-xs text-white/80 text-center">
+            Need help? Email <a className="font-medium text-white hover:underline" href="mailto:libraaismartlibraryassistant@gmail.com">libraaismartlibraryassistant@gmail.com</a>
           </p>
         </section>
 
@@ -336,7 +319,7 @@ function AuthContent() {
                   type="button"
                   onClick={() => setMode("student")}
                   aria-pressed={mode === "student"}
-                  className={`${mode === "student" ? "bg-white text-zinc-900 shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
+                  className={`${mode === "student" ? "bg-[#C86F26] text-white shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
                 >
                   Student
                 </button>
@@ -344,7 +327,7 @@ function AuthContent() {
                   type="button"
                   onClick={() => setMode("admin")}
                   aria-pressed={mode === "admin"}
-                  className={`${mode === "admin" ? "bg-white text-zinc-900 shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
+                  className={`${mode === "admin" ? "bg-[#C86F26] text-white shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
                 >
                   Admin
                 </button>
@@ -471,7 +454,7 @@ function AuthContent() {
                 )}
 
                 <button
-                  className="flex w-full items-center justify-center rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:hover:bg-zinc-700"
+                  className="flex w-full items-center justify-center rounded-xl bg-[#C86F26] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#b06121] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C86F26] disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:hover:bg-zinc-700"
                   type="submit"
                   disabled={isSubmitting}
                 >
