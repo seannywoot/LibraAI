@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardSidebar from "@/components/dashboard-sidebar";
-import { Book as BookIcon, BookOpen, Camera, Upload, X, Scan, Bookmark, Archive } from "@/components/icons";
+import { Book as BookIcon, BookOpen, Camera, Upload, X, Scan, Bookmark } from "@/components/icons";
 import { getStudentLinks } from "@/components/navLinks";
 import SignOutButton from "@/components/sign-out-button";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
@@ -37,7 +37,6 @@ function StatusBadge({ status }) {
     borrowed: { bg: "bg-amber-100", text: "text-amber-800", label: "Borrowed" },
     "return-requested": { bg: "bg-rose-100", text: "text-rose-800", label: "Return Requested" },
     rejected: { bg: "bg-zinc-200", text: "text-zinc-700", label: "Request Rejected" },
-    returned: { bg: "bg-green-100", text: "text-green-800", label: "Returned" },
   };
   const config = map[status] || map["pending-approval"];
   return (
@@ -57,16 +56,10 @@ function MyLibraryContent() {
   const [loading, setLoading] = useState(true);
   const [myBooks, setMyBooks] = useState([]);
   const [borrowedBooks, setBorrowedBooks] = useState([]);
-  const [archivedBooks, setArchivedBooks] = useState([]);
   const [bookmarkedBooks, setBookmarkedBooks] = useState([]);
   const [totalMyBooks, setTotalMyBooks] = useState(0);
   const [totalBorrowedBooks, setTotalBorrowedBooks] = useState(0);
-  const [totalArchivedBooks, setTotalArchivedBooks] = useState(0);
   const [totalBookmarkedBooks, setTotalBookmarkedBooks] = useState(0);
-  const [statusFilter, setStatusFilter] = useState("active"); // 'active', 'returned', 'rejected', 'archived'
-  const [archiving, setArchiving] = useState(null);
-  const [bulkArchiving, setBulkArchiving] = useState(false);
-  const [selectedTransactions, setSelectedTransactions] = useState(new Set());
   const [searchInput, setSearchInput] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -110,7 +103,7 @@ function MyLibraryContent() {
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchInput, activeTab, statusFilter]);
+  }, [searchInput, activeTab]);
 
   // Auto-suggestions effect
   useEffect(() => {
@@ -143,8 +136,6 @@ function MyLibraryContent() {
     if (activeTab === "personal") {
       loadMyLibrary();
     } else if (activeTab === "borrowed") {
-      setStatusFilter("active"); // Reset filter when switching to borrowed tab
-      setSelectedTransactions(new Set()); // Clear selections when switching tabs
       loadBorrowedBooks();
     } else if (activeTab === "bookmarked") {
       loadBookmarkedBooks();
@@ -153,7 +144,7 @@ function MyLibraryContent() {
   }, [activeTab]);
 
   async function loadAllCounts() {
-    // Load all counts in parallel without search filters
+    // Load all three counts in parallel without search filters
     try {
       const [myLibRes, borrowedRes, bookmarkedRes] = await Promise.all([
         fetch("/api/student/library", { cache: "no-store" }),
@@ -293,18 +284,11 @@ function MyLibraryContent() {
     try {
       const params = new URLSearchParams();
       if (searchInput) params.append("search", searchInput);
-      if (statusFilter && statusFilter !== "active") {
-        params.append("status", statusFilter);
-      }
 
       const res = await fetch(`/api/student/books/borrowed?${params}`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load borrowed books");
-
       setBorrowedBooks(data.items || []);
-
-      // Clear selections when data changes
-      setSelectedTransactions(new Set());
 
       // Only update total count when not searching
       if (!searchInput) {
@@ -580,102 +564,6 @@ function MyLibraryContent() {
       showToast(e?.message || "Failed to return book", "error");
     } finally {
       setReturning(null);
-    }
-  }
-
-  async function handleArchive(transactionId) {
-    if (!confirm("Archive this transaction? You can view it later in the Archived filter.")) return;
-
-    setArchiving(transactionId);
-    try {
-      const res = await fetch("/api/student/books/archive", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ transactionId }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to archive transaction");
-
-      showToast("Transaction archived", "success");
-      loadBorrowedBooks();
-    } catch (e) {
-      showToast(e?.message || "Failed to archive transaction", "error");
-    } finally {
-      setArchiving(null);
-    }
-  }
-
-  async function handleBulkArchive() {
-    // Use selected transactions if any are selected, otherwise use all archivable
-    const transactionsToArchive = selectedTransactions.size > 0
-      ? borrowedBooks.filter((t) => selectedTransactions.has(t._id))
-      : borrowedBooks.filter(
-        (t) => ["returned", "rejected"].includes(t.status) && !t.archived
-      );
-
-    if (transactionsToArchive.length === 0) {
-      showToast("No transactions to archive", "info");
-      return;
-    }
-
-    const message = selectedTransactions.size > 0
-      ? `Archive ${transactionsToArchive.length} selected transaction(s)?`
-      : `Archive all ${transactionsToArchive.length} transaction(s)?`;
-
-    if (!confirm(`${message} You can view them later in the Archived filter.`)) return;
-
-    setBulkArchiving(true);
-    try {
-      const results = await Promise.allSettled(
-        transactionsToArchive.map((transaction) =>
-          fetch("/api/student/books/archive", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ transactionId: transaction._id }),
-          })
-        )
-      );
-
-      const successful = results.filter((r) => r.status === "fulfilled" && r.value.ok).length;
-      const failed = results.length - successful;
-
-      if (successful > 0) {
-        showToast(`${successful} transaction(s) archived successfully`, "success");
-      }
-      if (failed > 0) {
-        showToast(`${failed} transaction(s) failed to archive`, "error");
-      }
-
-      setSelectedTransactions(new Set());
-      loadBorrowedBooks();
-    } catch (e) {
-      showToast(e?.message || "Failed to archive transactions", "error");
-    } finally {
-      setBulkArchiving(false);
-    }
-  }
-
-  function handleToggleSelection(transactionId) {
-    const newSelected = new Set(selectedTransactions);
-    if (newSelected.has(transactionId)) {
-      newSelected.delete(transactionId);
-    } else {
-      newSelected.add(transactionId);
-    }
-    setSelectedTransactions(newSelected);
-  }
-
-  function handleToggleSelectAll() {
-    const archivableTransactions = borrowedBooks.filter(
-      (t) => ["returned", "rejected"].includes(t.status) && !t.archived
-    );
-
-    if (selectedTransactions.size === archivableTransactions.length) {
-      // Deselect all
-      setSelectedTransactions(new Set());
-    } else {
-      // Select all archivable
-      setSelectedTransactions(new Set(archivableTransactions.map(t => t._id)));
     }
   }
 
@@ -1449,136 +1337,183 @@ function MyLibraryContent() {
             <div className="space-y-4">
               {/* View Controls */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Borrowed Books ({borrowedBooks.length})
-                  </h2>
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => {
-                      setStatusFilter(e.target.value);
-                      setSearchInput("");
-                    }}
-                    className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Borrowed Books ({borrowedBooks.length})
+                </h2>
+                <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-1.5 rounded ${viewMode === "grid"
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                      }`}
                   >
-                    <option value="active">Active</option>
-                    <option value="returned">Returned</option>
-                    <option value="rejected">Rejected</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Select All Checkbox - only show for returned/rejected filters */}
-                  {(statusFilter === "returned" || statusFilter === "rejected") && borrowedBooks.filter(t => ["returned", "rejected"].includes(t.status) && !t.archived).length > 0 && (
-                    <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={selectedTransactions.size > 0 && selectedTransactions.size === borrowedBooks.filter(t => ["returned", "rejected"].includes(t.status) && !t.archived).length}
-                        onChange={handleToggleSelectAll}
-                        className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-1.5 rounded ${viewMode === "list"
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                      }`}
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                        clipRule="evenodd"
                       />
-                      Select All
-                    </label>
-                  )}
-                  {/* Bulk Archive Button - only show for returned/rejected filters */}
-                  {(statusFilter === "returned" || statusFilter === "rejected") && (
-                    <button
-                      onClick={handleBulkArchive}
-                      disabled={bulkArchiving || borrowedBooks.filter(t => ["returned", "rejected"].includes(t.status) && !t.archived).length === 0}
-                      className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Archive className="h-4 w-4" />
-                      {bulkArchiving ? "Archiving..." : selectedTransactions.size > 0 ? `Archive Selected (${selectedTransactions.size})` : "Archive All"}
-                    </button>
-                  )}
-                  <div className="flex items-center gap-1 rounded-lg border border-gray-300 p-1">
-                    <button
-                      onClick={() => setViewMode("grid")}
-                      className={`p-1.5 rounded ${viewMode === "grid"
-                        ? "bg-gray-900 text-white"
-                        : "text-gray-600 hover:bg-gray-100"
-                        }`}
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setViewMode("list")}
-                      className={`p-1.5 rounded ${viewMode === "list"
-                        ? "bg-gray-900 text-white"
-                        : "text-gray-600 hover:bg-gray-100"
-                        }`}
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                    </svg>
+                  </button>
                 </div>
               </div>
 
               <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
                 {loading ? (
                   <div className="text-center py-12 text-gray-600">
-                    Loading transactions...
+                    Loading borrowed books...
                   </div>
                 ) : borrowedBooks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                     <div className="rounded-full bg-gray-100 p-4 text-gray-400">
-                      {statusFilter === "archived" ? <Archive className="h-8 w-8" /> : <BookOpen className="h-8 w-8" />}
+                      <BookOpen className="h-8 w-8" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      {statusFilter === "active" && "No active borrowed books"}
-                      {statusFilter === "returned" && "No returned books"}
-                      {statusFilter === "rejected" && "No rejected requests"}
-                      {statusFilter === "archived" && "No archived transactions"}
+                      No borrowed books
                     </h3>
                     <p className="text-sm text-gray-600 max-w-md">
-                      {statusFilter === "active" && "You haven't borrowed any books yet. Browse the catalog to get started."}
-                      {statusFilter === "returned" && "Your returned books will appear here."}
-                      {statusFilter === "rejected" && "Your rejected borrow requests will appear here."}
-                      {statusFilter === "archived" && "Archived transactions will appear here."}
+                      You haven&apos;t borrowed any books yet. Browse the catalog to get started.
                     </p>
                   </div>
                 ) : viewMode === "list" ? (
                   <div className="space-y-4">
                     {borrowedBooks.map((transaction) => {
-                      const borrowDate = transaction.borrowedAt || transaction.requestedAt;
-                      const returnDate = transaction.returnedAt;
-                      const isReturned = transaction.status === "returned";
+                      const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
+                      const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
+                      const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
+                      const canReturn = transaction.status === "borrowed";
                       return (
                         <Link
                           key={transaction._id}
                           href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
-                          className="rounded-lg border border-gray-200 bg-white p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col relative"
+                          className={`block rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                            }`}
                         >
-                          {/* Selection Checkbox - only for returned/rejected */}
-                          {canArchive && (
-                            <div className="absolute top-2 right-2 z-10" onClick={(e) => e.preventDefault()}>
-                              <input
-                                type="checkbox"
-                                checked={selectedTransactions.has(transaction._id)}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleSelection(transaction._id);
-                                }}
-                                className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer"
-                              />
+                          <div className="flex gap-6">
+                            {/* Book Cover */}
+                            <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
+                              {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
+                                  alt={`Cover of ${transaction.bookTitle}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
+                                  }}
+                                />
+                              ) : (
+                                <span>Book Cover</span>
+                              )}
                             </div>
-                          )}
+
+                            {/* Book Details */}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                                {transaction.bookTitle}
+                              </h3>
+                              <p className="text-sm text-gray-600 mb-2">
+                                {transaction.bookAuthor}
+                              </p>
+
+                              <div className="flex items-center gap-3 mb-3">
+                                <StatusBadge status={transaction.status} />
+                              </div>
+
+                              <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                                <span>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</span>
+                                <span>|</span>
+                                <span className={overdue ? "font-semibold text-rose-700" : ""}>
+                                  Due: {formatDate(dueDate)}
+                                  {overdue && " (Overdue)"}
+                                </span>
+                              </div>
+
+                              {/* Action Button */}
+                              <div className="flex items-center justify-between">
+                                <div></div>
+                                <div className="flex items-center gap-3" onClick={(e) => e.preventDefault()}>
+                                  {canReturn ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleReturn(transaction.bookId);
+                                      }}
+                                      disabled={returning === transaction.bookId}
+                                      className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                                    >
+                                      {returning === transaction.bookId ? "Submitting..." : "Request Return"}
+                                    </button>
+                                  ) : transaction.status === "return-requested" ? (
+                                    <span className="text-sm font-medium text-gray-500">
+                                      Awaiting confirmation
+                                    </span>
+                                  ) : transaction.status === "rejected" ? (
+                                    <span className="text-sm font-medium text-rose-600">
+                                      Request rejected
+                                    </span>
+                                  ) : (
+                                    <span className="text-sm font-medium text-gray-500">
+                                      Pending approval
+                                    </span>
+                                  )}
+
+                                  {/* Bookmark Button */}
+                                  <button
+                                    onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
+                                    disabled={bookmarking === transaction.bookId}
+                                    className={`p-2 rounded-full transition-colors ${bookmarkStatus.get(transaction.bookId)
+                                      ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
+                                      : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                                      } disabled:opacity-50`}
+                                    title={bookmarkStatus.get(transaction.bookId) ? "Remove bookmark" : "Bookmark this book"}
+                                  >
+                                    <Bookmark className={`h-4 w-4 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                    {borrowedBooks.map((transaction) => {
+                      const borrowDate = transaction.status === "borrowed" ? transaction.borrowedAt : transaction.requestedAt;
+                      const dueDate = transaction.status === "borrowed" ? transaction.dueDate : transaction.requestedDueDate;
+                      const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
+                      const canReturn = transaction.status === "borrowed";
+                      return (
+                        <Link
+                          key={transaction._id}
+                          href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
+                          className={`rounded-lg border p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                            }`}
+                        >
                           {/* Book Cover */}
                           <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
                             {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
@@ -1613,251 +1548,11 @@ function MyLibraryContent() {
 
                             {/* Dates */}
                             <div className="text-[11px] text-gray-500 space-y-1 mb-3">
-                              {borrowDate && <p>Borrowed: {formatDate(borrowDate)}</p>}
-                              {isReturned && returnDate && <p>Returned: {formatDate(returnDate)}</p>}
-                            </div>
-
-                            {/* Bookmark Button */}
-                            <div className="mt-auto space-y-2" onClick={(e) => e.preventDefault()}>
-                              <button
-                                onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
-                                disabled={bookmarking === transaction.bookId}
-                                className={`w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-xs font-medium transition-colors ${bookmarkStatus.get(transaction.bookId)
-                                  ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                  } disabled:opacity-50`}
-                              >
-                                <Bookmark className={`h-3.5 w-3.5 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
-                                {bookmarkStatus.get(transaction.bookId) ? "Bookmarked" : "Bookmark"}
-                              </button>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ) : borrowedBooks.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                    <div className="rounded-full bg-gray-100 p-4 text-gray-400">
-                      <BookOpen className="h-8 w-8" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      No borrowed books
-                    </h3>
-                    <p className="text-sm text-gray-600 max-w-md">
-                      You haven&apos;t borrowed any books yet. Browse the catalog to get started.
-                    </p>
-                  </div>
-                ) : viewMode === "list" ? (
-                  <div className="space-y-4">
-                    {borrowedBooks.map((transaction) => {
-                      const borrowDate = transaction.borrowedAt || transaction.requestedAt;
-                      const dueDate = transaction.dueDate || transaction.requestedDueDate;
-                      const returnDate = transaction.returnedAt;
-                      const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
-                      const canReturn = transaction.status === "borrowed";
-                      const canArchive = ["returned", "rejected"].includes(transaction.status) && !transaction.archived;
-                      const isArchived = transaction.archived === true;
-
-                      return (
-                        <Link
-                          key={transaction._id}
-                          href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
-                          className={`block rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer relative ${overdue ? "border-rose-200 bg-rose-50" : isArchived ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-white"
-                            }`}
-                        >
-                          {/* Selection Checkbox - only for returned/rejected */}
-                          {canArchive && (
-                            <div className="absolute top-4 right-4 z-10" onClick={(e) => e.preventDefault()}>
-                              <input
-                                type="checkbox"
-                                checked={selectedTransactions.has(transaction._id)}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleSelection(transaction._id);
-                                }}
-                                className="h-5 w-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer"
-                              />
-                            </div>
-                          )}
-                          <div className="flex gap-6">
-                            {/* Book Cover */}
-                            <div className="w-24 h-32 shrink-0 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
-                              {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
-                                  alt={`Cover of ${transaction.bookTitle}`}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
-                                  }}
-                                />
-                              ) : (
-                                <span>Book Cover</span>
-                              )}
-                            </div>
-
-                            {/* Book Details */}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
-                                {transaction.bookTitle}
-                              </h3>
-                              <p className="text-sm text-gray-600 mb-2">
-                                {transaction.bookAuthor}
+                              <p>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</p>
+                              <p className={overdue ? "font-semibold text-rose-700" : ""}>
+                                Due: {formatDate(dueDate)}
+                                {overdue && " (Overdue)"}
                               </p>
-
-                              <div className="flex items-center gap-3 mb-3">
-                                <StatusBadge status={transaction.status} />
-                              </div>
-
-                              <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
-                                {borrowDate && <span>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</span>}
-                                {dueDate && statusFilter === "active" && (
-                                  <>
-                                    <span>|</span>
-                                    <span className={overdue ? "font-semibold text-rose-700" : ""}>
-                                      Due: {formatDate(dueDate)}
-                                      {overdue && " (Overdue)"}
-                                    </span>
-                                  </>
-                                )}
-                                {returnDate && transaction.status === "returned" && (
-                                  <>
-                                    <span>|</span>
-                                    <span>Returned: {formatDate(returnDate)}</span>
-                                  </>
-                                )}
-                              </div>
-
-                              {/* Action Buttons */}
-                              <div className="flex items-center justify-between">
-                                <div></div>
-                                <div className="flex items-center gap-3" onClick={(e) => e.preventDefault()}>
-                                  {canReturn ? (
-                                    <button
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleReturn(transaction.bookId);
-                                      }}
-                                      disabled={returning === transaction.bookId}
-                                      className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                                    >
-                                      {returning === transaction.bookId ? "Submitting..." : "Request Return"}
-                                    </button>
-                                  ) : transaction.status === "return-requested" ? (
-                                    <span className="text-sm font-medium text-gray-500">
-                                      Awaiting confirmation
-                                    </span>
-                                  ) : transaction.status === "rejected" ? (
-                                    <span className="text-sm font-medium text-rose-600">
-                                      Request rejected
-                                    </span>
-                                  ) : transaction.status === "pending-approval" ? (
-                                    <span className="text-sm font-medium text-gray-500">
-                                      Pending approval
-                                    </span>
-                                  ) : null}
-
-                                  {/* Archive Button */}
-                                  {canArchive && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleArchive(transaction._id);
-                                      }}
-                                      disabled={archiving === transaction._id}
-                                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                                    >
-                                      {archiving === transaction._id ? "Archiving..." : "Archive"}
-                                    </button>
-                                  )}
-
-                                  {/* Bookmark Button */}
-                                  <button
-                                    onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
-                                    disabled={bookmarking === transaction.bookId}
-                                    className={`p-2 rounded-full transition-colors ${bookmarkStatus.get(transaction.bookId)
-                                      ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                                      : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                                      } disabled:opacity-50`}
-                                    title={bookmarkStatus.get(transaction.bookId) ? "Remove bookmark" : "Bookmark this book"}
-                                  >
-                                    <Bookmark className={`h-4 w-4 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                    {borrowedBooks.map((transaction) => {
-                      const borrowDate = transaction.borrowedAt || transaction.requestedAt;
-                      const dueDate = transaction.dueDate || transaction.requestedDueDate;
-                      const returnDate = transaction.returnedAt;
-                      const overdue = transaction.status === "borrowed" ? isOverdue(dueDate) : false;
-                      const canReturn = transaction.status === "borrowed";
-                      const canArchive = ["returned", "rejected"].includes(transaction.status) && !transaction.archived;
-                      const isArchived = transaction.archived === true;
-
-                      return (
-                        <Link
-                          key={transaction._id}
-                          href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
-                          className={`rounded-lg border p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${overdue ? "border-rose-200 bg-rose-50" : isArchived ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-white"
-                            }`}
-                        >
-                          {/* Book Cover */}
-                          <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
-                            {transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={transaction.bookCoverImage || transaction.bookThumbnail || transaction.bookCoverImageUrl}
-                                alt={`Cover of ${transaction.bookTitle}`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.parentElement.innerHTML = '<span class="text-gray-400 text-xs font-medium">Book Cover</span>';
-                                }}
-                              />
-                            ) : (
-                              <span>Book Cover</span>
-                            )}
-                          </div>
-
-                          {/* Book Details */}
-                          <div className="flex-1 flex flex-col">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-snug line-clamp-2 h-10">
-                              {transaction.bookTitle}
-                            </h3>
-                            <p className="text-xs text-gray-600 mb-1 line-clamp-1 h-4">
-                              {transaction.bookAuthor}
-                            </p>
-
-                            {/* Status Badge */}
-                            <div className="mb-2 h-6 flex items-center gap-1 flex-wrap">
-                              <StatusBadge status={transaction.status} />
-                            </div>
-
-                            {/* Dates */}
-                            <div className="text-[11px] text-gray-500 space-y-1 mb-3">
-                              {borrowDate && <p>{transaction.status === "pending-approval" ? "Requested" : "Borrowed"}: {formatDate(borrowDate)}</p>}
-                              {dueDate && statusFilter === "active" && (
-                                <p className={overdue ? "font-semibold text-rose-700" : ""}>
-                                  Due: {formatDate(dueDate)}
-                                  {overdue && " (Overdue)"}
-                                </p>
-                              )}
-                              {returnDate && transaction.status === "returned" && (
-                                <p>Returned: {formatDate(returnDate)}</p>
-                              )}
                             </div>
 
                             {/* Action Buttons */}
@@ -1882,25 +1577,10 @@ function MyLibraryContent() {
                                 <div className="w-full rounded-md bg-rose-100 border border-rose-200 px-4 py-2 text-xs font-medium text-rose-700 text-center">
                                   Request rejected
                                 </div>
-                              ) : transaction.status === "pending-approval" ? (
+                              ) : (
                                 <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
                                   Pending approval
                                 </div>
-                              ) : null}
-
-                              {/* Archive Button */}
-                              {canArchive && (
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleArchive(transaction._id);
-                                  }}
-                                  disabled={archiving === transaction._id}
-                                  className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                                >
-                                  {archiving === transaction._id ? "Archiving..." : "Archive"}
-                                </button>
                               )}
 
                               {/* Bookmark Button */}
