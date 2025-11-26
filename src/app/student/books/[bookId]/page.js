@@ -12,6 +12,7 @@ import RecommendationCard from "@/components/recommendation-card";
 import BorrowConfirmButton from "@/components/borrow-confirm-button";
 import { getBehaviorTracker } from "@/lib/behavior-tracker";
 import CategoryBadge from "@/components/category-badge";
+import PDFViewer from "@/components/pdf-viewer";
 
 function StatusChip({ status }) {
   const map = {
@@ -76,6 +77,7 @@ export default function BookDetailPage({ params }) {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarking, setBookmarking] = useState(false);
   const [bookmarkedRecommendations, setBookmarkedRecommendations] = useState(new Set());
+  const [showPDFModal, setShowPDFModal] = useState(false);
 
   const navigationLinks = getStudentLinks();
   const origin = searchParams?.get("from");
@@ -475,19 +477,14 @@ export default function BookDetailPage({ params }) {
                 </button>
 
                 {book.format === "eBook" && book.ebookUrl ? (
-                  <a
-                    href={(() => {
-                      // Check if ebookUrl is a PDF ID (MongoDB ObjectId format) or external URL
-                      const isPdfId = /^[a-f\d]{24}$/i.test(book.ebookUrl);
-                      return isPdfId ? `/api/ebooks/${book.ebookUrl}` : book.ebookUrl;
-                    })()}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => setShowPDFModal(true)}
                     className="inline-flex items-center gap-2 rounded-lg bg-black px-6 py-3 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
                   >
                     <BookOpen className="h-4 w-4" />
                     Access eBook
-                  </a>
+                  </button>
                 ) : book.status === "available" &&
                   !["reference-only", "staff-only"].includes(
                     book.loanPolicy || ""
@@ -569,6 +566,40 @@ export default function BookDetailPage({ params }) {
           ) : null}
         </div>
       </main>
+
+      {/* PDF Modal */}
+      {showPDFModal && book.format === "eBook" && book.ebookUrl && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
+          {/* Modal Header */}
+          <div className="flex items-center justify-between px-6 py-4 bg-gray-900 border-b border-gray-700">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold text-white">{book.title}</h2>
+              {book.author && (
+                <span className="text-sm text-gray-400">by {book.author}</span>
+              )}
+            </div>
+            <button
+              onClick={() => setShowPDFModal(false)}
+              className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+              aria-label="Close PDF viewer"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* PDF Viewer */}
+          <div className="flex-1 overflow-hidden">
+            <PDFViewer
+              fileUrl={(() => {
+                const isPdfId = /^[a-f\d]{24}$/i.test(book.ebookUrl);
+                return isPdfId ? `/api/ebooks/${book.ebookUrl}` : book.ebookUrl;
+              })()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
