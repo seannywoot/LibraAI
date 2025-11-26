@@ -47,7 +47,8 @@ const VARIANTS = {
     navBackground: "border border-(--stroke) bg-(--bg-1)",
     defaultLink:
       "text-(--subtext) hover:bg-orange-50 hover:text-orange-600",
-    activeLink: "bg-(--sidebar-active-bg) text-(--sidebar-active-text)",
+    // Use theme variables so active state follows light/dark correctly
+    activeLink: "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)]",
     subtleText: "text-(--subtext)",
     divider: "border-(--stroke)",
     signOutVariant:

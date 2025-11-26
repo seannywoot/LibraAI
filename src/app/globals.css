@@ -81,27 +81,7 @@
   --text: var(--text-primary);
   /* Button colors - dark mode uses orange */
   --btn-primary: #C86F26;
-  --btn-primary-hover: #A65C20;
-  /* Sidebar active state - dark mode uses blue */
-  --sidebar-active-bg: rgba(30, 58, 138, 0.2);
-  --sidebar-active-text: #60a5fa;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light):not(.dark) {
-    color-scheme: dark;
-    --background: #050b18;
-    --foreground: #e2e8f0;
-    /* Sidebar active state - dark mode uses blue */
-    --sidebar-active-bg: rgba(30, 58, 138, 0.2);
-    --sidebar-active-text: #60a5fa;
-  }
-}
-
-@layer base {
-
-  *,
-  *::before,
   *::after {
     border-color: inherit;
   }
