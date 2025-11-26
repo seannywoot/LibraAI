@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard-sidebar";
@@ -203,39 +203,13 @@ export default function NotesPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredNotes.map((note) => (
-              <Link
+              <NoteCard
                 key={note._id}
-                href={`/student/notes/${note._id}`}
-                className="group flex flex-col rounded-lg border border-gray-200 bg-white p-5 hover:shadow-lg transition-all min-h-[200px]"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">
-                    {note.title || "Untitled"}
-                  </h3>
-                  <button
-                    onClick={(e) => openDeleteModal(note, e)}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-opacity"
-                    title="Delete note"
-                  >
-                    <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-600" />
-                  </button>
-                </div>
-
-                {note.content && (
-                  <div className="relative mb-3 max-h-[4.5rem] overflow-hidden">
-                    <div
-                      className="text-sm text-gray-600 prose prose-sm max-w-none prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0"
-                      dangerouslySetInnerHTML={{ __html: getPreview(note.content) }}
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between text-xs text-gray-500 mt-auto">
-                  <span>Updated {formatDate(note.updatedAt)}</span>
-                  <Edit className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </Link>
+                note={note}
+                searchQuery={searchQuery}
+                openDeleteModal={openDeleteModal}
+                formatDate={formatDate}
+              />
             ))}
           </div>
         )}
@@ -249,7 +223,7 @@ export default function NotesPage() {
       />
 
       {/* Toast Container */}
-      < ToastContainer />
+      <ToastContainer />
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
@@ -295,5 +269,79 @@ export default function NotesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function getPreview(content) {
+  if (!content) return "";
+  const temp = document.createElement("div");
+  temp.innerHTML = content;
+
+  // Convert headings to divs to maintain formatting but avoid large text and prose-p conflicts
+  const headings = temp.querySelectorAll("h1, h2, h3, h4, h5, h6");
+  headings.forEach(heading => {
+    const div = document.createElement("div");
+    div.innerHTML = heading.innerHTML;
+    div.className = "font-bold mb-1 mt-2"; // Keep it bold but normal size, add spacing
+    heading.parentNode.replaceChild(div, heading);
+  });
+
+  // Remove empty paragraphs
+  const paragraphs = temp.querySelectorAll("p");
+  paragraphs.forEach(p => {
+    if (!p.textContent.trim() && !p.querySelector("img")) {
+      p.remove();
+    }
+  });
+
+  return temp.innerHTML;
+}
+
+function NoteCard({ note, searchQuery, openDeleteModal, formatDate }) {
+  const contentRef = useRef(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      setIsOverflowing(contentRef.current.scrollHeight > contentRef.current.clientHeight);
+    }
+  }, [note.content]);
+
+  return (
+    <Link
+      href={`/student/notes/${note._id}`}
+      className="group flex flex-col rounded-lg border border-gray-200 bg-white p-5 hover:shadow-lg transition-all min-h-[200px]"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">
+          {note.title || "Untitled"}
+        </h3>
+        <button
+          onClick={(e) => openDeleteModal(note, e)}
+          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-opacity"
+          title="Delete note"
+        >
+          <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-600" />
+        </button>
+      </div>
+
+      {note.content && (
+        <div className="relative mb-3 max-h-[4.5rem] overflow-hidden">
+          <div
+            ref={contentRef}
+            className="text-sm text-gray-600 prose prose-sm max-w-none prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0"
+            dangerouslySetInnerHTML={{ __html: getPreview(note.content) }}
+          />
+          {isOverflowing && (
+            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between text-xs text-gray-500 mt-auto">
+        <span>Updated {formatDate(note.updatedAt)}</span>
+        <Edit className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+    </Link>
   );
 }
