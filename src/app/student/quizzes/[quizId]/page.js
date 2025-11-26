@@ -81,7 +81,7 @@ export default function QuizTakingPage({ params }) {
     useEffect(() => {
         loadQuiz();
         loadPreviousResults();
-    }, [quizId]);
+    }, [loadPreviousResults, loadQuiz, quizId]);
 
     // Check for saved state after quiz loads
     useEffect(() => {
@@ -317,7 +317,7 @@ export default function QuizTakingPage({ params }) {
                         {/* Progress Bar */}
                         <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                className="bg-[var(--btn-primary)] h-2 rounded-full transition-all duration-300"
                                 style={{ width: `${progress}%` }}
                             />
                         </div>
@@ -340,14 +340,14 @@ export default function QuizTakingPage({ params }) {
                                             key={index}
                                             onClick={() => handleAnswerSelect(index)}
                                             className={`w-full text-left p-4 rounded-lg border-2 transition-all ${selectedAnswers[currentQuestion] === index
-                                                ? "border-blue-500 bg-blue-50"
+                                                ? "border-[var(--btn-primary)] bg-orange-50"
                                                 : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                                                 }`}
                                         >
                                             <div className="flex items-start gap-3">
                                                 <div
                                                     className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5 ${selectedAnswers[currentQuestion] === index
-                                                        ? "border-blue-500 bg-blue-500"
+                                                        ? "border-[var(--btn-primary)] bg-[var(--btn-primary)]"
                                                         : "border-gray-300"
                                                         }`}
                                                 >
@@ -414,7 +414,7 @@ export default function QuizTakingPage({ params }) {
                                         key={index}
                                         onClick={() => setCurrentQuestion(index)}
                                         className={`aspect-square rounded-lg text-sm font-medium transition-colors ${index === currentQuestion
-                                            ? "bg-blue-600 text-white"
+                                            ? "bg-[var(--btn-primary)] text-white"
                                             : selectedAnswers[index] !== null
                                                 ? "bg-green-100 text-green-700 border border-green-300"
                                                 : "bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
@@ -443,8 +443,8 @@ export default function QuizTakingPage({ params }) {
                         {/* Score Card */}
                         <section className="rounded-lg bg-white border border-gray-200 p-6 lg:p-8 shadow-sm">
                             <div className="text-center space-y-4">
-                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 mb-2">
-                                    <CheckCircle className="h-10 w-10 text-blue-600" />
+                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-100 mb-2">
+                                    <CheckCircle className="h-10 w-10 text-[var(--btn-primary)]" />
                                 </div>
                                 <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
                                     {result.percentage}%
@@ -601,7 +601,7 @@ export default function QuizTakingPage({ params }) {
                                             previousResults.map((prevResult) => (
                                                 <div
                                                     key={prevResult._id}
-                                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border border-gray-200 gap-3 hover:border-blue-200 hover:bg-blue-50/50 transition-colors"
+                                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border border-gray-200 gap-3 hover:border-orange-200 hover:bg-orange-50/50 transition-colors"
                                                 >
                                                     <div className="flex items-center gap-4">
                                                         <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${prevResult.percentage >= 80 ? 'bg-green-100 text-green-700' :
@@ -653,8 +653,8 @@ export default function QuizTakingPage({ params }) {
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                         <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
                             <div className="text-center space-y-4">
-                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-2">
-                                    <RefreshCw className="h-8 w-8 text-blue-600" />
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 mb-2">
+                                    <RefreshCw className="h-8 w-8 text-[var(--btn-primary)]" />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900">
                                     Resume Previous Attempt?
@@ -678,7 +678,7 @@ export default function QuizTakingPage({ params }) {
                                 <div className="flex flex-col gap-3 pt-2">
                                     <button
                                         onClick={handleResumeQuiz}
-                                        className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                        className="w-full px-6 py-3 bg-[var(--btn-primary)] text-white rounded-lg font-medium hover:bg-[var(--btn-primary-hover)] transition-colors"
                                     >
                                         Resume Quiz
                                     </button>

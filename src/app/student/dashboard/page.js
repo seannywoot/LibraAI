@@ -189,8 +189,8 @@ export default function StudentDashboardPage() {
                   </p>
                   <p className="text-xs text-gray-500 mt-1">All time</p>
                 </div>
-                <div className="rounded-full bg-blue-100 p-3">
-                  <Book className="h-6 w-6 text-blue-600" />
+                <div className="rounded-full bg-orange-100 p-3">
+                  <Book className="h-6 w-6 text-[var(--btn-primary)]" />
                 </div>
               </div>
             </div>
@@ -578,7 +578,7 @@ export default function StudentDashboardPage() {
                     {book.matchReasons && book.matchReasons.length > 0 && (
                       <div className="flex items-center gap-1 mt-1.5">
                         <svg
-                          className="w-3 h-3 text-blue-500 shrink-0"
+                          className="w-3 h-3 text-[var(--btn-primary)] shrink-0"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -590,7 +590,7 @@ export default function StudentDashboardPage() {
                             d="M13 10V3L4 14h7v7l9-11h-7z"
                           />
                         </svg>
-                        <p className="text-xs text-blue-600 font-medium line-clamp-1">
+                        <p className="text-xs text-[var(--btn-primary)] font-medium line-clamp-1">
                           {book.matchReasons[0]}
                         </p>
                       </div>

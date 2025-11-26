@@ -263,7 +263,7 @@ export default function QuizzesPage() {
                                         onClick={() => setQuestionCount(count)}
                                         disabled={uploading}
                                         className={`flex-1 px-4 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${questionCount === count
-                                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                                            ? "!border-[var(--btn-primary)] bg-orange-50 !text-[var(--btn-primary)]"
                                             : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                                             }`}
                                     >
@@ -331,8 +331,8 @@ export default function QuizzesPage() {
                                     className="group block rounded-lg border border-gray-200 p-4 hover:shadow-md hover:border-gray-300 transition-all"
                                 >
                                     <div className="flex items-start gap-3 mb-3">
-                                        <div className="rounded-lg bg-blue-100 p-2">
-                                            <FileText className="h-5 w-5 text-blue-600" />
+                                        <div className="rounded-lg bg-orange-100 p-2">
+                                            <FileText className="h-5 w-5 text-[var(--btn-primary)]" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1">
@@ -377,9 +377,9 @@ export default function QuizzesPage() {
                             <div className="text-center space-y-6">
                                 <div className="flex justify-center">
                                     <div className="relative">
-                                        <Loader2 className="h-16 w-16 text-blue-600 animate-spin" />
+                                        <Loader2 className="h-16 w-16 text-[var(--btn-primary)] animate-spin" />
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <div className="h-8 w-8 bg-blue-100 rounded-full"></div>
+                                            <div className="h-8 w-8 bg-orange-100 rounded-full"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -400,7 +400,7 @@ export default function QuizzesPage() {
                                 <div className="space-y-2">
                                     <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                                         <div
-                                            className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                                            className="bg-[var(--btn-primary)] h-2 rounded-full transition-all duration-1000 ease-out"
                                             style={{
                                                 width: generationStage === 1 ? '33%' : generationStage === 2 ? '66%' : '100%'
                                             }}
@@ -412,22 +412,22 @@ export default function QuizzesPage() {
                                 </div>
 
                                 <div className="flex justify-between items-center text-xs">
-                                    <div className={`flex flex-col items-center gap-1 ${generationStage >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${generationStage >= 1 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'}`}>
+                                    <div className={`flex flex-col items-center gap-1 ${generationStage >= 1 ? 'text-[var(--btn-primary)]' : 'text-gray-400'}`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${generationStage >= 1 ? 'border-[var(--btn-primary)] bg-orange-50' : 'border-gray-300'}`}>
                                             {generationStage > 1 ? <CheckCircle className="h-5 w-5" /> : '1'}
                                         </div>
                                         <span className="font-medium">Extract</span>
                                     </div>
-                                    <div className={`flex-1 h-0.5 mx-2 ${generationStage >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-                                    <div className={`flex flex-col items-center gap-1 ${generationStage >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${generationStage >= 2 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'}`}>
+                                    <div className={`flex-1 h-0.5 mx-2 ${generationStage >= 2 ? 'bg-[var(--btn-primary)]' : 'bg-gray-300'}`}></div>
+                                    <div className={`flex flex-col items-center gap-1 ${generationStage >= 2 ? 'text-[var(--btn-primary)]' : 'text-gray-400'}`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${generationStage >= 2 ? 'border-[var(--btn-primary)] bg-orange-50' : 'border-gray-300'}`}>
                                             {generationStage > 2 ? <CheckCircle className="h-5 w-5" /> : '2'}
                                         </div>
                                         <span className="font-medium">Generate</span>
                                     </div>
-                                    <div className={`flex-1 h-0.5 mx-2 ${generationStage >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-                                    <div className={`flex flex-col items-center gap-1 ${generationStage >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${generationStage >= 3 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'}`}>
+                                    <div className={`flex-1 h-0.5 mx-2 ${generationStage >= 3 ? 'bg-[var(--btn-primary)]' : 'bg-gray-300'}`}></div>
+                                    <div className={`flex flex-col items-center gap-1 ${generationStage >= 3 ? 'text-[var(--btn-primary)]' : 'text-gray-400'}`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${generationStage >= 3 ? 'border-[var(--btn-primary)] bg-orange-50' : 'border-gray-300'}`}>
                                             {generationStage > 3 ? <CheckCircle className="h-5 w-5" /> : '3'}
                                         </div>
                                         <span className="font-medium">Finalize</span>

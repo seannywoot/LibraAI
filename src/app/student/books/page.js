@@ -748,7 +748,7 @@ export default function StudentBooksPage() {
                               type="checkbox"
                               checked={tempFilters.resourceTypes.includes(label)}
                               onChange={() => toggleResourceType(label)}
-                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              className="w-4 h-4 rounded border-gray-300 text-[var(--btn-primary)] focus:ring-[var(--btn-primary)]"
                             />
                             <span className="text-sm text-gray-700">
                               {label}
@@ -773,7 +773,7 @@ export default function StudentBooksPage() {
                               type="checkbox"
                               checked={tempFilters.formats.includes(format)}
                               onChange={() => toggleFormat(format)}
-                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              className="w-4 h-4 rounded border-gray-300 text-[var(--btn-primary)] focus:ring-[var(--btn-primary)]"
                             />
                             <span className="text-sm text-gray-700">
                               {format}
@@ -799,7 +799,7 @@ export default function StudentBooksPage() {
                                 type="checkbox"
                                 checked={tempFilters.availability.includes(status)}
                                 onChange={() => toggleAvailability(status)}
-                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="w-4 h-4 rounded border-gray-300 text-[var(--btn-primary)] focus:ring-[var(--btn-primary)]"
                               />
                               <span className="text-sm text-gray-700">
                                 {status}
@@ -975,7 +975,7 @@ export default function StudentBooksPage() {
                                 type="checkbox"
                                 checked={tempFilters.categories.includes(category)}
                                 onChange={() => toggleCategory(category)}
-                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="w-4 h-4 rounded border-gray-300 text-[var(--btn-primary)] focus:ring-[var(--btn-primary)]"
                               />
                               <span className="text-sm text-gray-700">
                                 {category}

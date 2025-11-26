@@ -858,7 +858,7 @@ function MyLibraryContent() {
                     Add Book Manually
                   </h2>
 
-                  <div className="mb-6 rounded-lg bg-blue-50 p-4 text-sm text-blue-700">
+                  <div className="mb-6 rounded-lg bg-orange-50 p-4 text-sm text-[var(--btn-primary)]">
                     <p>
                       Enter an ISBN or Title and click <strong>Fetch Details</strong> to automatically fill in the book information.
                     </p>
