@@ -290,8 +290,14 @@ function AuthContent() {
   };
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-zinc-100 px-4 sm:px-6 lg:px-8 text-zinc-900 overflow-hidden">
-      <div className="flex w-full max-w-6xl max-h-[90vh] flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 md:flex-row">
+    <div className="flex h-screen w-screen flex-col items-center justify-center bg-zinc-100 px-4 sm:px-6 lg:px-8 text-zinc-900 overflow-hidden">
+      {/* Mobile Header - Above Card */}
+      <div className="md:hidden flex items-center justify-center gap-3 mb-4 shrink-0">
+        <img src="/libraai-logo.png" alt="LibraAI" className="h-10 w-auto object-contain" />
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">LibraAI</h1>
+      </div>
+
+      <div className="flex w-full max-w-6xl max-h-[85vh] md:max-h-[90vh] flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 md:flex-row">
         <section className="relative hidden w-full md:max-w-xs lg:max-w-sm flex-col justify-between bg-zinc-900 p-10 text-zinc-100 md:flex">
           <div className="absolute inset-0 bg-[linear-gradient(to_bottom,_#F4BC42,_#C86F26,_#802910)]" aria-hidden />
           <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
@@ -300,17 +306,21 @@ function AuthContent() {
               LibraAI
             </h2>
           </div>
-          <p className="relative z-10 text-xs text-white/80 text-center">
-            Need help? Email <a className="font-medium text-white hover:underline" href="mailto:libraaismartlibraryassistant@gmail.com">libraaismartlibraryassistant@gmail.com</a>
-          </p>
+          <div className="relative z-10 mt-auto">
+            <div className="flex items-center gap-4 text-sm text-white/80">
+              <a href="mailto:libraaismartlibraryassistant@gmail.com" className="text-white hover:underline">
+                libraaismartlibraryassistant@gmail.com
+              </a>
+            </div>
+          </div>
         </section>
 
-        <main className="flex w-full flex-1 flex-col justify-center px-6 py-8 sm:px-10 sm:py-12 lg:px-14 overflow-y-auto">
+        <main className="flex w-full flex-1 flex-col justify-center px-4 py-6 sm:px-10 sm:py-12 lg:px-14 overflow-y-auto">
           <div className="w-full max-w-2xl">
             <header className="mb-6 flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight">Sign in</h1>
-                <p className="mt-2 text-sm text-zinc-600">
+                <p className="mt-2 text-sm text-zinc-600 hidden md:block">
                   LibraAI is an AI-powered digital library assistant that simplifies how students discover, access, and manage educational resources.
                 </p>
               </div>
@@ -491,10 +501,10 @@ function AuthContent() {
                 )}
               </div>
             </section>
-          </div>
-        </main>
-      </div>
-    </div>
+          </div >
+        </main >
+      </div >
+    </div >
   );
 }
 
