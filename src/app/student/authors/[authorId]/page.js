@@ -284,7 +284,7 @@ export default function StudentAuthorBooksPage() {
                     href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
                     className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow cursor-pointer"
                   >
-                    <div className="flex gap-6">
+                    <div className="flex gap-6 flex-wrap">
                       {/* Book Cover */}
                       <div className="w-24 h-32 shrink-0 rounded bg-gray-100 flex flex-col items-center justify-center text-gray-400 text-xs font-medium overflow-hidden">
                         {book.coverImage || book.coverImageUrl || book.thumbnail ? (
@@ -308,7 +308,7 @@ export default function StudentAuthorBooksPage() {
                       </div>
 
                       {/* Book Details */}
-                      <div className="flex-1 min-w-0 w-full">
+                        <div className="flex-1 min-w-0 w-full">
                         <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
                           {book.title}
                         </h3>

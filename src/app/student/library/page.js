@@ -1096,7 +1096,7 @@ function MyLibraryContent() {
           /* Bookmarked Books */
           <div className="space-y-4">
             {/* View Controls */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-xl font-semibold text-gray-900">
                 Bookmarked Books ({bookmarkedBooks.length})
               </h2>
@@ -1265,7 +1265,7 @@ function MyLibraryContent() {
           /* Personal Collection */
           <div className="space-y-4">
             {/* View Controls */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-xl font-semibold text-gray-900">
                 Personal Collection ({myBooks.length})
               </h2>
@@ -1471,7 +1471,7 @@ function MyLibraryContent() {
           /* Borrowed Books */
           <div className="space-y-4">
             {/* View Controls */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-xl font-semibold text-gray-900">
                 Borrowed Books ({borrowedBooks.length})
               </h2>

@@ -679,7 +679,7 @@ export default function StudentBooksPage() {
 
       <main className="flex flex-col gap-6 flex-1 min-h-0">
         {/* Header */}
-        <header className="flex items-end justify-between gap-4 shrink-0">
+        <header className="flex items-end justify-between gap-4 shrink-0 flex-wrap">
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
               STUDENT
@@ -1035,7 +1035,7 @@ export default function StudentBooksPage() {
             <div className="shrink-0 space-y-6 mb-6">
               {/* Search Bar */}
               <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
-                <div className="relative flex items-center gap-2">
+                <div className="relative flex items-center gap-2 flex-wrap">
                   <div className="relative flex-1">
                     <svg
                       className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
@@ -1184,7 +1184,7 @@ export default function StudentBooksPage() {
               </div >
 
               {/* Results Header */}
-              < div className="flex items-center justify-between" >
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-4">
                   <p className="text-sm text-gray-600">
                     <span className="font-semibold text-gray-900">

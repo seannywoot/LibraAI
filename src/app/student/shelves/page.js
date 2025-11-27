@@ -20,6 +20,7 @@ export default function StudentShelvesPage() {
   const [codePrefixes, setCodePrefixes] = useState([]);
   const [selectedCodePrefix, setSelectedCodePrefix] = useState("");
   const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
+  const [showFilters, setShowFilters] = useState(false); // mobile filters toggle
 
   const navigationLinks = getStudentLinks();
 
@@ -120,7 +121,7 @@ export default function StudentShelvesPage() {
 
           <div className="space-y-4">
             {/* Search Bar with View Toggle */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
               <div className="relative flex-1">
                 <svg
                   className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400"
@@ -155,7 +156,7 @@ export default function StudentShelvesPage() {
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "grid"
-                    ? "bg-[var(--btn-primary)] text-white"
+                    ? "bg-(--btn-primary) text-white"
                     : "text-zinc-700 hover:bg-zinc-50"
                     }`}
                 >
@@ -166,7 +167,7 @@ export default function StudentShelvesPage() {
                 <button
                   onClick={() => setViewMode("list")}
                   className={`px-3 py-2.5 text-sm transition-colors ${viewMode === "list"
-                    ? "bg-[var(--btn-primary)] text-white"
+                    ? "bg-(--btn-primary) text-white"
                     : "text-zinc-700 hover:bg-zinc-50"
                     }`}
                 >
@@ -175,12 +176,29 @@ export default function StudentShelvesPage() {
                   </svg>
                 </button>
               </div>
+
+              {/* Mobile Filters Toggle */}
+              <button
+                type="button"
+                onClick={() => setShowFilters((v) => !v)}
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 sm:hidden"
+                aria-expanded={showFilters}
+                aria-controls="mobile-filters"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h18M3 12h18M3 19h18" />
+                </svg>
+                Filters
+              </button>
             </div>
 
             {/* Filters */}
-            <div className="flex items-center gap-3">
+            <div
+              id="mobile-filters"
+              className={`flex items-center gap-3 flex-wrap sm:flex-nowrap ${showFilters ? "" : "hidden sm:flex"}`}
+            >
               {codePrefixes.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <label className="text-sm font-medium text-zinc-700">Code:</label>
                   <select
                     value={selectedCodePrefix}
@@ -188,7 +206,7 @@ export default function StudentShelvesPage() {
                       setSelectedCodePrefix(e.target.value);
                       setPage(1);
                     }}
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                    className="w-full sm:w-auto rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
                   >
                     <option value="">All Codes</option>
                     {codePrefixes.map((prefix) => (
@@ -199,7 +217,7 @@ export default function StudentShelvesPage() {
               )}
 
               {locations.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <label className="text-sm font-medium text-zinc-700">Location:</label>
                   <select
                     value={selectedLocation}
@@ -207,7 +225,7 @@ export default function StudentShelvesPage() {
                       setSelectedLocation(e.target.value);
                       setPage(1);
                     }}
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                    className="w-full sm:w-auto rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
                   >
                     <option value="">All Locations</option>
                     {locations.map((loc) => (
