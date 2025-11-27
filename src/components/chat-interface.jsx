@@ -1401,7 +1401,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                 </span>
               </div>
               {msg.role === "user" && (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e4e4e7] dark:bg-(--bg-2) text-zinc-700 dark:text-zinc-200 mt-2">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--btn-primary) text-white mt-2">
                   <span className="text-sm font-semibold">{userName?.[0] || "U"}</span>
                 </div>
               )}
