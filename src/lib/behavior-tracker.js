@@ -15,7 +15,7 @@ class BehaviorTracker {
     this.debounceTimers = {};
     this.flushInterval = null;
     this.isTracking = true;
-    
+
     // Start auto-flush interval (every 5 seconds)
     this.startAutoFlush();
   }
@@ -25,7 +25,7 @@ class BehaviorTracker {
    */
   invalidateRecommendationCache() {
     if (typeof window === "undefined") return;
-    
+
     try {
       // Dynamically import to avoid circular dependencies
       import('./recommendation-service').then(module => {
@@ -55,7 +55,7 @@ class BehaviorTracker {
     };
 
     this.addToQueue(event);
-    
+
     // Invalidate cache after view to update recommendations
     this.invalidateRecommendationCache();
   }
@@ -69,27 +69,28 @@ class BehaviorTracker {
     if (!this.isTracking || !query || query.trim().length === 0) return;
 
     const eventKey = `search_${query}`;
-    
-    // Debounce search tracking (300ms)
-    if (this.debounceTimers[eventKey]) {
-      clearTimeout(this.debounceTimers[eventKey]);
-    }
 
-    this.debounceTimers[eventKey] = setTimeout(() => {
-      const event = {
-        eventType: "search",
-        searchQuery: query.trim(),
-        searchFilters: filters,
-        timestamp: new Date().toISOString()
-      };
+    // Prevent duplicate tracking with timestamps (page re-renders clear setTimeout)
+    const now = Date.now();
+    if (!this.lastSearchTime) this.lastSearchTime = {};
+    const lastTracked = this.lastSearchTime[eventKey] || 0;
 
-      this.addToQueue(event);
-      
-      // Invalidate cache after search to update recommendations
-      this.invalidateRecommendationCache();
-      
-      delete this.debounceTimers[eventKey];
-    }, 300);
+    // Only track if not tracked in last 2 seconds
+    if (now - lastTracked < 2000) return;
+
+    this.lastSearchTime[eventKey] = now;
+
+    const event = {
+      eventType: "search",
+      searchQuery: query.trim(),
+      searchFilters: filters,
+      timestamp: new Date().toISOString()
+    };
+
+    this.addToQueue(event);
+
+    // Invalidate cache after search to update recommendations
+    this.invalidateRecommendationCache();
   }
 
   /**
@@ -125,7 +126,7 @@ class BehaviorTracker {
     } catch (error) {
       // Silent failure - log to console but don't interrupt user experience
       console.error("Failed to track events:", error);
-      
+
       // Re-queue failed events (up to 5 retries)
       for (const event of eventsToSend) {
         if (!event.retryCount) event.retryCount = 0;
@@ -171,7 +172,7 @@ class BehaviorTracker {
   disable() {
     this.isTracking = false;
     this.queue = [];
-    
+
     // Clear all debounce timers
     Object.values(this.debounceTimers).forEach(timer => clearTimeout(timer));
     this.debounceTimers = {};
@@ -183,7 +184,7 @@ class BehaviorTracker {
   cleanup() {
     this.stopAutoFlush();
     this.flushQueue(); // Flush remaining events
-    
+
     // Clear all debounce timers
     Object.values(this.debounceTimers).forEach(timer => clearTimeout(timer));
     this.debounceTimers = {};
@@ -200,12 +201,12 @@ export function getBehaviorTracker() {
   if (typeof window === "undefined") {
     // Server-side rendering - return mock
     return {
-      trackBookView: () => {},
-      trackSearch: () => {},
-      flushQueue: () => {},
-      enable: () => {},
-      disable: () => {},
-      cleanup: () => {}
+      trackBookView: () => { },
+      trackSearch: () => { },
+      flushQueue: () => { },
+      enable: () => { },
+      disable: () => { },
+      cleanup: () => { }
     };
   }
 

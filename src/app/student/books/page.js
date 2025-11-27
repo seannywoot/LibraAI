@@ -294,6 +294,8 @@ export default function StudentBooksPage() {
           yearRange: filters.yearRange,
           availability: filters.availability,
         });
+        // Force immediate flush so admin analytics sees the search promptly
+        tracker.flushQueue();
       }
     }, 300);
 
@@ -340,6 +342,8 @@ export default function StudentBooksPage() {
         yearRange: filters.yearRange,
         availability: filters.availability,
       });
+      // Flush filter-induced search so counts update without waiting for batch interval
+      tracker.flushQueue();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pageSize, sortBy, filters, isInitialized]);

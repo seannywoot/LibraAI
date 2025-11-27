@@ -34,7 +34,7 @@ export default function DashboardClient() {
     // Poll for updates every 30 seconds
     const interval = setInterval(() => {
       fetchAnalytics(true);
-    }, 30000);
+    }, 15000); // Reduced polling interval for faster visibility of new interactions
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,6 +94,10 @@ export default function DashboardClient() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleManualRefresh = () => {
+    fetchAnalytics(true);
   };
 
   const handleConvertToFAQ = (question) => {

@@ -31,8 +31,8 @@ if (process.env.NODE_ENV === "development") {
 
 export default clientPromise;
 
-// Default database name - change this if your data is in a different database
-const DEFAULT_DB_NAME = process.env.MONGODB_DB_NAME || "test";
+// Default database name - prefer MONGODB_DB (used by some routes) then MONGODB_DB_NAME, fallback to 'test'
+const DEFAULT_DB_NAME = process.env.MONGODB_DB || process.env.MONGODB_DB_NAME || "test";
 
 // Helper to get a db instance by name; defaults to the database from the URI or DEFAULT_DB_NAME
 export async function getDb(dbName) {
