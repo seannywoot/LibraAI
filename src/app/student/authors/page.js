@@ -157,7 +157,7 @@ export default function StudentAuthorsPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
       <DashboardSidebar heading="LibraAI" links={navigationLinks} variant="light" SignOutComponent={SignOutButton} />
 
       <main className="space-y-8 rounded-3xl border border-zinc-200 bg-white p-6 lg:p-10 shadow-sm">
@@ -202,7 +202,7 @@ export default function StudentAuthorsPage() {
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-(--btn-primary) dark:text-(--btn-primary) hover:text-(--btn-primary-hover)"
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -298,7 +298,7 @@ export default function StudentAuthorsPage() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
             <div className="rounded-full bg-white p-3 shadow text-zinc-500">
-              <Users className="h-6 w-6" />
+              <Users className="h-6 w-6 text-(--btn-primary) dark:text-(--btn-primary)" />
             </div>
             <h2 className="text-lg font-semibold text-zinc-900">No existing author</h2>
             <p className="text-sm text-zinc-600">Try searching for other authors or consult with the librarian for assistance.</p>
@@ -315,14 +315,14 @@ export default function StudentAuthorsPage() {
                   >
                     <div className="flex items-start gap-3">
                       <div className="rounded-full bg-white p-2 shadow-sm">
-                        <Users className="h-5 w-5 text-zinc-700" />
+                        <Users className="h-5 w-5 text-(--btn-primary) dark:text-(--btn-primary)" />
                       </div>
                       <div className="flex-1 space-y-2">
-                        <h3 className="font-semibold text-zinc-900">{author.name}</h3>
+                        <h3 className="font-semibold text-(--btn-primary) dark:text-(--btn-primary)">{author.name}</h3>
                         {author.bio && (
                           <p className="text-sm text-zinc-600 line-clamp-3">{author.bio}</p>
                         )}
-                        <p className="text-xs font-medium text-zinc-700 pt-1">
+                        <p className="text-xs font-medium text-(--btn-primary) dark:text-(--btn-primary) pt-1">
                           {author.bookCount || 0} {author.bookCount === 1 ? 'book' : 'books'}
                         </p>
                       </div>
@@ -339,16 +339,16 @@ export default function StudentAuthorsPage() {
                     className="flex items-center gap-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:bg-zinc-100 hover:border-zinc-300 transition-colors"
                   >
                     <div className="rounded-full bg-white p-2 shadow-sm">
-                      <Users className="h-5 w-5 text-zinc-700" />
+                      <Users className="h-5 w-5 text-(--btn-primary) dark:text-(--btn-primary)" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-zinc-900">{author.name}</h3>
+                      <h3 className="font-semibold text-(--btn-primary) dark:text-(--btn-primary)">{author.name}</h3>
                       {author.bio && (
                         <p className="text-sm text-zinc-600 line-clamp-1">{author.bio}</p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-medium text-zinc-700">
+                      <p className="text-sm font-medium text-(--btn-primary) dark:text-(--btn-primary)">
                         {author.bookCount || 0} {author.bookCount === 1 ? 'book' : 'books'}
                       </p>
                     </div>
@@ -361,14 +361,14 @@ export default function StudentAuthorsPage() {
               <p className="text-xs text-zinc-500">Page {page} of {totalPages} · {total} total</p>
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-700 disabled:opacity-50"
+                  className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-(--btn-primary) dark:text-(--btn-primary) hover:bg-(--btn-primary) hover:text-white disabled:opacity-50 transition-colors"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
                 >
                   Previous
                 </button>
                 <button
-                  className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-700 disabled:opacity-50"
+                  className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-(--btn-primary) dark:text-(--btn-primary) hover:bg-(--btn-primary) hover:text-white disabled:opacity-50 transition-colors"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
                 >

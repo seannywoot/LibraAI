@@ -452,9 +452,9 @@ export default function DashboardClient() {
                                 <Search className="h-3 w-3 md:h-3.5 md:w-3.5" />
                                 <span>{user.searches} searches</span>
                               </div>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1" title="Current bookmarks (from bookmarks collection)">
                                 <span className="text-amber-500">★</span>
-                                <span>{user.bookmarks} bookmarks</span>
+                                <span>{user.bookmarks} current bookmarks</span>
                               </div>
                             </div>
                             <div className="mt-1.5 md:mt-2">

@@ -111,7 +111,7 @@ export default function UnansweredQueriesAnalytics() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+    <div className="min-h-screen bg-zinc-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px]">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">

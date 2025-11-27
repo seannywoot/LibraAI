@@ -249,7 +249,7 @@ export async function GET(request) {
       { $limit: 10 }
     ]).toArray();
 
-    // Top 10 Active Users (last 30 days)
+    // Top 10 Active Users (last 30 days) — interaction-based (views/searches)
     const topUsers = await interactionsCollection.aggregate([
       {
         $match: {
@@ -277,9 +277,7 @@ export async function GET(request) {
               ]
             }
           },
-          bookmarks: {
-            $sum: { $cond: [{ $eq: ["$eventType", "bookmark_add"] }, 1, 0] }
-          }
+          // Do not infer bookmarks from events here; we'll use current state from bookmarks collection
         }
       },
       {
@@ -299,6 +297,38 @@ export async function GET(request) {
       { $sort: { totalInteractions: -1 } },
       { $limit: 10 }
     ]).toArray();
+
+    // Compute current bookmark counts per user from the bookmarks collection (state-based)
+    const bookmarksCollection = db.collection("bookmarks");
+    const bookmarksPerUser = await bookmarksCollection.aggregate([
+      {
+        $group: {
+          _id: "$userId",
+          bookmarkCount: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user"
+        }
+      },
+      {
+        $project: {
+          email: { $arrayElemAt: ["$user.email", 0] },
+          bookmarkCount: 1
+        }
+      }
+    ]).toArray();
+
+    const bookmarkCountByEmail = new Map();
+    bookmarksPerUser.forEach(b => {
+      if (b.email) {
+        bookmarkCountByEmail.set(b.email, b.bookmarkCount || 0);
+      }
+    });
 
     // Get transaction trends for the last 90 days
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -478,7 +508,8 @@ export async function GET(request) {
           totalInteractions: u.totalInteractions,
           views: u.views,
           searches: u.searches,
-          bookmarks: u.bookmarks
+          // Current bookmarks (state from bookmarks collection)
+          bookmarks: bookmarkCountByEmail.get(u._id) || 0
         }))
       }
     });

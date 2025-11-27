@@ -119,7 +119,7 @@ export default function PersonalBookDetailPage({ params }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
         <DashboardSidebar
           heading="LibraAI"
           links={navigationLinks}
@@ -135,7 +135,7 @@ export default function PersonalBookDetailPage({ params }) {
 
   if (error || !book) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
         <DashboardSidebar
           heading="LibraAI"
           links={navigationLinks}
@@ -150,7 +150,7 @@ export default function PersonalBookDetailPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"
@@ -261,7 +261,7 @@ export default function PersonalBookDetailPage({ params }) {
                   <button
                     type="button"
                     onClick={() => setShowPDFModal(true)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#C86F26] px-5 py-2.5 text-sm font-medium text-white hover:bg-orange-700 transition-colors"
                   >
                     <BookOpen className="h-4 w-4" />
                     Open PDF
@@ -331,16 +331,16 @@ export default function PersonalBookDetailPage({ params }) {
       {showPDFModal && book.fileType === "application/pdf" && book.fileUrl && (
         <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
           {/* Modal Header */}
-          <div className="flex items-center justify-between px-6 py-4 bg-gray-900 border-b border-gray-700">
+          <div className="flex items-center justify-between px-6 py-4 bg-[#C86F26] border-b border-orange-800">
             <div className="flex items-center gap-4">
               <h2 className="text-lg font-semibold text-white">{book.title}</h2>
               {book.author && (
-                <span className="text-sm text-gray-400">by {book.author}</span>
+                <span className="text-sm text-orange-100">by {book.author}</span>
               )}
             </div>
             <button
               onClick={() => setShowPDFModal(false)}
-              className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+              className="rounded-lg p-2 bg-white text-[#C86F26] hover:bg-gray-100 transition-colors"
               aria-label="Close PDF viewer"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

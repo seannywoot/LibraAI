@@ -264,7 +264,7 @@ export default function QuizTakingPage({ params }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+            <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
                 <DashboardSidebar
                     heading="LibraAI"
                     links={navigationLinks}
@@ -292,7 +292,7 @@ export default function QuizTakingPage({ params }) {
     const answeredCount = selectedAnswers.filter(a => a !== null).length;
 
     return (
-        <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+        <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px]">
             <DashboardSidebar
                 heading="LibraAI"
                 links={navigationLinks}
@@ -436,7 +436,7 @@ export default function QuizTakingPage({ params }) {
                         <header className="space-y-2">
                             <button
                                 onClick={() => router.push("/student/quizzes")}
-                                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+                                className="flex items-center gap-2 text-sm text-[#C86F26] hover:text-[#A65C20] mb-4"
                             >
                                 <ArrowLeft className="h-4 w-4" />
                                 Back to Quizzes
@@ -450,10 +450,10 @@ export default function QuizTakingPage({ params }) {
                                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-100 mb-2">
                                     <CheckCircle className="h-10 w-10 text-[var(--btn-primary)]" />
                                 </div>
-                                <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
+                                <h2 className="text-3xl lg:text-4xl font-bold text-[#C86F26]">
                                     {result.percentage}%
                                 </h2>
-                                <p className="text-lg text-gray-600">
+                                <p className="text-lg text-[#C86F26]">
                                     You scored {result.score} out of {result.totalQuestions}
                                 </p>
                                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">

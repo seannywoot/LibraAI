@@ -75,6 +75,7 @@ export default function DashboardSidebar({
   const [open, setOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // State for mobile/tablet sidebar
   const menuRef = useRef(null);
+  const asideRef = useRef(null);
 
   // Handle navigation with optional interception
   const handleLinkClick = (e, href) => {
@@ -98,6 +99,47 @@ export default function DashboardSidebar({
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
+  // Ensure content does not sit underneath the fixed sidebar on ≥1440px.
+  // If the immediate <main> sibling doesn't already provide sufficient
+  // left spacing, we add a runtime padding-left of 300px.
+  useEffect(() => {
+    function applyOrRemoveContentPadding() {
+      try {
+        const el = asideRef.current;
+        if (!el) return;
+
+        const isWide = typeof window !== "undefined" && window.matchMedia("(min-width: 1440px)").matches;
+        // Find first <main> sibling after the aside within the same parent
+        const parent = el.parentElement;
+        if (!parent) return;
+        let sib = el.nextElementSibling;
+        while (sib && sib.tagName.toLowerCase() !== "main") sib = sib.nextElementSibling;
+
+        if (!sib) return;
+
+        if (isWide) {
+          const computed = window.getComputedStyle(sib);
+          const padLeft = parseFloat(computed.paddingLeft || "0");
+          // Only add padding if existing left padding is small (< 200px)
+          if (padLeft < 200) {
+            sib.style.setProperty("padding-left", "300px");
+          }
+        } else {
+          // Remove any runtime padding we may have added on smaller screens
+          if (sib.style) {
+            sib.style.removeProperty("padding-left");
+          }
+        }
+      } catch (_) {
+        // no-op if DOM access fails
+      }
+    }
+
+    applyOrRemoveContentPadding();
+    window.addEventListener("resize", applyOrRemoveContentPadding);
+    return () => window.removeEventListener("resize", applyOrRemoveContentPadding);
+  }, []);
+
   // We intentionally avoid calling setState directly on route changes to satisfy strict lint rules.
 
   const role = session?.user?.role === "admin" ? "admin" : "student";
@@ -118,7 +160,7 @@ export default function DashboardSidebar({
   return (
     <>
       {/* Mobile/Tablet Navbar - Only visible below 1024px */}
-      <nav className="fixed top-0 left-0 right-0 z-50 min-[1120px]:hidden bg-white border-b border-zinc-200 px-4 py-3">
+      <nav className="fixed top-0 left-0 right-0 z-50 min-[1440px]:hidden bg-white border-b border-zinc-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -138,7 +180,7 @@ export default function DashboardSidebar({
       {/* Backdrop overlay - Only on mobile/tablet when sidebar is open */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 min-[1120px]:hidden"
+          className="fixed inset-0 bg-black/50 z-40 min-[1440px]:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -146,12 +188,13 @@ export default function DashboardSidebar({
 
       {/* Sidebar */}
       <aside
+        ref={asideRef}
         className={`flex flex-col gap-6 rounded-3xl ${theme.panel} p-6 
           ${fixed
             ? `fixed left-4 top-4 h-[calc(100vh-2rem)] w-60 overflow-auto z-50
                  transition-transform duration-300 ease-in-out
                  ${sidebarOpen ? 'translate-x-0' : '-translate-x-[280px]'}
-                 min-[1120px]:translate-x-0`
+                 min-[1440px]:translate-x-0`
             : fullHeight
               ? "sticky top-4 self-start h-[calc(100vh-2rem)] overflow-auto"
               : ""
@@ -161,7 +204,7 @@ export default function DashboardSidebar({
         {/* Close button - Only visible on mobile and tablet */}
         <button
           onClick={() => setSidebarOpen(false)}
-          className="min-[1120px]:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-zinc-100 transition-colors"
+          className="min-[1440px]:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-zinc-100 transition-colors"
           aria-label="Close menu"
         >
           <X className="h-5 w-5 text-zinc-600" />

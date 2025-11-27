@@ -668,7 +668,7 @@ export default function StudentBooksPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] flex flex-col overflow-hidden">
+    <div className="h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4 flex flex-col overflow-hidden">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"

@@ -364,7 +364,7 @@ export default function RecommendationsSidebar({
             <button
               onClick={() => loadRecommendations(false, true)}
               disabled={isRefreshing}
-              className="w-full mt-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full mt-4 py-2 text-sm text-[#C86F26] hover:text-orange-700 hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <svg
                 className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}

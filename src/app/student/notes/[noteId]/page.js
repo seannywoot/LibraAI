@@ -185,7 +185,7 @@ export default function NoteEditorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+      <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
         <DashboardSidebar
           heading="LibraAI"
           links={navigationLinks}
@@ -198,7 +198,7 @@ export default function NoteEditorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+    <div className="min-h-screen bg-white px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px]">
       <DashboardSidebar
         heading="LibraAI"
         links={navigationLinks}
@@ -229,8 +229,8 @@ export default function NoteEditorPage() {
               onClick={handleExportPDF}
               disabled={isContentEmpty(content)}
               className={`p-2 rounded transition-colors ${isContentEmpty(content)
-                  ? "text-gray-300 cursor-not-allowed"
-                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                ? "text-gray-300 cursor-not-allowed"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               title={isContentEmpty(content) ? "Cannot export empty note" : "Export to PDF"}
             >

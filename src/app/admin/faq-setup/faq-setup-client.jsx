@@ -201,7 +201,7 @@ export default function FAQSetupClient() {
   const isDeletingCurrent = pendingDelete ? deletingId === pendingDelete._id : false;
 
   return (
-    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px] text-(--text)">
+    <div className="min-h-screen bg-(--bg-1) px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] text-(--text)">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"

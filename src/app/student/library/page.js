@@ -86,6 +86,8 @@ function MyLibraryContent() {
   const [returning, setReturning] = useState(null);
   const [showManualForm, setShowManualForm] = useState(false);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState(null);
   const [viewMode, setViewMode] = useState("grid"); // 'list' or 'grid'
   const [manualBook, setManualBook] = useState({
     title: "",
@@ -409,11 +411,16 @@ function MyLibraryContent() {
     }
   }
 
-  async function handleRemoveBook(bookId) {
-    if (!confirm("Remove this book from your library?")) return;
+  function handleRemoveBook(bookId) {
+    setBookToDelete(bookId);
+    setShowDeleteConfirmation(true);
+  }
+
+  async function confirmDelete() {
+    if (!bookToDelete) return;
 
     try {
-      const res = await fetch(`/api/student/library/${bookId}`, {
+      const res = await fetch(`/api/student/library/${bookToDelete}`, {
         method: "DELETE",
       });
       const data = await res.json().catch(() => ({}));
@@ -421,9 +428,13 @@ function MyLibraryContent() {
         throw new Error(data?.error || "Failed to remove book");
 
       showToast("Book removed from library", "success");
+      setShowDeleteConfirmation(false);
+      setBookToDelete(null);
       loadMyLibrary();
     } catch (e) {
       showToast(e?.message || "Failed to remove book", "error");
+      setShowDeleteConfirmation(false);
+      setBookToDelete(null);
     }
   }
 
@@ -682,7 +693,7 @@ function MyLibraryContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
       <ToastContainer />
       <DashboardSidebar
         heading="LibraAI"
@@ -708,7 +719,7 @@ function MyLibraryContent() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 px-3 sm:px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-orange-100 border border-orange-200 px-3 sm:px-5 py-2.5 text-sm font-medium text-orange-700 hover:bg-orange-200 transition-colors disabled:opacity-50"
                 title="Upload PDF"
               >
                 <Upload className="h-4 w-4" />
@@ -717,7 +728,7 @@ function MyLibraryContent() {
               <button
                 onClick={() => setShowScanner(true)}
                 disabled={uploading}
-                className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 px-3 sm:px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-orange-200 border border-orange-300 px-3 sm:px-5 py-2.5 text-sm font-medium text-orange-800 hover:bg-orange-300 transition-colors disabled:opacity-50"
                 title="Scan Barcode"
               >
                 <Camera className="h-4 w-4" />
@@ -1015,6 +1026,37 @@ function MyLibraryContent() {
                     className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
                   >
                     Yes, discard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ModalPortal>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirmation && (
+          <ModalPortal>
+            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4">
+              <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-2xl">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Remove book from library?</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  This will permanently remove this book from your personal collection. This action cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirmation(false);
+                      setBookToDelete(null);
+                    }}
+                    className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                  >
+                    Remove
                   </button>
                 </div>
               </div>
@@ -1343,7 +1385,7 @@ function MyLibraryContent() {
 
                             {/* Action Button */}
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-400">
+                              <span className={`text-xs font-medium ${book.fileType === "application/pdf" && book.fileUrl ? "text-[#C86F26]" : "text-gray-400"}`}>
                                 {book.fileType === "application/pdf" && book.fileUrl ? "Click to read PDF" : "View details"}
                               </span>
                             </div>
@@ -1651,45 +1693,62 @@ function MyLibraryContent() {
                           </div>
 
                           {/* Action Buttons */}
-                          <div className="mt-auto space-y-2" onClick={(e) => e.preventDefault()}>
+                          <div className="mt-auto" onClick={(e) => e.preventDefault()}>
                             {canReturn ? (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleReturn(transaction.bookId);
-                                }}
-                                disabled={returning === transaction.bookId}
-                                className="w-full rounded-md bg-[var(--btn-primary)] px-4 py-2 text-xs font-medium text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition-colors"
-                              >
-                                {returning === transaction.bookId ? "Submitting..." : "Request Return"}
-                              </button>
-                            ) : transaction.status === "return-requested" ? (
-                              <div className="w-full rounded-md bg-amber-100 border border-amber-200 px-4 py-2 text-xs font-medium text-amber-700 text-center">
-                                Awaiting confirmation
-                              </div>
-                            ) : transaction.status === "rejected" ? (
-                              <div className="w-full rounded-md bg-rose-100 border border-rose-200 px-4 py-2 text-xs font-medium text-rose-700 text-center">
-                                Request rejected
+                              <div className="space-y-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleReturn(transaction.bookId);
+                                  }}
+                                  disabled={returning === transaction.bookId}
+                                  className="w-full rounded-md bg-[var(--btn-primary)] px-4 py-2 text-xs font-medium text-white hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 transition-colors"
+                                >
+                                  {returning === transaction.bookId ? "Submitting..." : "Request Return"}
+                                </button>
+                                {/* Bookmark Button */}
+                                <button
+                                  onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
+                                  disabled={bookmarking === transaction.bookId}
+                                  className={`w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-xs font-medium transition-colors ${bookmarkStatus.get(transaction.bookId)
+                                    ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                    } disabled:opacity-50`}
+                                >
+                                  <Bookmark className={`h-3.5 w-3.5 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
+                                  {bookmarkStatus.get(transaction.bookId) ? "Bookmarked" : "Bookmark"}
+                                </button>
                               </div>
                             ) : (
-                              <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
-                                Pending approval
+                              <div className="space-y-2">
+                                {transaction.status === "return-requested" ? (
+                                  <div className="w-full rounded-md bg-amber-100 border border-amber-200 px-4 py-2 text-xs font-medium text-amber-700 text-center">
+                                    Awaiting confirmation
+                                  </div>
+                                ) : transaction.status === "rejected" ? (
+                                  <div className="w-full rounded-md bg-rose-100 border border-rose-200 px-4 py-2 text-xs font-medium text-rose-700 text-center">
+                                    Request rejected
+                                  </div>
+                                ) : (
+                                  <div className="w-full rounded-md bg-sky-100 border border-sky-200 px-4 py-2 text-xs font-medium text-sky-700 text-center">
+                                    Pending approval
+                                  </div>
+                                )}
+                                {/* Bookmark Button */}
+                                <button
+                                  onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
+                                  disabled={bookmarking === transaction.bookId}
+                                  className={`w-full flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-xs font-medium transition-colors ${bookmarkStatus.get(transaction.bookId)
+                                    ? "bg-amber-100 border-amber-200 text-amber-700 hover:bg-amber-200"
+                                    : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200"
+                                    } disabled:opacity-50`}
+                                >
+                                  <Bookmark className={`h-3.5 w-3.5 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
+                                  {bookmarkStatus.get(transaction.bookId) ? "Bookmarked" : "Bookmark"}
+                                </button>
                               </div>
                             )}
-
-                            {/* Bookmark Button */}
-                            <button
-                              onClick={(e) => handleToggleBookmark(transaction.bookId, e)}
-                              disabled={bookmarking === transaction.bookId}
-                              className={`w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-xs font-medium transition-colors ${bookmarkStatus.get(transaction.bookId)
-                                ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                } disabled:opacity-50`}
-                            >
-                              <Bookmark className={`h-3.5 w-3.5 ${bookmarkStatus.get(transaction.bookId) ? "fill-current" : ""}`} />
-                              {bookmarkStatus.get(transaction.bookId) ? "Bookmarked" : "Bookmark"}
-                            </button>
                           </div>
                         </div>
                       </Link>

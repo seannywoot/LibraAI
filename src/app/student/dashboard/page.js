@@ -151,9 +151,8 @@ export default function StudentDashboardPage() {
     const daysUntil = getDaysUntilDue(book.dueDate);
     return daysUntil !== null && daysUntil >= 2 && daysUntil <= 3;
   });
-
   return (
-    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 lg:pl-[300px]">
+    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
       <DashboardSidebar
         heading="LibraAI"
         links={navigationLinks}
@@ -163,85 +162,87 @@ export default function StudentDashboardPage() {
 
       <main className="space-y-6">
         {/* Header */}
-        <header className="space-y-2">
+        < header className="space-y-2" >
           <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
             STUDENT DASHBOARD
           </p>
-          <h1 className="text-4xl font-bold text-gray-900">Welcome back!</h1>
+          <h1 className="text-4xl font-bold text-orange-600">Welcome back!</h1>
           <p className="text-sm text-gray-600">
             Here&apos;s an overview of your borrowed books and personalized
             recommendations.
           </p>
-        </header>
+        </header >
 
         {/* Reading Statistics Widget */}
-        {!statsLoading && stats && (
-          <section className="grid gap-4 md:grid-cols-3">
-            {/* Total Borrowed */}
-            <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Total Borrowed
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">
-                    {stats.totalBorrowed}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">All time</p>
-                </div>
-                <div className="rounded-full bg-orange-100 p-3">
-                  <Book className="h-6 w-6 text-[var(--btn-primary)]" />
-                </div>
-              </div>
-            </div>
-
-            {/* Currently Borrowed */}
-            <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Currently Reading
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">
-                    {stats.currentlyBorrowed}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {stats.pendingRequests > 0 &&
-                      `${stats.pendingRequests} pending`}
-                  </p>
-                </div>
-                <div className="rounded-full bg-orange-100 p-3">
-                  <Clock className="h-6 w-6 text-orange-700" />
-                </div>
-              </div>
-            </div>
-
-            {/* Books Returned */}
-            <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Books Returned
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">
-                    {stats.totalReturned}
-                  </p>
-                  {stats.totalReturned > 0 && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {Math.round(
-                        (stats.onTimeReturns / stats.totalReturned) * 100
-                      )}
-                      % on time
+        {
+          !statsLoading && stats && (
+            <section className="grid gap-4 md:grid-cols-3">
+              {/* Total Borrowed */}
+              <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">
+                      Total Borrowed
                     </p>
-                  )}
-                </div>
-                <div className="rounded-full bg-green-100 p-3">
-                  <Book className="h-6 w-6 text-green-600" />
+                    <p className="text-3xl font-bold text-orange-600 mt-1">
+                      {stats.totalBorrowed}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">All time</p>
+                  </div>
+                  <div className="rounded-full bg-orange-100 p-3">
+                    <Book className="h-6 w-6 text-[var(--btn-primary)]" />
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
-        )}
+
+              {/* Currently Borrowed */}
+              <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">
+                      Currently Reading
+                    </p>
+                    <p className="text-3xl font-bold text-orange-600 mt-1">
+                      {stats.currentlyBorrowed}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {stats.pendingRequests > 0 &&
+                        `${stats.pendingRequests} pending`}
+                    </p>
+                  </div>
+                  <div className="rounded-full bg-orange-100 p-3">
+                    <Clock className="h-6 w-6 text-amber-600" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Books Returned */}
+              <div className="rounded-lg bg-white border border-gray-200 p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">
+                      Books Returned
+                    </p>
+                    <p className="text-3xl font-bold text-orange-600 mt-1">
+                      {stats.totalReturned}
+                    </p>
+                    {stats.totalReturned > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {Math.round(
+                          (stats.onTimeReturns / stats.totalReturned) * 100
+                        )}
+                        % on time
+                      </p>
+                    )}
+                  </div>
+                  <div className="rounded-full bg-green-100 p-3">
+                    <Book className="h-6 w-6 text-green-600" />
+                  </div>
+                </div>
+              </div>
+            </section>
+          )
+        }
 
         {/* Bar Chart and Quick Actions Section */}
         <section className="grid gap-4 md:grid-cols-2">
@@ -301,62 +302,64 @@ export default function StudentDashboardPage() {
         </section>
 
         {/* Alerts Section */}
-        {!loading && (criticalBooks.length > 0 || dueSoonBooks.length > 0) && (
-          <div className="space-y-3">
-            {criticalBooks.length > 0 && (
-              <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-rose-600 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-rose-900">
-                      {criticalBooks.length}{" "}
-                      {criticalBooks.length === 1 ? "book" : "books"} due today
-                      or overdue
-                    </h3>
-                    <p className="text-sm text-rose-700 mt-1">
-                      Please return{" "}
-                      {criticalBooks.length === 1 ? "this book" : "these books"}{" "}
-                      as soon as possible to avoid penalties.
-                    </p>
+        {
+          !loading && (criticalBooks.length > 0 || dueSoonBooks.length > 0) && (
+            <div className="space-y-3">
+              {criticalBooks.length > 0 && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-rose-600 mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-rose-900">
+                        {criticalBooks.length}{" "}
+                        {criticalBooks.length === 1 ? "book" : "books"} due today
+                        or overdue
+                      </h3>
+                      <p className="text-sm text-rose-700 mt-1">
+                        Please return{" "}
+                        {criticalBooks.length === 1 ? "this book" : "these books"}{" "}
+                        as soon as possible to avoid penalties.
+                      </p>
+                    </div>
+                    <Link
+                      href="/student/library?tab=borrowed"
+                      className="text-sm font-medium text-rose-700 hover:text-rose-800 whitespace-nowrap"
+                    >
+                      View details →
+                    </Link>
                   </div>
-                  <Link
-                    href="/student/library?tab=borrowed"
-                    className="text-sm font-medium text-rose-700 hover:text-rose-800 whitespace-nowrap"
-                  >
-                    View details →
-                  </Link>
                 </div>
-              </div>
-            )}
+              )}
 
-            {dueSoonBooks.length > 0 && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-amber-900">
-                      {dueSoonBooks.length}{" "}
-                      {dueSoonBooks.length === 1 ? "book is" : "books are"} due
-                      soon
-                    </h3>
-                    <p className="text-sm text-amber-700 mt-1">
-                      {dueSoonBooks.length === 1
-                        ? "This book is"
-                        : "These books are"}{" "}
-                      due within 2-3 days.
-                    </p>
+              {dueSoonBooks.length > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-amber-900">
+                        {dueSoonBooks.length}{" "}
+                        {dueSoonBooks.length === 1 ? "book is" : "books are"} due
+                        soon
+                      </h3>
+                      <p className="text-sm text-amber-700 mt-1">
+                        {dueSoonBooks.length === 1
+                          ? "This book is"
+                          : "These books are"}{" "}
+                        due within 2-3 days.
+                      </p>
+                    </div>
+                    <Link
+                      href="/student/library?tab=borrowed"
+                      className="text-sm font-medium text-amber-700 hover:text-amber-800 whitespace-nowrap"
+                    >
+                      View details →
+                    </Link>
                   </div>
-                  <Link
-                    href="/student/library?tab=borrowed"
-                    className="text-sm font-medium text-amber-700 hover:text-amber-800 whitespace-nowrap"
-                  >
-                    View details →
-                  </Link>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )
+        }
 
         {/* Borrowed Books Section */}
         <section className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
@@ -366,7 +369,7 @@ export default function StudentDashboardPage() {
             </h2>
             <Link
               href="/student/library?tab=borrowed"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="inline-flex items-center justify-center rounded-lg bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 transition-colors"
             >
               View all →
             </Link>
@@ -405,7 +408,7 @@ export default function StudentDashboardPage() {
                   <Link
                     key={transaction._id}
                     href="/student/library?tab=borrowed"
-                    className={`block rounded-lg border p-4 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow ${isCritical
+                    className={`block rounded-lg border p-4 hover:shadow-md transition-shadow ${isCritical
                       ? "border-rose-200 bg-rose-50"
                       : isDueSoon
                         ? "border-amber-200 bg-amber-50"
@@ -514,7 +517,7 @@ export default function StudentDashboardPage() {
               </button>
               <Link
                 href="/student/books"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                className="inline-flex items-center justify-center rounded-lg bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 transition-colors"
               >
                 Browse all →
               </Link>
@@ -551,7 +554,7 @@ export default function StudentDashboardPage() {
                   <Link
                     key={book._id}
                     href={`/student/books/${book._id}`}
-                    className="group rounded-lg border border-gray-200 p-3 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow"
+                    className="group rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow"
                   >
                     <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs mb-2 overflow-hidden">
                       {book.coverImage || book.coverImageUrl || book.thumbnail ? (
@@ -602,8 +605,7 @@ export default function StudentDashboardPage() {
           )}
         </section>
 
-
-      </main>
-    </div>
+      </main >
+    </div >
   );
 }
