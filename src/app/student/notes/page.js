@@ -140,7 +140,7 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
+    <div className="min-h-screen bg-gray-50 px-4 pt-16 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
       <DashboardSidebar
         heading="LibraAI"
         links={navigationLinks}
@@ -163,7 +163,7 @@ export default function NotesPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={createNewNote}
-                className="flex items-center gap-2 px-4 py-2 bg-[var(--btn-primary)] text-white rounded-lg hover:bg-[var(--btn-primary-hover)] transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-(--btn-primary) text-white rounded-lg hover:bg-(--btn-primary-hover) transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 New Note
@@ -201,7 +201,7 @@ export default function NotesPage() {
             {!searchQuery && (
               <button
                 onClick={createNewNote}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--btn-primary)] text-white rounded-lg hover:bg-[var(--btn-primary-hover)] transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-(--btn-primary) text-white rounded-lg hover:bg-(--btn-primary-hover) transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Create Note
@@ -363,14 +363,14 @@ function NoteCard({ note, searchQuery, openDeleteModal, formatDate }) {
       </div>
 
       {note.content && (
-        <div className="relative mb-3 max-h-[4.5rem] overflow-hidden">
+        <div className="relative mb-3 max-h-18 overflow-hidden">
           <div
             ref={contentRef}
             className="text-sm text-gray-600 leading-6 prose prose-sm max-w-none prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
             dangerouslySetInnerHTML={{ __html: getPreview(note.content) }}
           />
           {isOverflowing && (
-            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-6 bg-linear-to-t from-white to-transparent pointer-events-none" />
           )}
         </div>
       )}

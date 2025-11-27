@@ -152,7 +152,7 @@ export default function StudentDashboardPage() {
     return daysUntil !== null && daysUntil >= 2 && daysUntil <= 3;
   });
   return (
-    <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
+    <div className="min-h-screen bg-gray-50 px-4 pt-16 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
       <DashboardSidebar
         heading="LibraAI"
         links={navigationLinks}

@@ -264,7 +264,7 @@ export default function QuizTakingPage({ params }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
+            <div className="min-h-screen bg-gray-50 px-4 pt-16 pb-8 lg:p-8 min-[1440px]:pl-[300px] min-[1440px]:pt-4">
                 <DashboardSidebar
                     heading="LibraAI"
                     links={navigationLinks}
@@ -292,7 +292,7 @@ export default function QuizTakingPage({ params }) {
     const answeredCount = selectedAnswers.filter(a => a !== null).length;
 
     return (
-        <div className="min-h-screen bg-gray-50 px-4 pt-20 pb-8 lg:p-8 min-[1440px]:pl-[300px]">
+        <div className="min-h-screen bg-gray-50 px-4 pt-16 pb-8 lg:p-8 min-[1440px]:pl-[300px]">
             <DashboardSidebar
                 heading="LibraAI"
                 links={navigationLinks}
@@ -300,7 +300,7 @@ export default function QuizTakingPage({ params }) {
                 SignOutComponent={SignOutButton}
             />
 
-            <main className="space-y-6 max-w-4xl mx-auto pt-16 lg:pt-0">
+            <main className="space-y-6 max-w-4xl mx-auto pt-12 lg:pt-0">
                 {!showResults ? (
                     <>
                         {/* Header */}
@@ -321,7 +321,7 @@ export default function QuizTakingPage({ params }) {
                         {/* Progress Bar */}
                         <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                                className="bg-[var(--btn-primary)] h-2 rounded-full transition-all duration-300"
+                                className="bg-(--btn-primary) h-2 rounded-full transition-all duration-300"
                                 style={{ width: `${progress}%` }}
                             />
                         </div>
@@ -344,14 +344,14 @@ export default function QuizTakingPage({ params }) {
                                             key={index}
                                             onClick={() => handleAnswerSelect(index)}
                                             className={`w-full text-left p-4 rounded-lg border-2 transition-all ${selectedAnswers[currentQuestion] === index
-                                                ? "border-[var(--btn-primary)] bg-orange-50"
+                                                ? "border-(--btn-primary) bg-orange-50"
                                                 : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                                                 }`}
                                         >
                                             <div className="flex items-start gap-3">
                                                 <div
-                                                    className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5 ${selectedAnswers[currentQuestion] === index
-                                                        ? "border-[var(--btn-primary)] bg-[var(--btn-primary)]"
+                                                    className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5 ${selectedAnswers[currentQuestion] === index
+                                                        ? "border-(--btn-primary) bg-(--btn-primary)"
                                                         : "border-gray-300"
                                                         }`}
                                                 >
@@ -400,7 +400,7 @@ export default function QuizTakingPage({ params }) {
                                 ) : (
                                     <button
                                         onClick={handleNext}
-                                        className="px-4 py-2 bg-[var(--btn-primary)] text-white rounded-lg hover:bg-[var(--btn-primary-hover)] flex items-center gap-2"
+                                        className="px-4 py-2 bg-(--btn-primary) text-white rounded-lg hover:bg-(--btn-primary-hover) flex items-center gap-2"
                                     >
                                         Next
                                         <ArrowRight className="h-4 w-4" />
@@ -418,7 +418,7 @@ export default function QuizTakingPage({ params }) {
                                         key={index}
                                         onClick={() => setCurrentQuestion(index)}
                                         className={`aspect-square rounded-lg text-sm font-medium transition-colors ${index === currentQuestion
-                                            ? "bg-[var(--btn-primary)] text-white"
+                                            ? "bg-(--btn-primary) text-white"
                                             : selectedAnswers[index] !== null
                                                 ? "bg-green-100 text-green-700 border border-green-300"
                                                 : "bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
@@ -448,7 +448,7 @@ export default function QuizTakingPage({ params }) {
                         <section className="rounded-lg bg-white border border-gray-200 p-6 lg:p-8 shadow-sm">
                             <div className="text-center space-y-4">
                                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-100 mb-2">
-                                    <CheckCircle className="h-10 w-10 text-[var(--btn-primary)]" />
+                                    <CheckCircle className="h-10 w-10 text-(--btn-primary)" />
                                 </div>
                                 <h2 className="text-3xl lg:text-4xl font-bold text-[#C86F26]">
                                     {result.percentage}%
@@ -459,7 +459,7 @@ export default function QuizTakingPage({ params }) {
                                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
                                     <button
                                         onClick={handleRetake}
-                                        className="px-6 py-2 bg-[var(--btn-primary)] text-white rounded-lg font-medium hover:bg-[var(--btn-primary-hover)]"
+                                        className="px-6 py-2 bg-(--btn-primary) text-white rounded-lg font-medium hover:bg-(--btn-primary-hover)"
                                     >
                                         Retake Quiz
                                     </button>
@@ -499,7 +499,7 @@ export default function QuizTakingPage({ params }) {
                                         }`}>
                                         <div className="flex items-start gap-3 mb-3">
                                             <span
-                                                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-medium ${isCorrect ? "bg-green-600" : "bg-red-600"
+                                                className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-medium ${isCorrect ? "bg-green-600" : "bg-red-600"
                                                     }`}
                                             >
                                                 {reviewCurrentQuestion + 1}
@@ -551,7 +551,7 @@ export default function QuizTakingPage({ params }) {
                                 <button
                                     onClick={() => setReviewCurrentQuestion(prev => Math.min(quiz.questions.length - 1, prev + 1))}
                                     disabled={reviewCurrentQuestion === quiz.questions.length - 1}
-                                    className="px-4 py-2 bg-[var(--btn-primary)] text-white rounded-lg hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="px-4 py-2 bg-(--btn-primary) text-white rounded-lg hover:bg-(--btn-primary-hover) disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     Next
                                     <ArrowRight className="h-4 w-4" />
@@ -663,7 +663,7 @@ export default function QuizTakingPage({ params }) {
                         <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
                             <div className="text-center space-y-4">
                                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 mb-2">
-                                    <RefreshCw className="h-8 w-8 text-[var(--btn-primary)]" />
+                                    <RefreshCw className="h-8 w-8 text-(--btn-primary)" />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900">
                                     Resume Previous Attempt?
@@ -687,7 +687,7 @@ export default function QuizTakingPage({ params }) {
                                 <div className="flex flex-col gap-3 pt-2">
                                     <button
                                         onClick={handleResumeQuiz}
-                                        className="w-full px-6 py-3 bg-[var(--btn-primary)] text-white rounded-lg font-medium hover:bg-[var(--btn-primary-hover)] transition-colors"
+                                        className="w-full px-6 py-3 bg-(--btn-primary) text-white rounded-lg font-medium hover:bg-(--btn-primary-hover) transition-colors"
                                     >
                                         Resume Quiz
                                     </button>

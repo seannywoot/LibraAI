@@ -1131,8 +1131,8 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
     <>
       <div className="flex-1 flex flex-col relative">
         {/* Chat Header */}
-        <div className="border-b border-(--border-subtle) p-6">
-          <div className="flex items-center justify-between">
+        <div className="border-b border-(--border-subtle) p-4 sm:p-6">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full overflow-hidden bg-[#18181b] dark:bg-(--surface-2)">
                 <img src="/libraai-chatbot.png" alt="LibraAI" className="h-full w-full object-cover" style={{ transform: 'scaleX(-1)' }} />
@@ -1142,10 +1142,10 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
                 <p className="text-sm text-(--text-muted) truncate">{autoTitle ? 'Topic • Auto‑generated' : 'Ask me anything about literature'}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={startNewConversation}
-                className="flex items-center justify-center gap-2 rounded-xl bg-[var(--btn-primary)] text-white text-sm font-medium transition hover:bg-[var(--btn-primary-hover)] h-10 w-10 lg:h-auto lg:w-auto lg:px-4 lg:py-2"
+                className="flex items-center justify-center gap-2 rounded-xl bg-(--btn-primary) text-white text-sm font-medium transition hover:bg-(--btn-primary-hover) h-10 w-10 lg:h-auto lg:w-auto lg:px-4 lg:py-2"
                 aria-label="New Chat"
               >
                 <Plus className="h-5 w-5" />
@@ -1326,7 +1326,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         )}
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
               {msg.role === "assistant" && (
@@ -1440,7 +1440,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-zinc-200 p-6">
+        <div className="border-t border-zinc-200 p-4 sm:p-6 sticky bottom-0 bg-white">
           {attachedFile && (
             <div className="mb-3 flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
               {filePreview && filePreview !== 'pdf' && attachedFile.type.startsWith('image/') && (
@@ -1534,7 +1534,7 @@ export default function ChatInterface({ userName, showHistorySidebar = false }) 
               <button
                 type="submit"
                 disabled={(!input.trim() && !attachedFile)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--btn-primary)] text-white transition hover:bg-[var(--btn-primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-(--btn-primary) text-white transition hover:bg-(--btn-primary-hover) disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Send message"
               >
                 <Send className="h-5 w-5" />
