@@ -14,11 +14,12 @@ export async function POST(request, { params }) {
       );
     }
 
-    const { bookId } = params;
+    // Await params in Next.js 15
+    const { bookId } = await params;
 
-    if (!bookId || !ObjectId.isValid(bookId)) {
+    if (!bookId) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Invalid book ID" }),
+        JSON.stringify({ ok: false, error: "Missing book identifier" }),
         { status: 400, headers: { "content-type": "application/json" } }
       );
     }
@@ -28,7 +29,16 @@ export async function POST(request, { params }) {
     const db = client.db();
     const books = db.collection("books");
 
-    const book = await books.findOne({ _id: new ObjectId(bookId) });
+    // Try to find book by ObjectId first, then by slug
+    let book;
+    if (ObjectId.isValid(bookId)) {
+      book = await books.findOne({ _id: new ObjectId(bookId) });
+    }
+
+    // If not found by ObjectId or bookId is not a valid ObjectId, try slug
+    if (!book) {
+      book = await books.findOne({ slug: bookId });
+    }
 
     if (!book) {
       return new Response(
@@ -41,8 +51,8 @@ export async function POST(request, { params }) {
     const bookCategories = book.categories && book.categories.length > 0
       ? book.categories
       : book.category
-      ? [book.category]
-      : [];
+        ? [book.category]
+        : [];
 
     await trackBookView({
       userId: session.user.email,

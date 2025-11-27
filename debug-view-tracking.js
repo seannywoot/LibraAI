@@ -8,9 +8,19 @@
  */
 
 import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'your-mongodb-connection-string';
-const DB_NAME = process.env.MONGODB_DB || 'libraai';
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' });
+
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
+const DB_NAME = process.env.MONGODB_DB_NAME || 'test';
+
+if (!MONGODB_URI) {
+    console.error('❌ ERROR: MONGODB_URI not found in .env.local');
+    console.error('   Please make sure .env.local exists and contains MONGODB_URI');
+    process.exit(1);
+}
 
 async function debugViewTracking() {
     const client = new MongoClient(MONGODB_URI);
