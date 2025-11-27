@@ -278,6 +278,14 @@ export async function GET(request) {
     // Get transaction trends for the last 90 days
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
+    // Calculate timezone offset for MongoDB to match server/client local time
+    const now = new Date();
+    const offsetMinutes = now.getTimezoneOffset();
+    const offsetHours = Math.abs(Math.floor(offsetMinutes / 60));
+    const offsetMins = Math.abs(offsetMinutes % 60);
+    const sign = offsetMinutes > 0 ? "-" : "+"; // Invert sign because getTimezoneOffset returns positive for behind UTC
+    const timezone = `${sign}${String(offsetHours).padStart(2, "0")}:${String(offsetMins).padStart(2, "0")}`;
+
     const transactionTrends = await transactionsCollection.aggregate([
       {
         $match: {
@@ -295,7 +303,7 @@ export async function GET(request) {
             {
               $group: {
                 _id: {
-                  $dateToString: { format: "%Y-%m-%d", date: "$borrowedAt" }
+                  $dateToString: { format: "%Y-%m-%d", date: "$borrowedAt", timezone: timezone }
                 },
                 count: { $sum: 1 }
               }
@@ -306,7 +314,7 @@ export async function GET(request) {
             {
               $group: {
                 _id: {
-                  $dateToString: { format: "%Y-%m-%d", date: "$returnedAt" }
+                  $dateToString: { format: "%Y-%m-%d", date: "$returnedAt", timezone: timezone }
                 },
                 count: { $sum: 1 }
               }
@@ -317,7 +325,7 @@ export async function GET(request) {
             {
               $group: {
                 _id: {
-                  $dateToString: { format: "%Y-%m-%d", date: "$requestedAt" }
+                  $dateToString: { format: "%Y-%m-%d", date: "$requestedAt", timezone: timezone }
                 },
                 count: { $sum: 1 }
               }
@@ -330,11 +338,16 @@ export async function GET(request) {
     // Process trends data into a unified format
     const trendsMap = new Map();
 
-    // Initialize all dates in the last 90 days
-    for (let i = 0; i < 90; i++) {
+    // Initialize all dates in the last 90 days (including today)
+    for (let i = 0; i <= 90; i++) {
       const date = new Date(ninetyDaysAgo);
       date.setDate(date.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+      // Use local date string construction to match the timezone used in aggregation
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
       trendsMap.set(dateStr, { date: dateStr, borrowed: 0, returned: 0, requests: 0, active: 0, totalBorrowed: 0 });
     }
 

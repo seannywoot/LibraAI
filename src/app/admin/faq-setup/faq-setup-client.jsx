@@ -239,7 +239,7 @@ export default function FAQSetupClient() {
 
         {/* Existing FAQs */}
         <section className="space-y-4">
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-(--stroke)">
             {faqs.length > 0 ? (
               faqs.map((faq) => (
                 <div key={faq._id} className="py-6 first:pt-0 hover:bg-zinc-50 transition-colors -mx-4 px-4 rounded-xl">
