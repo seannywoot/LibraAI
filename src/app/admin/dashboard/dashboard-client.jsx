@@ -228,7 +228,7 @@ export default function DashboardClient() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-900"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C86F26]"></div>
       </div>
     );
   }

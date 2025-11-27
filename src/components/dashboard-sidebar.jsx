@@ -118,7 +118,7 @@ export default function DashboardSidebar({
   return (
     <>
       {/* Mobile/Tablet Navbar - Only visible below 1024px */}
-      <nav className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-white border-b border-zinc-200 px-4 py-3">
+      <nav className="fixed top-0 left-0 right-0 z-50 min-[1120px]:hidden bg-white border-b border-zinc-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -138,7 +138,7 @@ export default function DashboardSidebar({
       {/* Backdrop overlay - Only on mobile/tablet when sidebar is open */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 min-[1120px]:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -151,7 +151,7 @@ export default function DashboardSidebar({
             ? `fixed left-4 top-4 h-[calc(100vh-2rem)] w-60 overflow-auto z-50
                  transition-transform duration-300 ease-in-out
                  ${sidebarOpen ? 'translate-x-0' : '-translate-x-[280px]'}
-                 lg:translate-x-0`
+                 min-[1120px]:translate-x-0`
             : fullHeight
               ? "sticky top-4 self-start h-[calc(100vh-2rem)] overflow-auto"
               : ""
@@ -161,7 +161,7 @@ export default function DashboardSidebar({
         {/* Close button - Only visible on mobile and tablet */}
         <button
           onClick={() => setSidebarOpen(false)}
-          className="lg:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-zinc-100 transition-colors"
+          className="min-[1120px]:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-zinc-100 transition-colors"
           aria-label="Close menu"
         >
           <X className="h-5 w-5 text-zinc-600" />
@@ -175,47 +175,50 @@ export default function DashboardSidebar({
             <img src="/libraai-logo.png" alt="LibraAI" className="h-12 w-auto object-contain" />
             <h1 className={`text-2xl font-semibold tracking-tight ${theme.title} -ml-1`}>LibraAI</h1>
           </div>
-        </header>
+        </header >
 
         {/* Remove horizontal padding from the nav container to align with header */}
-        <nav className={`flex flex-col gap-2 rounded-2xl ${navBackground} py-2 px-0`}>
-          {filteredLinks.map((link) => {
-            const rawHref = typeof link.href === "string" ? link.href : link.href?.pathname ?? "/";
-            const normalizedHref = rawHref.split("?")[0].split("#")[0];
-            const matchTarget = link.matchPath ?? normalizedHref;
-            const isActive = link.exact ? pathname === matchTarget : pathname.startsWith(matchTarget);
-            const linkClasses = `${baseLinkStyles} ${isActive ? theme.activeLink : theme.defaultLink}`;
-            const key = link.key ?? (typeof link.href === "string" ? link.href : link.href?.pathname ?? link.label);
+        < nav className={`flex flex-col gap-2 rounded-2xl ${navBackground} py-2 px-0`
+        }>
+          {
+            filteredLinks.map((link) => {
+              const rawHref = typeof link.href === "string" ? link.href : link.href?.pathname ?? "/";
+              const normalizedHref = rawHref.split("?")[0].split("#")[0];
+              const matchTarget = link.matchPath ?? normalizedHref;
+              const isActive = link.exact ? pathname === matchTarget : pathname.startsWith(matchTarget);
+              const linkClasses = `${baseLinkStyles} ${isActive ? theme.activeLink : theme.defaultLink}`;
+              const key = link.key ?? (typeof link.href === "string" ? link.href : link.href?.pathname ?? link.label);
 
-            return (
-              <Link
-                key={key}
-                href={link.href}
-                className={linkClasses}
-                aria-current={isActive ? "page" : undefined}
-                onClick={(e) => {
-                  handleLinkClick(e, link.href);
-                  // Close sidebar on mobile/tablet when a link is clicked
-                  setSidebarOpen(false);
-                }}
-              >
-                <span className="flex items-center gap-3">
-                  {link.icon ? (
-                    <span className="transition-colors">
-                      {link.icon}
+              return (
+                <Link
+                  key={key}
+                  href={link.href}
+                  className={linkClasses}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={(e) => {
+                    handleLinkClick(e, link.href);
+                    // Close sidebar on mobile/tablet when a link is clicked
+                    setSidebarOpen(false);
+                  }}
+                >
+                  <span className="flex items-center gap-3">
+                    {link.icon ? (
+                      <span className="transition-colors">
+                        {link.icon}
+                      </span>
+                    ) : null}
+                    <span>{link.label}</span>
+                  </span>
+                  {link.badge ? (
+                    <span className="ml-auto rounded-md bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                      {link.badge}
                     </span>
                   ) : null}
-                  <span>{link.label}</span>
-                </span>
-                {link.badge ? (
-                  <span className="ml-auto rounded-md bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                    {link.badge}
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
-        </nav>
+                </Link>
+              );
+            })
+          }
+        </nav >
 
         {/* Footer description intentionally removed for a cleaner, consistent sidebar */}
 
@@ -272,7 +275,7 @@ export default function DashboardSidebar({
             </div>
           ) : null}
         </div>
-      </aside>
+      </aside >
     </>
   );
 }

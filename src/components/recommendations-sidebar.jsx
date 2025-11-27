@@ -46,7 +46,7 @@ export default function RecommendationsSidebar({
       const recs = data.recommendations || [];
       setRecommendations(recs);
       setLastUpdate(new Date());
-      
+
       // Load bookmark status for all recommendations
       if (recs.length > 0) {
         loadBookmarkStatus(recs);
@@ -65,7 +65,7 @@ export default function RecommendationsSidebar({
 
     try {
       const bookIds = books.map(book => book._id);
-      
+
       // Use bulk API to check all bookmarks at once
       const res = await fetch("/api/student/books/bookmarks/bulk", {
         method: "POST",
@@ -73,9 +73,9 @@ export default function RecommendationsSidebar({
         body: JSON.stringify({ bookIds }),
         cache: "no-store",
       });
-      
+
       const data = await res.json().catch(() => ({}));
-      
+
       if (res.ok && data?.ok) {
         // Update bookmarked set with the results
         const newBookmarked = new Set();
@@ -343,7 +343,7 @@ export default function RecommendationsSidebar({
             <div className="space-y-2 relative">
               {isRefreshing && (
                 <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#C86F26]"></div>
                 </div>
               )}
               {recommendations.map((book) => (

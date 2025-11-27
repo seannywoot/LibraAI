@@ -292,7 +292,7 @@ export default function QuizzesPage() {
                         >
                             {uploading ? (
                                 <>
-                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    <Loader2 className="h-5 w-5 animate-spin text-[#C86F26]" />
                                     Generating Quiz...
                                 </>
                             ) : (
@@ -312,7 +312,7 @@ export default function QuizzesPage() {
 
                     {loading ? (
                         <div className="text-center py-8 text-gray-600">
-                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-[#C86F26]" />
                             <p>Loading quizzes...</p>
                         </div>
                     ) : quizzes.length === 0 ? (

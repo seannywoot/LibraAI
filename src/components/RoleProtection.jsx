@@ -59,7 +59,7 @@ export default function RoleProtection({ requiredRole, children }) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-gray-900 border-r-transparent" role="status">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#C86F26] border-r-transparent" role="status">
             <span className="sr-only">Loading...</span>
           </div>
           <p className="mt-4 text-sm text-gray-600">Loading...</p>

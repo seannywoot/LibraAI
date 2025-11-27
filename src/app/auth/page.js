@@ -114,7 +114,7 @@ function AuthContent() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-100">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-zinc-900 border-r-transparent" role="status">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#C86F26] border-r-transparent" role="status">
             <span className="sr-only">Loading...</span>
           </div>
           <p className="mt-4 text-sm text-zinc-600">Redirecting...</p>
@@ -308,6 +308,10 @@ function AuthContent() {
           </div>
           <div className="relative z-10 mt-auto">
             <div className="flex items-center gap-4 text-sm text-white/80">
+              <svg className="h-5 w-5 text-white/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
               <a href="mailto:libraaismartlibraryassistant@gmail.com" className="text-white hover:underline">
                 libraaismartlibraryassistant@gmail.com
               </a>
@@ -329,7 +333,7 @@ function AuthContent() {
                   type="button"
                   onClick={() => setMode("student")}
                   aria-pressed={mode === "student"}
-                  className={`${mode === "student" ? "bg-[#C86F26] text-white shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
+                  className={`${mode === "student" ? "bg-[linear-gradient(to_bottom,_#F4BC42,_#C86F26,_#802910)] text-white shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
                 >
                   Student
                 </button>
@@ -337,7 +341,7 @@ function AuthContent() {
                   type="button"
                   onClick={() => setMode("admin")}
                   aria-pressed={mode === "admin"}
-                  className={`${mode === "admin" ? "bg-[#C86F26] text-white shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
+                  className={`${mode === "admin" ? "bg-[linear-gradient(to_bottom,_#F4BC42,_#C86F26,_#802910)] text-white shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
                 >
                   Admin
                 </button>
@@ -464,7 +468,7 @@ function AuthContent() {
                 )}
 
                 <button
-                  className="flex w-full items-center justify-center rounded-xl bg-[#C86F26] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#b06121] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C86F26] disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:hover:bg-zinc-700"
+                  className="flex w-full items-center justify-center rounded-xl bg-[linear-gradient(to_bottom,_#F4BC42,_#C86F26,_#802910)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C86F26] disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:hover:bg-zinc-700"
                   type="submit"
                   disabled={isSubmitting}
                 >

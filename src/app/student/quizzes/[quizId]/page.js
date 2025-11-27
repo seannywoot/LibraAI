@@ -273,7 +273,7 @@ export default function QuizTakingPage({ params }) {
                 />
                 <div className="flex items-center justify-center min-h-[60vh] pt-16 lg:pt-0">
                     <div className="text-center">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-gray-600" />
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-[#C86F26]" />
                         <p className="text-gray-600">Loading quiz...</p>
                     </div>
                 </div>
@@ -387,7 +387,7 @@ export default function QuizTakingPage({ params }) {
                                     >
                                         {submitting ? (
                                             <>
-                                                <Loader2 className="h-5 w-5 animate-spin" />
+                                                <Loader2 className="h-5 w-5 animate-spin text-[#C86F26]" />
                                                 Submitting...
                                             </>
                                         ) : (

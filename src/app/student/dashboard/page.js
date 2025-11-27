@@ -541,7 +541,7 @@ export default function StudentDashboardPage() {
               {refreshingRecommendations && (
                 <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded-lg">
                   <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-md">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#C86F26]"></div>
                     <span className="text-sm text-gray-700">Updating...</span>
                   </div>
                 </div>
