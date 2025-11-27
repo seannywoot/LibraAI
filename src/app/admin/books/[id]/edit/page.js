@@ -26,7 +26,8 @@ export default function AdminEditBookPage() {
   const [format, setFormat] = useState("");
   const [ebookUrl, setEbookUrl] = useState("");
   const [barcode, setBarcode] = useState("");
-  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [tags, setTags] = useState([]);
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("available");
   const [loanPolicy, setLoanPolicy] = useState("standard");
@@ -39,10 +40,282 @@ export default function AdminEditBookPage() {
   const [pdfFile, setPdfFile] = useState(null);
   const [extractingMetadata, setExtractingMetadata] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Search states
+  const [categorySearch, setCategorySearch] = useState("");
+  const [tagSearch, setTagSearch] = useState("");
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [showAuthorSuggestions, setShowAuthorSuggestions] = useState(false);
+
   const initialDataRef = useRef(null);
 
   const ALLOWED_STATUS = ["available", "checked-out", "reserved", "maintenance", "lost"];
   const ALLOWED_POLICIES = ["standard", "short-loan", "reference-only", "staff-only"];
+
+  // Comprehensive category list based on Google Books API
+  const PREDEFINED_CATEGORIES = [
+    "Fiction",
+    "Non-Fiction",
+    "Science",
+    "Technology",
+    "Mathematics",
+    "Computer Science",
+    "Engineering",
+    "History",
+    "Biography",
+    "Autobiography",
+    "Self-Help",
+    "Business",
+    "Economics",
+    "Finance",
+    "Arts",
+    "Music",
+    "Photography",
+    "Education",
+    "Children",
+    "Young Adult",
+    "Philosophy",
+    "Religion",
+    "Psychology",
+    "Social Science",
+    "Political Science",
+    "Law",
+    "Medical",
+    "Health & Fitness",
+    "Cooking",
+    "Travel",
+    "Nature",
+    "Science Fiction",
+    "Fantasy",
+    "Mystery",
+    "Thriller",
+    "Romance",
+    "Horror",
+    "Poetry",
+    "Drama",
+    "Comics",
+    "Graphic Novels",
+    "Reference",
+    "Study Aids",
+    "Language Arts",
+    "Literary Criticism",
+    "Architecture",
+    "Design",
+    "Crafts & Hobbies",
+    "Sports & Recreation",
+    "Games",
+    "Gardening",
+    "Pets",
+    "Family & Relationships",
+    "House & Home",
+    "Transportation",
+    "True Crime",
+    "Humor",
+  ].sort();
+
+  // Comprehensive tag list based on common Google Books subjects
+  const PREDEFINED_TAGS = [
+    "Programming",
+    "Web Development",
+    "Mobile Development",
+    "Data Science",
+    "Machine Learning",
+    "Artificial Intelligence",
+    "Algorithms",
+    "Database",
+    "Networking",
+    "Security",
+    "Cloud Computing",
+    "DevOps",
+    "Software Engineering",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "Astronomy",
+    "Geology",
+    "Environmental Science",
+    "World War I",
+    "World War II",
+    "Ancient History",
+    "Medieval History",
+    "Modern History",
+    "American History",
+    "European History",
+    "Asian History",
+    "Leadership",
+    "Management",
+    "Marketing",
+    "Entrepreneurship",
+    "Investing",
+    "Personal Finance",
+    "Productivity",
+    "Motivation",
+    "Mindfulness",
+    "Mental Health",
+    "Nutrition",
+    "Exercise",
+    "Meditation",
+    "Parenting",
+    "Education Theory",
+    "Teaching Methods",
+    "Curriculum",
+    "Early Childhood",
+    "Higher Education",
+    "Adventure",
+    "Coming of Age",
+    "Dystopian",
+    "Historical Fiction",
+    "Literary Fiction",
+    "Magical Realism",
+    "Suspense",
+    "Crime",
+    "Detective",
+    "Espionage",
+    "Contemporary Romance",
+    "Historical Romance",
+    "Paranormal",
+    "Gothic",
+    "Epic Poetry",
+    "Modern Poetry",
+    "Classical Poetry",
+    "Manga",
+    "Superhero",
+    "Memoir",
+    "Essays",
+    "Journalism",
+    "Philosophy of Mind",
+    "Ethics",
+    "Logic",
+    "Metaphysics",
+    "Christianity",
+    "Islam",
+    "Buddhism",
+    "Hinduism",
+    "Judaism",
+    "Spirituality",
+    "Cognitive Psychology",
+    "Developmental Psychology",
+    "Social Psychology",
+    "Clinical Psychology",
+    "Sociology",
+    "Anthropology",
+    "Economics Theory",
+    "Microeconomics",
+    "Macroeconomics",
+    "International Relations",
+    "Public Policy",
+    "Constitutional Law",
+    "Criminal Law",
+    "Civil Law",
+    "Anatomy",
+    "Physiology",
+    "Pharmacology",
+    "Surgery",
+    "Pediatrics",
+    "Psychiatry",
+    "Painting",
+    "Sculpture",
+    "Drawing",
+    "Digital Art",
+    "Classical Music",
+    "Jazz",
+    "Rock Music",
+    "Pop Music",
+    "World Music",
+    "Portrait Photography",
+    "Landscape Photography",
+    "Street Photography",
+    "Baking",
+    "International Cuisine",
+    "Vegetarian",
+    "Vegan",
+    "Quick & Easy",
+    "Europe Travel",
+    "Asia Travel",
+    "America Travel",
+    "Adventure Travel",
+    "Wildlife",
+    "Ecology",
+    "Conservation",
+    "Botany",
+    "Zoology",
+    "Space Opera",
+    "Cyberpunk",
+    "Time Travel",
+    "Urban Fantasy",
+    "High Fantasy",
+    "Cozy Mystery",
+    "Legal Thriller",
+    "Medical Thriller",
+    "Psychological Thriller",
+    "Dictionary",
+    "Encyclopedia",
+    "Handbook",
+    "Guide",
+    "Textbook",
+    "Workbook",
+    "Test Preparation",
+    "Grammar",
+    "Vocabulary",
+    "Writing",
+    "Reading",
+    "Speaking",
+    "Listening",
+    "English Language",
+    "Spanish Language",
+    "French Language",
+    "German Language",
+    "Chinese Language",
+    "Japanese Language",
+    "Interior Design",
+    "Landscape Architecture",
+    "Urban Planning",
+    "Graphic Design",
+    "Fashion Design",
+    "Knitting",
+    "Sewing",
+    "Woodworking",
+    "DIY",
+    "Football",
+    "Basketball",
+    "Baseball",
+    "Soccer",
+    "Tennis",
+    "Golf",
+    "Running",
+    "Cycling",
+    "Swimming",
+    "Yoga",
+    "Board Games",
+    "Card Games",
+    "Video Games",
+    "Puzzles",
+    "Flowers",
+    "Vegetables",
+    "Organic Gardening",
+    "Dogs",
+    "Cats",
+    "Birds",
+    "Fish",
+    "Marriage",
+    "Divorce",
+    "Dating",
+    "Friendship",
+    "Decorating",
+    "Organizing",
+    "Cleaning",
+    "Automotive",
+    "Aviation",
+    "Railways",
+    "Ships",
+    "Serial Killers",
+    "Organized Crime",
+    "Forensics",
+    "Satire",
+    "Parody",
+    "Stand-up Comedy",
+  ].sort();
 
   const { showDialog, cancelNavigation, confirmNavigation, navigateTo, navigateBack, handleNavigation } = useUnsavedChanges(hasUnsavedChanges);
 
@@ -84,7 +357,17 @@ export default function AdminEditBookPage() {
           setFormat(book.format || "");
           setEbookUrl(book.ebookUrl || "");
           setBarcode(book.barcode || "");
-          setCategory(book.category || "");
+
+          // Handle categories (support both array and legacy string)
+          if (Array.isArray(book.categories) && book.categories.length > 0) {
+            setCategories(book.categories);
+          } else if (book.category) {
+            setCategories([book.category]);
+          } else {
+            setCategories([]);
+          }
+
+          setTags(book.tags || []);
           setDescription(book.description || "");
           setStatus(book.status || "available");
           setLoanPolicy(book.loanPolicy || "standard");
@@ -100,7 +383,8 @@ export default function AdminEditBookPage() {
             format: book.format || "",
             ebookUrl: book.ebookUrl || "",
             barcode: book.barcode || "",
-            category: book.category || "",
+            categories: Array.isArray(book.categories) ? book.categories : (book.category ? [book.category] : []),
+            tags: book.tags || [],
             description: book.description || "",
             status: book.status || "available",
             loanPolicy: book.loanPolicy || "standard"
@@ -183,8 +467,8 @@ export default function AdminEditBookPage() {
       e.format = "Book format/type is required";
     }
 
-    if (!category) {
-      e.category = "Book category is required";
+    if (!categories || categories.length === 0) {
+      e.categories = "At least one category is required";
     }
 
     if (format !== "eBook" && !trimmedShelf) {
@@ -283,7 +567,8 @@ export default function AdminEditBookPage() {
           format,
           ebookUrl: format === "eBook" ? ebookUrl : undefined,
           barcode,
-          category,
+          categories, // Send categories array
+          tags,
           description,
           status,
           loanPolicy,
@@ -350,63 +635,63 @@ export default function AdminEditBookPage() {
                 />
                 {fieldError("title")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Author <span className="text-rose-600">*</span>
                 </span>
-                {loadingAuthors ? (
+                <div className="relative">
                   <input
-                    className="rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-zinc-500"
-                    type="text"
-                    value="Loading authors..."
-                    disabled
-                  />
-                ) : authors.length > 0 ? (
-                  <div className="relative">
-                    <select
-                      className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
-                      value={author}
-                      onChange={(e) => setAuthor(e.target.value)}
-                      aria-invalid={!!errors.author}
-                      data-field="author"
-                    >
-                      <option value="">Select an author or type custom</option>
-                      {authors.map((a) => (
-                        <option key={a._id} value={a.name}>
-                          {a.name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="mt-2">
-                      <input
-                        className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
-                        type="text"
-                        value={author}
-                        onChange={(e) => setAuthor(e.target.value)}
-                        placeholder="Or type custom author name"
-                        aria-invalid={!!errors.author}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <input
-                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"}`}
+                    className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.author ? "border-rose-400" : "border-zinc-200"} w-full`}
                     type="text"
                     value={author}
-                    onChange={(e) => setAuthor(e.target.value)}
+                    onChange={(e) => {
+                      setAuthor(e.target.value);
+                      setShowAuthorSuggestions(true);
+                      setHasUnsavedChanges(true);
+                    }}
+                    onFocus={() => setShowAuthorSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowAuthorSuggestions(false), 200)}
                     placeholder="e.g., François Chollet"
                     aria-invalid={!!errors.author}
                     data-field="author"
+                    required
                   />
-                )}
+                  {showAuthorSuggestions && author && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                      {authors
+                        .filter(a => a.name.toLowerCase().includes(author.toLowerCase()) && a.name !== author)
+                        .slice(0, 10)
+                        .map((a) => (
+                          <button
+                            key={a._id}
+                            type="button"
+                            onClick={() => {
+                              setAuthor(a.name);
+                              setShowAuthorSuggestions(false);
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm text-zinc-900 transition-colors"
+                          >
+                            {a.name}
+                          </button>
+                        ))}
+                      {authors.filter(a => a.name.toLowerCase().includes(author.toLowerCase()) && a.name !== author).length === 0 && (
+                        <div className="px-4 py-2 text-sm text-zinc-500 italic">
+                          No matching authors found. Using custom name.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {fieldError("author")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Year <span className="text-rose-600">*</span>
                 </span>
                 <input
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.year ? "border-rose-400" : "border-zinc-200"}`}
+                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.year ? "border-rose-400" : "border-zinc-200"} w-full`}
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -414,7 +699,6 @@ export default function AdminEditBookPage() {
                   value={year}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Only allow numeric input
                     if (value === '' || /^\d{0,4}$/.test(value)) {
                       handleFieldChange(setYear)(value);
                     }
@@ -443,6 +727,7 @@ export default function AdminEditBookPage() {
                 />
                 {fieldError("year")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Shelf {format !== "eBook" && <span className="text-rose-600">*</span>}
@@ -485,6 +770,7 @@ export default function AdminEditBookPage() {
                 )}
                 {fieldError("shelf")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   ISBN / Identifier <span className="text-zinc-500">(optional)</span>
@@ -495,15 +781,17 @@ export default function AdminEditBookPage() {
                   inputMode="numeric"
                   value={isbn}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "");
-                    handleFieldChange(setIsbn)(value);
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 13);
+                    setIsbn(value);
                   }}
                   placeholder="e.g., 9781492032649 (13 digits)"
                   aria-invalid={!!errors.isbn}
                   data-field="isbn"
+                  maxLength={13}
                 />
                 {fieldError("isbn")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Publisher <span className="text-zinc-500">(optional)</span>
@@ -519,6 +807,7 @@ export default function AdminEditBookPage() {
                 />
                 {fieldError("publisher")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Format / Type <span className="text-rose-600">*</span>
@@ -539,6 +828,7 @@ export default function AdminEditBookPage() {
                 </select>
                 {fieldError("format")}
               </label>
+
               {format === "eBook" && (
                 <label className="grid gap-2 text-sm sm:col-span-2">
                   <span className="text-zinc-700">eBook File (PDF only)</span>
@@ -565,6 +855,7 @@ export default function AdminEditBookPage() {
                   </p>
                 </label>
               )}
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Barcode / Item ID <span className="text-zinc-500">(optional)</span>
@@ -580,36 +871,171 @@ export default function AdminEditBookPage() {
                 />
                 {fieldError("barcode")}
               </label>
-              <label className="grid gap-2 text-sm">
-                <span className="text-zinc-700">
-                  Category <span className="text-rose-600">*</span>
-                </span>
-                <select
-                  className={`rounded-xl border bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${errors.category ? "border-rose-400" : "border-zinc-200"}`}
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  aria-invalid={!!errors.category}
-                  data-field="category"
-                >
-                  <option value="">Select category (required)</option>
-                  <option value="Fiction">Fiction</option>
-                  <option value="Non-Fiction">Non-Fiction</option>
-                  <option value="Science">Science</option>
-                  <option value="Technology">Technology</option>
-                  <option value="History">History</option>
-                  <option value="Biography">Biography</option>
-                  <option value="Self-Help">Self-Help</option>
-                  <option value="Business">Business</option>
-                  <option value="Arts">Arts</option>
-                  <option value="Education">Education</option>
-                  <option value="Children">Children</option>
-                  <option value="Young Adult">Young Adult</option>
-                </select>
-                {fieldError("category")}
-              </label>
+
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
-                  Description <span className="text-zinc-500">(optional but recommended)</span>
+                  Categories <span className="text-rose-600">*</span>
+                </span>
+                <div className={`rounded-xl border bg-white px-4 py-3 outline-none transition focus-within:border-[var(--btn-primary)] focus-within:ring-2 focus-within:ring-zinc-900/10 ${errors.categories ? "border-rose-400" : "border-zinc-200"}`}>
+                  {categories.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {categories.map((cat) => (
+                        <span
+                          key={cat}
+                          className="inline-flex items-center gap-1 rounded-lg bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800"
+                        >
+                          {cat}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCategories(categories.filter(c => c !== cat));
+                              setHasUnsavedChanges(true);
+                            }}
+                            className="hover:text-blue-900"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      className="w-full bg-transparent text-zinc-900 outline-none placeholder:text-zinc-400"
+                      placeholder="Search categories... (e.g., Science, Fiction, Technology)"
+                      value={categorySearch}
+                      onChange={(e) => {
+                        setCategorySearch(e.target.value);
+                        setShowCategorySuggestions(true);
+                      }}
+                      onFocus={() => setShowCategorySuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 200)}
+                      aria-invalid={!!errors.categories}
+                      data-field="categories"
+                    />
+                    {showCategorySuggestions && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                        {PREDEFINED_CATEGORIES
+                          .filter(cat =>
+                            !categories.includes(cat) &&
+                            cat.toLowerCase().includes(categorySearch.toLowerCase())
+                          )
+                          .slice(0, 10)
+                          .map((cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                setCategories([...categories, cat]);
+                                setCategorySearch("");
+                                setShowCategorySuggestions(false);
+                                setHasUnsavedChanges(true);
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-zinc-900 transition-colors"
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        {PREDEFINED_CATEGORIES.filter(cat =>
+                          !categories.includes(cat) &&
+                          cat.toLowerCase().includes(categorySearch.toLowerCase())
+                        ).length === 0 && (
+                            <div className="px-4 py-2 text-sm text-zinc-500">
+                              No categories found
+                            </div>
+                          )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {fieldError("categories")}
+              </label>
+
+              <label className="grid gap-2 text-sm sm:col-span-2">
+                <span className="text-zinc-700">
+                  Tags
+                </span>
+                <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 outline-none transition focus-within:border-[var(--btn-primary)] focus-within:ring-2 focus-within:ring-zinc-900/10">
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTags(tags.filter(t => t !== tag));
+                              setHasUnsavedChanges(true);
+                            }}
+                            className="hover:text-emerald-900"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      className="w-full bg-transparent text-zinc-900 outline-none placeholder:text-zinc-400"
+                      placeholder="Search tags... (e.g., Programming, Machine Learning, History)"
+                      value={tagSearch}
+                      onChange={(e) => {
+                        setTagSearch(e.target.value);
+                        setShowTagSuggestions(true);
+                      }}
+                      onFocus={() => setShowTagSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
+                    />
+                    {showTagSuggestions && tagSearch && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                        {PREDEFINED_TAGS
+                          .filter(tag =>
+                            !tags.includes(tag) &&
+                            tag.toLowerCase().includes(tagSearch.toLowerCase())
+                          )
+                          .slice(0, 10)
+                          .map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => {
+                                setTags([...tags, tag]);
+                                setTagSearch("");
+                                setShowTagSuggestions(false);
+                                setHasUnsavedChanges(true);
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm text-zinc-900 transition-colors"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        {PREDEFINED_TAGS.filter(tag =>
+                          !tags.includes(tag) &&
+                          tag.toLowerCase().includes(tagSearch.toLowerCase())
+                        ).length === 0 && (
+                            <div className="px-4 py-2 text-sm text-zinc-500">
+                              No tags found
+                            </div>
+                          )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </label>
+
+              <label className="grid gap-2 text-sm sm:col-span-2">
+                <span className="text-zinc-700">
+                  Description
                 </span>
                 <textarea
                   className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 min-h-[120px] resize-y"
@@ -618,10 +1044,8 @@ export default function AdminEditBookPage() {
                   placeholder="Enter a brief description of the book's content, themes, and key topics. This helps students discover books through the chatbot and improves search results."
                   rows={4}
                 />
-                <p className="text-xs text-zinc-500">
-                  💡 Tip: Include main themes, key concepts, and target audience. This description is searchable and helps the AI chatbot recommend this book to students.
-                </p>
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Status <span className="text-rose-600">*</span>
@@ -641,6 +1065,7 @@ export default function AdminEditBookPage() {
                 </select>
                 {fieldError("status")}
               </label>
+
               <label className="grid gap-2 text-sm">
                 <span className="text-zinc-700">
                   Loan Policy {format !== "eBook" && <span className="text-rose-600">*</span>}

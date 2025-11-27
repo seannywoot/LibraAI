@@ -34,8 +34,8 @@ function useForceLightTheme() {
 
 const STUDENT_DEMO_EMAIL = "seannpatrick25@gmail.com";
 const STUDENT_DEMO_PASSWORD = "LibraAI_2025";
-const ADMIN_DEMO_EMAIL = "admin@libra.ai";
-const ADMIN_DEMO_PASSWORD = "ManageStacks!";
+const ADMIN_DEMO_EMAIL = "libraaismartlibraryassistant@gmail.com";
+const ADMIN_DEMO_PASSWORD = "LibraAI_2025";
 
 function AuthContent() {
   useForceLightTheme();

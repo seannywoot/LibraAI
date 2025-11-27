@@ -1135,7 +1135,6 @@ export default function AdminAddBookPage() {
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
                   Categories <span className="text-rose-600">*</span>
-                  <span className="text-zinc-500 font-normal"> (Search and select one or more)</span>
                 </span>
                 <div className={`rounded-xl border bg-white px-4 py-3 outline-none transition focus-within:border-[var(--btn-primary)] focus-within:ring-2 focus-within:ring-zinc-900/10 ${errors.categories ? "border-rose-400" : "border-zinc-200"}`}>
                   {categories.length > 0 && (
@@ -1177,7 +1176,7 @@ export default function AdminAddBookPage() {
                       aria-invalid={!!errors.categories}
                       data-field="categories"
                     />
-                    {showCategorySuggestions && categorySearch && (
+                    {showCategorySuggestions && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
                         {PREDEFINED_CATEGORIES
                           .filter(cat =>
@@ -1217,7 +1216,7 @@ export default function AdminAddBookPage() {
 
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
-                  Tags <span className="text-zinc-500">(optional, for better discoverability)</span>
+                  Tags
                 </span>
                 <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 outline-none transition focus-within:border-[var(--btn-primary)] focus-within:ring-2 focus-within:ring-zinc-900/10">
                   {tags.length > 0 && (
@@ -1296,7 +1295,7 @@ export default function AdminAddBookPage() {
 
               <label className="grid gap-2 text-sm sm:col-span-2">
                 <span className="text-zinc-700">
-                  Description <span className="text-zinc-500">(optional but recommended)</span>
+                  Description
                 </span>
                 <textarea
                   className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 min-h-[120px] resize-y"
