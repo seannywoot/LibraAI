@@ -752,7 +752,8 @@ export default function StudentBooksPage() {
                               type="checkbox"
                               checked={tempFilters.resourceTypes.includes(label)}
                               onChange={() => toggleResourceType(label)}
-                              className="w-4 h-4 rounded border-gray-300 text-[var(--btn-primary)] focus:ring-[var(--btn-primary)]"
+                              className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 accent-orange-600"
+                              style={{ accentColor: 'var(--btn-primary)' }}
                             />
                             <span className="text-sm text-gray-700">
                               {label}
@@ -777,7 +778,8 @@ export default function StudentBooksPage() {
                               type="checkbox"
                               checked={tempFilters.formats.includes(format)}
                               onChange={() => toggleFormat(format)}
-                              className="w-4 h-4 rounded border-gray-300 text-[var(--btn-primary)] focus:ring-[var(--btn-primary)]"
+                              className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 accent-orange-600"
+                              style={{ accentColor: 'var(--btn-primary)' }}
                             />
                             <span className="text-sm text-gray-700">
                               {format}
@@ -803,7 +805,8 @@ export default function StudentBooksPage() {
                                 type="checkbox"
                                 checked={tempFilters.availability.includes(status)}
                                 onChange={() => toggleAvailability(status)}
-                                className="w-4 h-4 rounded border-gray-300 text-[var(--btn-primary)] focus:ring-[var(--btn-primary)]"
+                                className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 accent-orange-600"
+                                style={{ accentColor: 'var(--btn-primary)' }}
                               />
                               <span className="text-sm text-gray-700">
                                 {status}
@@ -979,7 +982,8 @@ export default function StudentBooksPage() {
                                 type="checkbox"
                                 checked={tempFilters.categories.includes(category)}
                                 onChange={() => toggleCategory(category)}
-                                className="w-4 h-4 rounded border-gray-300 text-[var(--btn-primary)] focus:ring-[var(--btn-primary)]"
+                                className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 accent-orange-600"
+                                style={{ accentColor: 'var(--btn-primary)' }}
                               />
                               <span className="text-sm text-gray-700">
                                 {category}
@@ -1283,7 +1287,7 @@ export default function StudentBooksPage() {
                         <Link
                           key={book._id}
                           href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
-                          className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                          className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow cursor-pointer"
                         >
                           <div className="flex gap-6">
                             {/* Book Cover */}
@@ -1454,7 +1458,7 @@ export default function StudentBooksPage() {
                       return (
                         <div
                           key={book._id}
-                          className="relative rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow flex flex-col"
+                          className="relative rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow flex flex-col"
                         >
                           {/* Bookmark Button */}
                           <button

@@ -1121,7 +1121,7 @@ function MyLibraryContent() {
                     <Link
                       key={book._id}
                       href={`/student/books/${encodeURIComponent(book.slug || book._id)}?from=library&tab=bookmarked`}
-                      className="rounded-lg border border-gray-200 bg-white p-6 hover:shadow-md transition-shadow cursor-pointer block"
+                      className="rounded-lg border border-gray-200 bg-white p-6 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow cursor-pointer block"
                     >
                       <div className="flex gap-6">
                         {/* Book Cover */}
@@ -1174,7 +1174,7 @@ function MyLibraryContent() {
                     <Link
                       key={book._id}
                       href={`/student/books/${encodeURIComponent(book.slug || book._id)}?from=library&tab=bookmarked`}
-                      className="rounded-lg border border-gray-200 bg-white p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col"
+                      className="rounded-lg border border-gray-200 bg-white p-3 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow cursor-pointer flex flex-col"
                     >
                       {/* Book Cover */}
                       <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium mb-2 overflow-hidden">
@@ -1290,7 +1290,7 @@ function MyLibraryContent() {
                   {myBooks.map((book) => (
                     <div
                       key={book._id}
-                      className="relative rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow"
+                      className="relative rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow"
                     >
                       <button
                         onClick={(e) => {
@@ -1358,7 +1358,7 @@ function MyLibraryContent() {
                   {myBooks.map((book) => (
                     <div
                       key={book._id}
-                      className="relative rounded-lg border border-gray-200 bg-white hover:shadow-md transition-shadow"
+                      className="relative rounded-lg border border-gray-200 bg-white hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow"
                     >
                       <button
                         onClick={(e) => {
@@ -1501,7 +1501,7 @@ function MyLibraryContent() {
                       <Link
                         key={transaction._id}
                         href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
-                        className={`block rounded-lg border p-6 hover:shadow-md transition-shadow cursor-pointer ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                        className={`block rounded-lg border p-6 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow cursor-pointer ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
                           }`}
                       >
                         <div className="flex gap-6">
@@ -1606,7 +1606,7 @@ function MyLibraryContent() {
                       <Link
                         key={transaction._id}
                         href={`/student/books/${encodeURIComponent(transaction.bookSlug || transaction.bookId)}?from=library&tab=borrowed`}
-                        className={`rounded-lg border p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
+                        className={`rounded-lg border p-3 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow cursor-pointer flex flex-col ${overdue ? "border-rose-200 bg-rose-50" : "border-gray-200 bg-white"
                           }`}
                       >
                         {/* Book Cover */}

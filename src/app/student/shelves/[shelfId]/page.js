@@ -280,7 +280,7 @@ export default function ShelfBooksPage() {
                   <Link
                     key={book._id}
                     href={`/student/books/${encodeURIComponent(book.slug || book._id)}`}
-                    className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    className="block rounded-lg bg-white border border-gray-200 p-6 shadow-sm hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow cursor-pointer"
                   >
                     <div className="flex gap-6">
                       {/* Book Cover */}

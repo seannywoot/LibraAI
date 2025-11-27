@@ -328,7 +328,7 @@ export default function QuizzesPage() {
                                 <Link
                                     key={quiz._id}
                                     href={`/student/quizzes/${quiz._id}`}
-                                    className="group block rounded-lg border border-gray-200 p-4 hover:shadow-md hover:border-gray-300 transition-all"
+                                    className="group block rounded-lg border border-gray-200 p-4 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] hover:border-gray-300 transition-all"
                                 >
                                     <div className="flex items-start gap-3 mb-3">
                                         <div className="rounded-lg bg-orange-100 p-2">

@@ -310,7 +310,7 @@ function NoteCard({ note, searchQuery, openDeleteModal, formatDate }) {
   return (
     <Link
       href={`/student/notes/${note._id}`}
-      className="group flex flex-col rounded-lg border border-gray-200 bg-white p-5 hover:shadow-lg transition-all min-h-[200px]"
+      className="group flex flex-col rounded-lg border border-gray-200 bg-white p-5 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-all min-h-[200px]"
     >
       <div className="flex items-start justify-between mb-3">
         <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">

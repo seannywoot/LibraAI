@@ -106,7 +106,7 @@ export default function RecommendationCard({
         <button
           type="button"
           onClick={handleClick}
-          className="w-full text-left rounded-lg bg-white border border-gray-200 p-2 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+          className="w-full text-left rounded-lg bg-white border border-gray-200 p-2 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] hover:scale-[1.02] transition-all duration-200 cursor-pointer"
         >
           <div className="flex gap-2">
             {/* Book Cover - Smaller */}
@@ -157,7 +157,7 @@ export default function RecommendationCard({
   }
 
   return (
-    <div className="relative rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow">
+    <div className="relative rounded-lg bg-white border border-gray-200 p-3 shadow-sm hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow">
       {/* Bookmark Button */}
       <button
         onClick={handleBookmarkClick}

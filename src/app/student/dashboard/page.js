@@ -210,8 +210,8 @@ export default function StudentDashboardPage() {
                       `${stats.pendingRequests} pending`}
                   </p>
                 </div>
-                <div className="rounded-full bg-amber-100 p-3">
-                  <Clock className="h-6 w-6 text-amber-600" />
+                <div className="rounded-full bg-orange-100 p-3">
+                  <Clock className="h-6 w-6 text-orange-700" />
                 </div>
               </div>
             </div>
@@ -405,7 +405,7 @@ export default function StudentDashboardPage() {
                   <Link
                     key={transaction._id}
                     href="/student/library?tab=borrowed"
-                    className={`block rounded-lg border p-4 hover:shadow-md transition-shadow ${isCritical
+                    className={`block rounded-lg border p-4 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow ${isCritical
                       ? "border-rose-200 bg-rose-50"
                       : isDueSoon
                         ? "border-amber-200 bg-amber-50"
@@ -551,7 +551,7 @@ export default function StudentDashboardPage() {
                   <Link
                     key={book._id}
                     href={`/student/books/${book._id}`}
-                    className="group rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow"
+                    className="group rounded-lg border border-gray-200 p-3 hover:shadow-[0_8px_20px_rgba(200,111,38,0.3)] transition-shadow"
                   >
                     <div className="w-full aspect-2/3 rounded bg-gray-200 flex items-center justify-center text-gray-400 text-xs mb-2 overflow-hidden">
                       {book.coverImage || book.coverImageUrl || book.thumbnail ? (
