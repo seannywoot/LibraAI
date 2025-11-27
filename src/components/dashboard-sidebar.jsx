@@ -285,13 +285,13 @@ export default function DashboardSidebar({
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className={`w-full ${theme.defaultLink} ${baseLinkStyles} rounded-xl`}
+            className={`w-full ${theme.defaultLink} ${baseLinkStyles} rounded-xl px-2 overflow-visible`}
             aria-haspopup="menu"
             aria-expanded={open ? "true" : "false"}
           >
             <span className="flex flex-1 min-w-0 items-center gap-3">
-              {/* Simple avatar using initial */}
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-(--bg-2) text-(--text) font-semibold">
+              {/* Simple avatar using initial - ensure full circle with spacing */}
+              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--btn-primary) text-white font-semibold">
                 {displayName.slice(0, 1)}
               </span>
               <span className="flex min-w-0 flex-col text-left">
