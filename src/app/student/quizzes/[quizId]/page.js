@@ -485,7 +485,10 @@ export default function QuizTakingPage({ params }) {
                             {/* Question Display */}
                             {(() => {
                                 const question = quiz.questions[reviewCurrentQuestion];
-                                const userAnswer = selectedAnswers[reviewCurrentQuestion];
+                                // Map shuffled answers back to original question order
+                                // Find which shuffled position corresponds to this original question
+                                const shuffledIndex = questionOrder.indexOf(reviewCurrentQuestion);
+                                const userAnswer = selectedAnswers[shuffledIndex];
                                 const correctAnswer = question.correctAnswer;
                                 const isCorrect = userAnswer === correctAnswer;
 
@@ -560,7 +563,9 @@ export default function QuizTakingPage({ params }) {
                                 <h4 className="text-sm font-medium text-gray-700 mb-3">Jump to Question</h4>
                                 <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
                                     {quiz.questions.map((q, index) => {
-                                        const isCorrect = selectedAnswers[index] === q.correctAnswer;
+                                        // Map shuffled answers back to original question order
+                                        const shuffledIndex = questionOrder.indexOf(index);
+                                        const isCorrect = selectedAnswers[shuffledIndex] === q.correctAnswer;
                                         return (
                                             <button
                                                 key={index}
