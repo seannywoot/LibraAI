@@ -235,7 +235,7 @@ export async function GET(request) {
         $match: {
           eventType: "search",
           timestamp: { $gte: thirtyDaysAgo },
-          searchQuery: { $exists: true, $ne: "" }
+          searchQuery: { $exists: true, $ne: "", $nin: ["filtered search", "Filtered Search"] }
         }
       },
       {
@@ -264,11 +264,36 @@ export async function GET(request) {
             $sum: { $cond: [{ $eq: ["$eventType", "view"] }, 1, 0] }
           },
           searches: {
-            $sum: { $cond: [{ $eq: ["$eventType", "search"] }, 1, 0] }
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ["$eventType", "search"] },
+                    { $not: { $in: [{ $toLower: "$searchQuery" }, ["filtered search"]] } }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
           },
           bookmarks: {
             $sum: { $cond: [{ $eq: ["$eventType", "bookmark_add"] }, 1, 0] }
           }
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "email",
+          as: "userDetails"
+        }
+      },
+      {
+        $match: {
+          "userDetails.0": { $exists: true },
+          "userDetails.role": { $ne: "admin" }
         }
       },
       { $sort: { totalInteractions: -1 } },

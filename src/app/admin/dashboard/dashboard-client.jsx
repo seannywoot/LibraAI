@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, HelpCircle, AlertTriangle, FileText, ThumbsUp, ThumbsDown, ChevronLeft, ChevronRight, BookOpen, RotateCcw, Clock, X, Trash2, MessageSquare } from "lucide-react";
+import { Search, HelpCircle, AlertTriangle, FileText, ThumbsUp, ThumbsDown, ChevronLeft, ChevronRight, BookOpen, RotateCcw, Clock, X, Trash2, MessageSquare, User } from "lucide-react";
 import { ToastContainer, showToast } from "@/components/ToastContainer";
 import ConfirmDialog from "@/components/confirm-dialog";
 import { AdminTransactionChart } from "@/components/admin-transaction-chart";
@@ -309,68 +309,71 @@ export default function DashboardClient() {
           </div>
         </section>
 
-        {/* Top Items Section with Tabs - COMMENTED OUT */}
-        {false && <section>
+        {/* Top Items Section with Tabs */}
+        <section>
           <h2 className="text-xl font-semibold text-zinc-900 mb-4">Top Items (Last 30 Days)</h2>
           <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
             {/* Tab Navigation */}
-            <div className="border-b border-zinc-200 bg-zinc-50 rounded-t-2xl">
-              <div className="flex gap-1 p-2">
+            <div className="border-b border-zinc-200 bg-zinc-50 rounded-t-2xl overflow-x-auto">
+              <div className="flex gap-1 p-2 min-w-max md:min-w-0">
                 <button
                   onClick={() => setActiveTopItemsTab('books')}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTopItemsTab === 'books'
-                    ? 'bg-white text-zinc-900 shadow-sm'
+                  className={`flex items-center gap-2 px-3 py-2 md:px-4 text-xs md:text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTopItemsTab === 'books'
+                    ? 'bg-[var(--btn-primary)] text-white shadow-sm'
                     : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/50'
                     }`}
+                  title="Most Viewed Books"
                 >
-                  <BookOpen className="h-4 w-4" />
-                  <span>Most Viewed Books</span>
+                  <BookOpen className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Most Viewed Books</span>
                 </button>
                 <button
                   onClick={() => setActiveTopItemsTab('searches')}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTopItemsTab === 'searches'
-                    ? 'bg-white text-zinc-900 shadow-sm'
+                  className={`flex items-center gap-2 px-3 py-2 md:px-4 text-xs md:text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTopItemsTab === 'searches'
+                    ? 'bg-[var(--btn-primary)] text-white shadow-sm'
                     : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/50'
                     }`}
+                  title="Top Search Terms"
                 >
-                  <Search className="h-4 w-4" />
-                  <span>Top Search Terms</span>
+                  <Search className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Top Search Terms</span>
                 </button>
                 <button
                   onClick={() => setActiveTopItemsTab('users')}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTopItemsTab === 'users'
-                    ? 'bg-white text-zinc-900 shadow-sm'
+                  className={`flex items-center gap-2 px-3 py-2 md:px-4 text-xs md:text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTopItemsTab === 'users'
+                    ? 'bg-[var(--btn-primary)] text-white shadow-sm'
                     : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/50'
                     }`}
+                  title="Most Active Users"
                 >
-                  <HelpCircle className="h-4 w-4" />
-                  <span>Most Active Users</span>
+                  <User className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Most Active Users</span>
                 </button>
               </div>
             </div>
 
             {/* Tab Content */}
-            <div className="divide-y divide-zinc-100 max-h-[500px] overflow-y-auto">
+            <div className="divide-y divide-zinc-100 max-h-[300px] overflow-y-auto">
               {/* Most Viewed Books Tab */}
               {activeTopItemsTab === 'books' && (
                 <>
                   {analytics.topBooksByViews && analytics.topBooksByViews.length > 0 ? (
                     analytics.topBooksByViews.map((book, index) => (
-                      <div key={`book-${book.bookId}-${index}`} className="p-4 hover:bg-zinc-50 transition-colors">
-                        <div className="flex items-start gap-4">
-                          <span className="shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-sm font-bold text-white">
+                      <div key={`book-${book.bookId}-${index}`} className="p-3 md:p-4 hover:bg-zinc-50 transition-colors">
+                        <div className="flex items-start gap-3 md:gap-4">
+                          <span className="shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-xs md:text-sm font-bold text-white">
                             {index + 1}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-base font-semibold text-zinc-900">
+                            <p className="text-sm md:text-base font-semibold text-zinc-900 truncate">
                               {book.title}
                             </p>
-                            <p className="text-sm text-zinc-600 mt-0.5">
+                            <p className="text-xs md:text-sm text-zinc-600 mt-0.5 truncate">
                               by {book.author}
                             </p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <div className="flex items-center gap-1 text-sm font-medium text-emerald-600">
-                                <BookOpen className="h-4 w-4" />
+                            <div className="flex items-center gap-2 mt-1.5 md:mt-2">
+                              <div className="flex items-center gap-1 text-xs md:text-sm font-medium text-emerald-600">
+                                <BookOpen className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                 <span>{book.viewCount} views</span>
                               </div>
                             </div>
@@ -393,18 +396,18 @@ export default function DashboardClient() {
                 <>
                   {analytics.topSearches && analytics.topSearches.length > 0 ? (
                     analytics.topSearches.map((search, index) => (
-                      <div key={`search-${search.query}-${index}`} className="p-4 hover:bg-zinc-50 transition-colors">
-                        <div className="flex items-start gap-4">
-                          <span className="shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white">
+                      <div key={`search-${search.query}-${index}`} className="p-3 md:p-4 hover:bg-zinc-50 transition-colors">
+                        <div className="flex items-start gap-3 md:gap-4">
+                          <span className="shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs md:text-sm font-bold text-white">
                             {index + 1}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-base font-semibold text-zinc-900">
+                            <p className="text-sm md:text-base font-semibold text-zinc-900 truncate">
                               &quot;{search.query}&quot;
                             </p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <div className="flex items-center gap-1 text-sm font-medium text-blue-600">
-                                <Search className="h-4 w-4" />
+                            <div className="flex items-center gap-2 mt-1.5 md:mt-2">
+                              <div className="flex items-center gap-1 text-xs md:text-sm font-medium text-blue-600">
+                                <Search className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                 <span>{search.searchCount} searches</span>
                               </div>
                             </div>
@@ -427,22 +430,22 @@ export default function DashboardClient() {
                 <>
                   {analytics.topUsers && analytics.topUsers.length > 0 ? (
                     analytics.topUsers.map((user, index) => (
-                      <div key={`user-${user.email}-${index}`} className="p-4 hover:bg-zinc-50 transition-colors">
-                        <div className="flex items-start gap-4">
-                          <span className="shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-sm font-bold text-white">
+                      <div key={`user-${user.email}-${index}`} className="p-3 md:p-4 hover:bg-zinc-50 transition-colors">
+                        <div className="flex items-start gap-3 md:gap-4">
+                          <span className="shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-xs md:text-sm font-bold text-white">
                             {index + 1}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-base font-semibold text-zinc-900 truncate">
+                            <p className="text-sm md:text-base font-semibold text-zinc-900 truncate">
                               {user.email}
                             </p>
-                            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-zinc-600">
+                            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1.5 md:mt-2 text-xs md:text-sm text-zinc-600">
                               <div className="flex items-center gap-1">
-                                <BookOpen className="h-3.5 w-3.5" />
+                                <BookOpen className="h-3 w-3 md:h-3.5 md:w-3.5" />
                                 <span>{user.views} views</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <Search className="h-3.5 w-3.5" />
+                                <Search className="h-3 w-3 md:h-3.5 md:w-3.5" />
                                 <span>{user.searches} searches</span>
                               </div>
                               <div className="flex items-center gap-1">
@@ -450,8 +453,8 @@ export default function DashboardClient() {
                                 <span>{user.bookmarks} bookmarks</span>
                               </div>
                             </div>
-                            <div className="mt-2">
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                            <div className="mt-1.5 md:mt-2">
+                              <span className="inline-flex items-center px-2 py-0.5 md:px-2.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium bg-purple-100 text-purple-700">
                                 {user.totalInteractions} total interactions
                               </span>
                             </div>
@@ -470,7 +473,7 @@ export default function DashboardClient() {
               )}
             </div>
           </div>
-        </section>}
+        </section>
 
         {/* Top Books by Borrows - COMMENTED OUT */}
         {false && <section>

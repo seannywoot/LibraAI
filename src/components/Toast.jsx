@@ -25,16 +25,19 @@ export default function Toast({
       ring: "ring-emerald-200",
       badge: "bg-emerald-500",
       text: "text-emerald-900",
+      bg: "bg-emerald-50",
     },
     error: {
       ring: "ring-rose-200",
       badge: "bg-rose-500",
       text: "text-rose-900",
+      bg: "bg-rose-50",
     },
     info: {
       ring: "ring-sky-200",
       badge: "bg-sky-500",
       text: "text-sky-900",
+      bg: "bg-sky-50",
     },
   }[type] || colorMap?.info;
 
@@ -42,7 +45,7 @@ export default function Toast({
 
   const content = (
     <div
-      className={`flex max-w-md items-start gap-3 rounded-xl border border-zinc-200 bg-white/95 px-4 py-3 shadow-[0_6px_30px_rgba(0,0,0,0.08)] backdrop-blur ring-1 ${colorMap.ring}`}
+      className={`flex max-w-md items-start gap-3 rounded-xl border border-zinc-200 ${colorMap.bg} px-4 py-3 shadow-[0_6px_30px_rgba(0,0,0,0.08)] backdrop-blur ring-1 ${colorMap.ring}`}
     >
       <span className={`mt-1 inline-flex h-2.5 w-2.5 flex-none rounded-full ${colorMap.badge}`} aria-hidden />
       <div className="min-w-0 flex-1">
