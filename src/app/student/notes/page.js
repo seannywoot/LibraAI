@@ -17,6 +17,8 @@ export default function NotesPage() {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(9);
   const [pdfPreview, setPdfPreview] = useState({ isOpen: false, blob: null, fileName: "" });
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState(null);
@@ -99,6 +101,9 @@ export default function NotesPage() {
       note.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const totalPages = Math.max(1, Math.ceil(filteredNotes.length / pageSize));
+  const paginatedNotes = filteredNotes.slice((page - 1) * pageSize, page * pageSize);
+
   function formatDate(dateStr) {
     if (!dateStr) return "";
     const date = new Date(dateStr);
@@ -151,6 +156,9 @@ export default function NotesPage() {
                 NOTES
               </p>
               <h1 className="text-4xl font-bold text-gray-900 mt-1">My Notes</h1>
+              <p className="text-sm text-gray-600 mt-2">
+                Create, organize, and manage your personal notes with our rich text editor
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -177,7 +185,7 @@ export default function NotesPage() {
 
         {loading ? (
           <div className="text-center py-12 text-gray-600">Loading notes...</div>
-        ) : filteredNotes.length === 0 ? (
+        ) : paginatedNotes.length === 0 ? (
           <div className="text-center py-12">
             <div className="rounded-full bg-gray-100 p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
               <FileText className="h-10 w-10 text-gray-400" />
@@ -201,16 +209,45 @@ export default function NotesPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredNotes.map((note) => (
-              <NoteCard
-                key={note._id}
-                note={note}
-                searchQuery={searchQuery}
-                openDeleteModal={openDeleteModal}
-                formatDate={formatDate}
-              />
-            ))}
+          <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {paginatedNotes.map((note) => (
+                <NoteCard
+                  key={note._id}
+                  note={note}
+                  searchQuery={searchQuery}
+                  openDeleteModal={openDeleteModal}
+                  formatDate={formatDate}
+                />
+              ))}
+            </div>
+
+            {filteredNotes.length > pageSize && (
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600">
+                  Showing {((page - 1) * pageSize) + 1} - {Math.min(page * pageSize, filteredNotes.length)} of {filteredNotes.length} notes
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-[#C86F26] hover:bg-[#C86F26] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-[#C86F26] hover:bg-[#C86F26] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

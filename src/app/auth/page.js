@@ -291,15 +291,38 @@ function AuthContent() {
 
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center bg-zinc-100 px-4 sm:px-6 lg:px-8 text-zinc-900 overflow-hidden">
+      <style jsx global>{`
+        /* Compact layout for short-height viewports */
+        @media (max-height: 740px) {
+          .auth-main { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+          .auth-form-card { padding: 1rem !important; }
+          .auth-sidebar { padding: 1rem !important; }
+          .auth-switch { padding: 2px !important; }
+          .auth-subcopy { display: none !important; }
+          .auth-forgot { display: none !important; }
+          .auth-demo-box { padding: 0.5rem 0.75rem !important; }
+          .auth-demo-hint { display: none !important; }
+          .auth-mobile-header img { height: 1.75rem !important; }
+          .auth-mobile-header h1 { font-size: 1.125rem !important; }
+          .auth-main h1 { font-size: 1.5rem !important; }
+          .auth-form > * + * { margin-top: 0.75rem !important; }
+          .auth-input { padding-top: 0.6rem !important; padding-bottom: 0.6rem !important; }
+        }
+        @media (max-height: 600px) {
+          .auth-main { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+          .auth-form-card { padding: 0.75rem !important; }
+          .auth-demo-box { display: none !important; }
+        }
+      `}</style>
       {/* Mobile Header - Above Card */}
-      <div className="md:hidden flex items-center justify-center gap-3 mb-4 shrink-0">
+      <div className="md:hidden flex items-center justify-center gap-3 mb-4 shrink-0 auth-mobile-header">
         <img src="/libraai-logo.png" alt="LibraAI" className="h-10 w-auto object-contain" />
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900">LibraAI</h1>
       </div>
 
       <div className="flex w-full max-w-6xl max-h-[85vh] md:max-h-[90vh] flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 md:flex-row">
-        <section className="relative hidden w-full md:max-w-xs lg:max-w-sm flex-col justify-between bg-zinc-900 p-10 text-zinc-100 md:flex">
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,_#F4BC42,_#C86F26,_#802910)]" aria-hidden />
+        <section className="relative hidden w-full md:max-w-xs lg:max-w-sm flex-col justify-between bg-zinc-900 p-10 text-zinc-100 md:flex auth-sidebar">
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#F4BC42,#C86F26,#802910)]" aria-hidden />
           <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
             <img src="/libraai-logo.png" alt="LibraAI" className="h-24 w-auto object-contain mb-4 drop-shadow-lg" />
             <h2 className="text-4xl font-bold tracking-tight text-white drop-shadow-md">
@@ -319,21 +342,21 @@ function AuthContent() {
           </div>
         </section>
 
-        <main className="flex w-full flex-1 flex-col justify-center px-4 py-6 sm:px-10 sm:py-12 lg:px-14 overflow-y-auto">
+        <main className="auth-main flex w-full flex-1 flex-col justify-center px-4 py-6 sm:px-10 sm:py-12 lg:px-14 overflow-hidden min-h-0">
           <div className="w-full max-w-2xl">
             <header className="mb-6 flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight">Sign in</h1>
-                <p className="mt-2 text-sm text-zinc-600 hidden md:block">
+                <p className="auth-subcopy mt-2 text-sm text-zinc-600 hidden md:block">
                   LibraAI is an AI-powered digital library assistant that simplifies how students discover, access, and manage educational resources.
                 </p>
               </div>
-              <div className="inline-flex rounded-xl border border-zinc-200 bg-zinc-100 p-1 text-sm font-medium">
+              <div className="auth-switch inline-flex rounded-xl border border-zinc-200 bg-zinc-100 p-1 text-sm font-medium">
                 <button
                   type="button"
                   onClick={() => setMode("student")}
                   aria-pressed={mode === "student"}
-                  className={`${mode === "student" ? "bg-[linear-gradient(to_bottom,_#F4BC42,_#C86F26,_#802910)] text-white shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
+                  className={`${mode === "student" ? "bg-[linear-gradient(to_bottom,#F4BC42,#C86F26,#802910)] text-white shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
                 >
                   Student
                 </button>
@@ -341,7 +364,7 @@ function AuthContent() {
                   type="button"
                   onClick={() => setMode("admin")}
                   aria-pressed={mode === "admin"}
-                  className={`${mode === "admin" ? "bg-[linear-gradient(to_bottom,_#F4BC42,_#C86F26,_#802910)] text-white shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
+                  className={`${mode === "admin" ? "bg-[linear-gradient(to_bottom,#F4BC42,#C86F26,#802910)] text-white shadow" : "text-zinc-600 hover:text-zinc-900"} rounded-lg px-4 py-2 transition`}
                 >
                   Admin
                 </button>
@@ -369,9 +392,9 @@ function AuthContent() {
               </div>
             )}
 
-            <section className="rounded-3xl border border-zinc-200 bg-white px-8 py-10 shadow-lg shadow-zinc-900/5">
+            <section className="auth-form-card rounded-3xl border border-zinc-200 bg-white px-8 py-10 shadow-lg shadow-zinc-900/5">
               <form
-                className="space-y-6"
+                className="auth-form space-y-6"
                 onSubmit={mode === "student" ? handleStudentSubmit : handleAdminSubmit}
               >
                 <div className="space-y-2">
@@ -379,7 +402,7 @@ function AuthContent() {
                     {mode === "student" ? "Email address" : "Admin email"}
                   </label>
                   <input
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                    className="auth-input w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
                     id="email"
                     name="email"
                     type="email"
@@ -397,13 +420,13 @@ function AuthContent() {
                     <label className="text-sm font-medium text-zinc-700" htmlFor="password">
                       Password
                     </label>
-                    <Link className="text-xs font-semibold text-zinc-900 hover:text-zinc-700" href="/auth/forgot">
+                    <Link className="auth-forgot text-xs font-semibold text-zinc-900 hover:text-zinc-700" href="/auth/forgot">
                       Forgot password?
                     </Link>
                   </div>
                   <div className="relative">
                     <input
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 pr-12 text-sm shadow-sm outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                      className="auth-input w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 pr-12 text-sm shadow-sm outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
                       id="password"
                       name="password"
                       type={mode === "student" ? (showStudentPassword ? "text" : "password") : (showAdminPassword ? "text" : "password")}
@@ -468,7 +491,7 @@ function AuthContent() {
                 )}
 
                 <button
-                  className="flex w-full items-center justify-center rounded-xl bg-[linear-gradient(to_bottom,_#F4BC42,_#C86F26,_#802910)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C86F26] disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:hover:bg-zinc-700"
+                  className="flex w-full items-center justify-center rounded-xl bg-[linear-gradient(to_bottom,#F4BC42,#C86F26,#802910)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C86F26] disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:hover:bg-zinc-700"
                   type="submit"
                   disabled={isSubmitting}
                 >
@@ -480,7 +503,7 @@ function AuthContent() {
                 </button>
               </form>
 
-              <div className="mt-6 space-y-2 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
+              <div className="auth-demo-box mt-6 space-y-2 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
                 <p className="font-semibold uppercase tracking-[0.25em] text-zinc-500">{mode === "student" ? "Student demo" : "Admin demo"}</p>
                 {mode === "student" ? (
                   <>
@@ -490,7 +513,7 @@ function AuthContent() {
                     <p>
                       Password: <span className="font-mono text-zinc-800">{STUDENT_DEMO_PASSWORD}</span>
                     </p>
-                    <p className="text-zinc-500">Use these credentials to explore the student dashboard experience.</p>
+                    <p className="auth-demo-hint text-zinc-500">Use these credentials to explore the student dashboard experience.</p>
                   </>
                 ) : (
                   <>
@@ -500,7 +523,7 @@ function AuthContent() {
                     <p>
                       Password: <span className="font-mono text-zinc-800">{ADMIN_DEMO_PASSWORD}</span>
                     </p>
-                    <p className="text-zinc-500">These credentials unlock the admin dashboard experience.</p>
+                    <p className="auth-demo-hint text-zinc-500">These credentials unlock the admin dashboard experience.</p>
                   </>
                 )}
               </div>

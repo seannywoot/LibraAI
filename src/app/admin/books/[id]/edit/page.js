@@ -47,6 +47,7 @@ export default function AdminEditBookPage() {
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const [showAuthorSuggestions, setShowAuthorSuggestions] = useState(false);
+  const [showShelfSuggestions, setShowShelfSuggestions] = useState(false);
 
   const initialDataRef = useRef(null);
 
@@ -740,33 +741,64 @@ export default function AdminEditBookPage() {
                     value="Loading shelves..."
                     disabled
                   />
-                ) : shelves.length > 0 ? (
-                  <select
-                    className={`rounded-xl border px-4 py-3 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
-                    value={shelf}
-                    onChange={(e) => setShelf(e.target.value)}
-                    aria-invalid={!!errors.shelf}
-                    data-field="shelf"
-                    disabled={format === "eBook"}
-                  >
-                    <option value="">Select a shelf{format === "eBook" ? " (N/A)" : ""}</option>
-                    {shelves.map((s) => (
-                      <option key={s._id} value={s.code}>
-                        {s.code}{s.name ? ` - ${s.name}` : ""}{s.location ? ` (${s.location})` : ""}
-                      </option>
-                    ))}
-                  </select>
                 ) : (
-                  <input
-                    className={`rounded-xl border px-4 py-3 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.shelf ? "border-rose-400" : "border-zinc-200"}`}
-                    type="text"
-                    value={shelf}
-                    onChange={(e) => setShelf(e.target.value)}
-                    placeholder={format === "eBook" ? "N/A for eBooks" : "e.g., A3"}
-                    aria-invalid={!!errors.shelf}
-                    data-field="shelf"
-                    disabled={format === "eBook"}
-                  />
+                  <div className="relative">
+                    <input
+                      className={`rounded-xl border px-4 py-3 outline-none transition focus:border-[var(--btn-primary)] focus:ring-2 focus:ring-zinc-900/10 ${format === "eBook" ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-white text-zinc-900"} ${errors.shelf ? "border-rose-400" : "border-zinc-200"} w-full`}
+                      type="text"
+                      value={shelf}
+                      onChange={(e) => {
+                        setShelf(e.target.value);
+                        setShowShelfSuggestions(true);
+                        setHasUnsavedChanges(true);
+                      }}
+                      onFocus={() => setShowShelfSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowShelfSuggestions(false), 200)}
+                      placeholder={format === "eBook" ? "N/A for eBooks" : "e.g., A3 or type to search"}
+                      aria-invalid={!!errors.shelf}
+                      data-field="shelf"
+                      disabled={format === "eBook"}
+                    />
+                    {showShelfSuggestions && format !== "eBook" && shelf && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                        {shelves
+                          .filter((s) => {
+                            const q = shelf.toLowerCase();
+                            return (
+                              (s.code && s.code.toLowerCase().includes(q)) ||
+                              (s.name && s.name.toLowerCase().includes(q)) ||
+                              (s.location && s.location.toLowerCase().includes(q))
+                            );
+                          })
+                          .slice(0, 10)
+                          .map((s) => (
+                            <button
+                              key={s._id}
+                              type="button"
+                              onClick={() => {
+                                setShelf(s.code);
+                                setShowShelfSuggestions(false);
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm text-zinc-900 transition-colors"
+                            >
+                              <span className="font-medium">{s.code}</span>
+                              {s.name ? ` — ${s.name}` : ""}
+                              {s.location ? ` (${s.location})` : ""}
+                            </button>
+                          ))}
+                        {shelves.filter((s) => {
+                          const q = shelf.toLowerCase();
+                          return (
+                            (s.code && s.code.toLowerCase().includes(q)) ||
+                            (s.name && s.name.toLowerCase().includes(q)) ||
+                            (s.location && s.location.toLowerCase().includes(q))
+                          );
+                        }).length === 0 && (
+                          <div className="px-4 py-2 text-sm text-zinc-500 italic">No matching shelves found. You can use a custom code.</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
                 {fieldError("shelf")}
               </label>

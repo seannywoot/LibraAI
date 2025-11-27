@@ -166,7 +166,7 @@ export default function StudentDashboardPage() {
           <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
             STUDENT DASHBOARD
           </p>
-          <h1 className="text-4xl font-bold text-orange-600">Welcome back!</h1>
+          <h1 className="text-4xl font-bold text-[#C86F26]">Welcome back!</h1>
           <p className="text-sm text-gray-600">
             Here&apos;s an overview of your borrowed books and personalized
             recommendations.
@@ -184,7 +184,7 @@ export default function StudentDashboardPage() {
                     <p className="text-sm font-medium text-gray-600">
                       Total Borrowed
                     </p>
-                    <p className="text-3xl font-bold text-orange-600 mt-1">
+                    <p className="text-3xl font-bold text-[#C86F26] mt-1">
                       {stats.totalBorrowed}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">All time</p>
@@ -202,7 +202,7 @@ export default function StudentDashboardPage() {
                     <p className="text-sm font-medium text-gray-600">
                       Currently Reading
                     </p>
-                    <p className="text-3xl font-bold text-orange-600 mt-1">
+                    <p className="text-3xl font-bold text-[#C86F26] mt-1">
                       {stats.currentlyBorrowed}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
@@ -223,7 +223,7 @@ export default function StudentDashboardPage() {
                     <p className="text-sm font-medium text-gray-600">
                       Books Returned
                     </p>
-                    <p className="text-3xl font-bold text-orange-600 mt-1">
+                    <p className="text-3xl font-bold text-[#C86F26] mt-1">
                       {stats.totalReturned}
                     </p>
                     {stats.totalReturned > 0 && (

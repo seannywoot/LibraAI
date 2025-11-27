@@ -124,10 +124,21 @@ export default function DashboardSidebar({
           if (padLeft < 200) {
             sib.style.setProperty("padding-left", "300px");
           }
+          // Remove any runtime mobile navbar spacing
+          if (sib.style) sib.style.removeProperty("padding-top");
         } else {
           // Remove any runtime padding we may have added on smaller screens
           if (sib.style) {
             sib.style.removeProperty("padding-left");
+          }
+          // Ensure content clears the fixed mobile navbar
+          const computed = window.getComputedStyle(sib);
+          const padTop = parseFloat(computed.paddingTop || "0");
+          const nav = document.querySelector('nav[data-mobile-navbar]');
+          const navHeight = nav ? nav.offsetHeight : 64;
+          const desired = Math.max(80, navHeight + 16); // add breathing room
+          if (padTop < desired - 4) {
+            sib.style.setProperty("padding-top", `${desired}px`);
           }
         }
       } catch (_) {
@@ -137,7 +148,11 @@ export default function DashboardSidebar({
 
     applyOrRemoveContentPadding();
     window.addEventListener("resize", applyOrRemoveContentPadding);
-    return () => window.removeEventListener("resize", applyOrRemoveContentPadding);
+    const t = setTimeout(applyOrRemoveContentPadding, 50);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("resize", applyOrRemoveContentPadding);
+    };
   }, []);
 
   // We intentionally avoid calling setState directly on route changes to satisfy strict lint rules.
@@ -160,7 +175,7 @@ export default function DashboardSidebar({
   return (
     <>
       {/* Mobile/Tablet Navbar - Only visible below 1024px */}
-      <nav className="fixed top-0 left-0 right-0 z-50 min-[1440px]:hidden bg-white border-b border-zinc-200 px-4 py-3">
+      <nav data-mobile-navbar className="fixed top-0 left-0 right-0 z-50 min-[1440px]:hidden bg-white border-b border-zinc-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setSidebarOpen(true)}
